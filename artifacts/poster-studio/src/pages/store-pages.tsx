@@ -41,7 +41,7 @@ function filterProducts(input: Product[], filters: { category: string; size: str
   return result;
 }
 
-export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean }) {
+export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean; params?: any }) {
   const params = useParams<{ slug?: string }>();
   const collection = collections.find((item) => item.slug === params.slug);
   const [filters, setFilters] = useState({ category: '', size: '', orientation: '', availability: '', price: '' });
