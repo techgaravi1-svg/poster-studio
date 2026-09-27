@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Poster Studio"
+description = "A premium original poster storefront with a parallax hero gallery, curated collections, custom print CTA, product browsing, FAQ, reviews, and responsive ecommerce interactions."
+version = "1.0.0"
+id = "artifacts/poster-studio"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25173
+
+[services.development]
+run = "pnpm --filter @workspace/poster-studio run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/poster-studio", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/poster-studio/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25173"
+BASE_PATH = "/"

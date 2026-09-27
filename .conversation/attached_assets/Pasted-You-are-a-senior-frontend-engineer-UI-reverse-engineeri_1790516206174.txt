@@ -1,0 +1,708 @@
+You are a senior frontend engineer, UI reverse-engineering specialist,
+interaction designer and pixel-perfect implementation expert.
+
+I want to build an ORIGINAL website inspired by the visual design and
+interaction patterns of:
+
+https://www.postgenz.in/
+
+IMPORTANT:
+Do NOT copy proprietary source code, copyrighted artwork, logo, brand name,
+product images, or other protected assets from the reference website.
+
+Instead, reproduce the VISUAL DESIGN SYSTEM, layout proportions,
+spacing system, typography hierarchy, responsive behavior, animations,
+component architecture and interaction patterns using original placeholder
+assets/content.
+
+The final implementation must be extremely close to the supplied reference
+screenshots in visual geometry and behavior.
+
+==================================================
+TECH STACK
+==================================================
+
+Use:
+
+- Next.js
+- TypeScript
+- App Router
+- React
+- Plain CSS / CSS Modules
+- Lucide React for icons
+- Framer Motion only where animation is genuinely required
+- No Tailwind CSS
+- No Bootstrap
+- No unnecessary UI libraries
+
+Use clean reusable components.
+
+==================================================
+REFERENCE
+==================================================
+
+Reference website:
+
+https://www.postgenz.in/
+
+I have also supplied screenshots showing:
+
+1. Desktop homepage hero
+2. Hero while scrolling
+3. Categories dropdown
+
+Treat these screenshots as the primary visual reference.
+
+Analyze:
+
+- exact proportions
+- spacing
+- typography
+- alignment
+- border radius
+- shadows
+- icon sizes
+- navbar height
+- content max-width
+- hero height
+- image card dimensions
+- image gaps
+- CTA dimensions
+- dropdown dimensions
+- responsive behavior
+
+Do NOT simply create something "similar".
+
+Measure the screenshots visually and reproduce their geometry.
+
+==================================================
+GLOBAL DESIGN SYSTEM
+==================================================
+
+Create CSS variables:
+
+--background
+--foreground
+--muted
+--border
+--card
+--accent
+--gradient-start
+--gradient-middle
+--gradient-end
+
+Visual direction:
+
+- premium
+- minimal
+- modern Gen-Z ecommerce
+- mostly white
+- black typography
+- subtle gray borders
+- extremely soft shadows
+- rounded cards
+- generous whitespace
+- large editorial typography
+- colorful gradient accent text
+
+Do not introduce unnecessary colors.
+
+==================================================
+TYPOGRAPHY
+==================================================
+
+Reproduce the reference typography hierarchy.
+
+Use a modern geometric sans-serif font.
+
+Heading characteristics:
+
+- very bold
+- tight line height
+- large desktop size
+- responsive scaling
+- black primary text
+
+Gradient heading:
+
+"masterpieces."
+
+Use a smooth multicolor gradient similar to the reference.
+
+Ensure gradient text remains selectable text, NOT an image.
+
+==================================================
+NAVBAR
+==================================================
+
+Create:
+
+LEFT:
+- logo area
+
+CENTER:
+- Home
+- Custom
+- Categories
+- Best Sellers
+- Anime
+- Movies
+- Wall Packs
+
+RIGHT:
+- Search icon
+- Account icon
+- Shopping bag/cart icon
+
+Navbar requirements:
+
+- centered max-width container
+- generous horizontal spacing
+- approximately 70–80px desktop height
+- white background
+- subtle fixed/sticky behavior if appropriate
+- active navigation underline
+- small NEW badge beside Custom
+- small HOT badge beside Wall Packs
+
+Desktop navigation should visually match the supplied screenshot.
+
+Mobile:
+
+- logo
+- hamburger/menu
+- cart
+- responsive drawer navigation
+
+==================================================
+CATEGORIES DROPDOWN
+==================================================
+
+When hovering/clicking Categories:
+
+Display a floating dropdown below Categories.
+
+Match the screenshot:
+
+- white card
+- approximately 230–250px width
+- rounded corners
+- soft shadow
+- generous padding
+- vertical menu
+- Anime
+- Movies
+- Gaming
+- Trading
+- Free Fire
+- Wall Packs
+- bottom "View All Collections" row
+- right chevron
+- HOT badge
+
+Dropdown animation:
+
+- opacity
+- translateY
+- subtle scale
+- 150–200ms
+
+Close when:
+
+- clicking outside
+- moving away where appropriate
+- pressing Escape
+
+==================================================
+HERO SECTION
+==================================================
+
+Build a desktop two-column hero.
+
+LEFT COLUMN:
+
+Small pill:
+
+"New Split Posters Available"
+
+with:
+
+- black circular dot
+- white background
+- subtle border
+- pill radius
+- soft shadow
+
+Main heading:
+
+Transform your
+bare walls into
+masterpieces.
+
+Match line breaks and approximate width from reference.
+
+"masterpieces." uses gradient text.
+
+Description:
+
+Discover exclusive, museum-quality posters designed to
+elevate your living space. Handcrafted and shipped directly
+to your door.
+
+Buttons:
+
+Primary:
+Explore Collection →
+
+Secondary:
+Upload Your Art
+
+Primary:
+- black
+- white text
+- pill
+- subtle hover animation
+
+Secondary:
+- white
+- black text
+- thin border
+- pill
+
+==================================================
+RIGHT HERO IMAGE SYSTEM
+==================================================
+
+This is extremely important.
+
+The right side is NOT a normal grid.
+
+Create a vertically animated editorial/masonry poster wall.
+
+Use 3 vertical columns.
+
+Each column should contain multiple poster cards.
+
+Cards should have:
+
+- large rounded corners
+- white/very-light background
+- subtle border
+- soft shadow
+- internal poster image
+- realistic room/mockup presentation
+- varying heights
+
+Column positioning should create the staggered masonry appearance
+shown in the screenshots.
+
+The gallery should extend vertically beyond the hero viewport.
+
+Implement smooth vertical movement while the user scrolls.
+
+Possible implementation:
+
+- CSS transforms
+- Framer Motion useScroll/useTransform
+- different movement speeds for each column
+
+Column 1:
+slower upward movement
+
+Column 2:
+different movement speed
+
+Column 3:
+different movement speed
+
+Create an elegant parallax effect.
+
+Do NOT make it look like a standard CSS grid.
+
+==================================================
+HERO RESPONSIVENESS
+==================================================
+
+Desktop:
+two-column layout.
+
+Tablet:
+approximately 50/50 with reduced typography.
+
+Mobile:
+
+Stack content vertically.
+
+Hero text first.
+
+Poster gallery underneath.
+
+For mobile, transform the 3-column wall into a horizontally clipped
+or 2-column visual gallery so it doesn't destroy performance.
+
+Never allow horizontal page overflow.
+
+==================================================
+FLOATING WHATSAPP
+==================================================
+
+Create fixed bottom-right WhatsApp button.
+
+- green circular button
+- white WhatsApp icon
+- subtle shadow
+- approximately 56px desktop
+- approximately 52px mobile
+
+Use an actual WhatsApp URL placeholder:
+
+https://wa.me/YOUR_NUMBER
+
+Do not use the original website's number.
+
+==================================================
+BEST SELLERS
+==================================================
+
+Create section after hero.
+
+Large centered/left aligned section heading.
+
+Small uppercase label:
+
+COLLECTION
+
+Create product cards matching the same premium visual language.
+
+Each product card:
+
+- image
+- title
+- price
+- optional original price
+- discount
+- rounded corners
+- hover image scale
+- add-to-cart interaction
+
+Use ORIGINAL placeholder poster artwork.
+
+==================================================
+CUSTOM PRINT SECTION
+==================================================
+
+Create:
+
+Design Your Own
+
+Premium Custom Prints
+
+Include:
+
+- large visual area
+- upload CTA
+- image upload UI
+- print customization concept
+
+Do not copy the original site's artwork.
+
+==================================================
+GAMING COLLECTION
+==================================================
+
+Create visually rich full-width collection section.
+
+Heading:
+
+Gaming Collection
+
+Small label:
+
+EPIC LEVEL
+
+Large poster imagery.
+
+Add hover motion and subtle parallax.
+
+==================================================
+SHOP BY COLLECTION
+==================================================
+
+Heading:
+
+Shop by Collection
+
+Description:
+
+Discover curated collections designed for every style.
+
+Create collection cards for:
+
+Anime
+Movies
+Gaming
+Cars
+Music
+Sports
+Minimal
+Vintage
+
+Cards should match the reference site's premium rounded visual language.
+
+==================================================
+NEW ARRIVALS
+==================================================
+
+Create:
+
+LATEST
+
+New Arrivals
+
+Product grid.
+
+Implement responsive product cards.
+
+==================================================
+FAQ
+==================================================
+
+Create:
+
+FREQUENTLY ASKED
+
+Everything you need to know...
+
+Accordion FAQ.
+
+Requirements:
+
+- smooth open/close
+- only one open at a time
+- plus/minus icon
+- keyboard accessible
+- proper ARIA attributes
+
+==================================================
+REVIEWS
+==================================================
+
+Create:
+
+CUSTOMER REVIEWS
+
+REAL HOMES • REAL WALLS
+
+Create premium review cards.
+
+Do not fabricate real customer testimonials.
+
+Use clearly marked placeholder/example content.
+
+==================================================
+FOOTER
+==================================================
+
+Create large premium footer.
+
+Columns:
+
+Explore
+- Collections
+- Best Sellers
+- Custom Posters
+- Wall Packs
+
+Support
+- Track Order
+- Contact Us
+- FAQ
+
+Legal
+- Terms
+- Privacy
+- Refund
+- Shipping
+- Cancellation
+
+Include:
+
+- copyright
+- country/language selector
+- WhatsApp support
+
+Use original company details.
+
+==================================================
+ANIMATIONS
+==================================================
+
+Animations should feel premium and subtle.
+
+Implement:
+
+1. Navbar entrance
+2. Hero text stagger
+3. Hero poster movement
+4. Button hover
+5. Product image hover
+6. Collection card hover
+7. FAQ accordion
+8. Scroll reveal
+9. Categories dropdown
+10. Mobile menu
+
+Avoid excessive animations.
+
+Use transform and opacity whenever possible.
+
+Avoid layout-triggering animations.
+
+==================================================
+RESPONSIVE BREAKPOINTS
+==================================================
+
+Test:
+
+1440px
+1366px
+1280px
+1024px
+768px
+430px
+390px
+375px
+
+The desktop screenshot is the primary target.
+
+No:
+
+- horizontal scrollbar
+- text overflow
+- image distortion
+- broken navigation
+- overlapping cards
+- CLS from images
+
+==================================================
+PERFORMANCE
+==================================================
+
+Use:
+
+- next/image
+- lazy loading
+- proper image dimensions
+- WebP/AVIF where appropriate
+- responsive image sizes
+- transform-based animations
+- no unnecessary client components
+
+Do not load huge images into the initial viewport.
+
+==================================================
+ACCESSIBILITY
+==================================================
+
+Implement:
+
+- semantic HTML
+- keyboard navigation
+- focus states
+- aria-labels
+- accessible buttons
+- alt text
+- sufficient contrast
+- reduced-motion support
+
+==================================================
+CODE ARCHITECTURE
+==================================================
+
+Use components:
+
+components/
+  Header.tsx
+  CategoriesDropdown.tsx
+  Hero.tsx
+  PosterMasonry.tsx
+  ProductCard.tsx
+  ProductGrid.tsx
+  CustomPrintSection.tsx
+  GamingSection.tsx
+  CollectionGrid.tsx
+  NewArrivals.tsx
+  FAQ.tsx
+  Reviews.tsx
+  Footer.tsx
+  WhatsAppButton.tsx
+
+app/
+  page.tsx
+  collections/
+  products/
+  custom/
+  cart/
+  account/
+
+styles/
+  globals.css
+
+Keep components reusable.
+
+==================================================
+IMPORTANT VISUAL QA
+==================================================
+
+After implementation:
+
+1. Run the application.
+2. Open homepage.
+3. Compare against the supplied screenshots.
+4. Check desktop at 1440x900.
+5. Check 1366x768.
+6. Check mobile at 390x844.
+
+Then fix:
+
+- typography mismatch
+- container width
+- navbar spacing
+- hero alignment
+- heading line breaks
+- button size
+- card radius
+- image positioning
+- shadow intensity
+- dropdown positioning
+- vertical spacing
+- responsive behavior
+
+Do at least 3 visual refinement passes.
+
+Do NOT stop after the first implementation.
+
+==================================================
+DELIVERABLE
+==================================================
+
+Produce a production-quality Next.js implementation.
+
+The result should feel like the same DESIGN SYSTEM and visual experience
+as the reference while using completely original branding, artwork,
+product data and content.
+
+Before finishing, verify that:
+
+npm run build
+
+passes successfully.
+
+Also ensure:
+
+- no TypeScript errors
+- no console errors
+- no broken images
+- no hydration errors
+- no horizontal overflow
+- no missing routes

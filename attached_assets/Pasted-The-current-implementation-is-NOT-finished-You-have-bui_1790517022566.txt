@@ -1,0 +1,660 @@
+The current implementation is NOT finished.
+
+You have built a storefront prototype, but my requirement is to recreate the complete website experience from the reference, not just a visual homepage prototype.
+
+DO NOT stop at "optional follow-ups".
+
+Continue development now.
+
+REFERENCE:
+https://www.postgenz.in/
+
+IMPORTANT:
+Do not copy proprietary source code, logo, copyrighted artwork, or protected brand assets.
+However, reproduce the reference's layout structure, UX patterns, spacing, typography hierarchy, navigation behavior, product browsing flow, animations and overall visual language using original branding/assets.
+
+==================================================
+PHASE 1 — COMPLETE WEBSITE STRUCTURE
+==================================================
+
+Create all required routes/pages:
+
+/
+ /collections
+ /collections/anime
+ /collections/movies
+ /collections/gaming
+ /collections/trading
+ /collections/free-fire
+ /collections/wall-packs
+ /best-sellers
+ /custom
+ /products/[slug]
+ /cart
+ /checkout
+ /account
+ /account/orders
+ /search
+
+Every route must have the same design system as the homepage.
+
+Do NOT create placeholder "coming soon" pages.
+
+==================================================
+PHASE 2 — PRODUCT SYSTEM
+==================================================
+
+Create a proper product data architecture.
+
+Each product must support:
+
+- id
+- slug
+- title
+- description
+- category
+- collection
+- images
+- price
+- compareAtPrice
+- discount
+- sizes
+- orientation
+- stock
+- featured
+- bestseller
+- newArrival
+- tags
+
+Create at least 20 ORIGINAL demo products.
+
+Use original/generated poster artwork.
+
+Do not use copied artwork from the reference website.
+
+Products must actually work with:
+
+- product cards
+- product page
+- category filtering
+- collection filtering
+- search
+- sorting
+- add to cart
+
+==================================================
+PHASE 3 — PRODUCT DETAIL PAGE
+==================================================
+
+Build a premium product page matching the reference visual language.
+
+Include:
+
+LEFT:
+- large product image
+- thumbnail gallery
+- image zoom
+- responsive image viewer
+
+RIGHT:
+- product title
+- rating
+- price
+- compare-at price
+- discount
+- size selector
+- quantity selector
+- Add to Bag
+- Buy Now
+- shipping information
+- product information
+- expandable details
+
+Add:
+
+- related products
+- recently viewed products
+- recommendation section
+
+Make the interactions functional.
+
+==================================================
+PHASE 4 — COLLECTION PAGES
+==================================================
+
+Create reusable collection page architecture.
+
+Each collection page must contain:
+
+- collection hero
+- title
+- description
+- product count
+- filter controls
+- sorting
+- responsive product grid
+- pagination/load more
+
+Filters:
+
+- price
+- size
+- category
+- orientation
+- availability
+
+Sorting:
+
+- featured
+- newest
+- price low to high
+- price high to low
+- best selling
+
+Do not duplicate code between collections.
+
+==================================================
+PHASE 5 — SEARCH
+==================================================
+
+Implement functional search.
+
+Navbar search icon should open a proper search interface.
+
+Search should search:
+
+- product name
+- category
+- collection
+- tags
+
+Include:
+
+- search suggestions
+- results count
+- product results
+- empty state
+
+Keyboard:
+
+- Escape closes search
+- Enter submits search
+
+==================================================
+PHASE 6 — CART
+==================================================
+
+Build a REAL persistent cart.
+
+Cart must support:
+
+- add product
+- remove product
+- increase quantity
+- decrease quantity
+- selected size
+- subtotal
+- shipping
+- discount
+- total
+
+Persist cart using localStorage initially.
+
+Cart must survive:
+
+- page refresh
+- route changes
+- browser restart where possible
+
+Add cart drawer from navbar.
+
+Cart badge must update dynamically.
+
+==================================================
+PHASE 7 — CHECKOUT
+==================================================
+
+Build a complete checkout UI.
+
+Sections:
+
+Customer information
+- name
+- email
+- phone
+
+Shipping address
+- address
+- city
+- state
+- pincode
+- country
+
+Order summary
+
+Payment section
+
+Coupon section
+
+Validation must be functional.
+
+Do not fake successful payment.
+
+Create a payment integration abstraction so Razorpay can be connected cleanly.
+
+==================================================
+PHASE 8 — CUSTOM POSTER
+==================================================
+
+The Custom page must be a real custom-product experience.
+
+User should be able to:
+
+1. Upload an image
+2. Preview it
+3. Select poster size
+4. Select orientation
+5. Select quantity
+6. See calculated price
+7. Add customized item to cart
+
+Supported formats:
+
+JPG
+JPEG
+PNG
+WEBP
+
+Add:
+
+- file size validation
+- preview
+- remove image
+- replace image
+- loading state
+- error state
+
+Do not upload files to the reference website.
+
+Use local preview or an appropriate storage abstraction.
+
+==================================================
+PHASE 9 — ACCOUNT
+==================================================
+
+Create account UI.
+
+Include:
+
+Login
+Register
+Forgot password
+Profile
+Orders
+Order details
+Logout
+
+For now, create a clean authentication abstraction.
+
+Do not use fake hardcoded login success.
+
+If authentication/backend is not configured yet, clearly separate the auth service layer so it can be connected later.
+
+==================================================
+PHASE 10 — ORDER SYSTEM
+==================================================
+
+Create proper order architecture.
+
+Order:
+
+- order ID
+- customer
+- products
+- quantities
+- selected sizes
+- custom uploads
+- subtotal
+- shipping
+- discount
+- total
+- payment status
+- fulfillment status
+- created date
+
+Statuses:
+
+pending
+paid
+processing
+shipped
+delivered
+cancelled
+
+Create an order confirmation page.
+
+==================================================
+PHASE 11 — ADMIN DASHBOARD
+==================================================
+
+Create:
+
+/admin
+
+Dashboard:
+
+- total orders
+- revenue
+- products
+- customers
+- pending orders
+- recent orders
+
+Products:
+
+- create
+- edit
+- delete
+- inventory
+- price
+- images
+
+Orders:
+
+- view
+- update status
+- customer details
+- payment status
+
+Collections:
+
+- create
+- edit
+- delete
+
+Customers:
+
+- view customers
+- order history
+
+This can initially use demo/local data, but structure it so a real database can replace it.
+
+==================================================
+PHASE 12 — DATABASE
+==================================================
+
+If the project currently has no persistent database, add a proper database architecture.
+
+Preferred:
+
+PostgreSQL
+
+Tables:
+
+users
+products
+categories
+collections
+product_images
+product_variants
+carts
+cart_items
+orders
+order_items
+custom_uploads
+reviews
+coupons
+
+Use migrations/schema definitions.
+
+Do not hardcode the entire application data into React components.
+
+==================================================
+PHASE 13 — WHATSAPP
+==================================================
+
+Keep the floating WhatsApp button.
+
+Use a configurable environment variable:
+
+WHATSAPP_NUMBER
+
+Do not hardcode the reference website's WhatsApp number.
+
+Add contextual WhatsApp message support from:
+
+- product page
+- cart
+- order confirmation
+
+==================================================
+PHASE 14 — HEADER
+==================================================
+
+The header needs to behave like the reference.
+
+Desktop:
+
+Logo
+Home
+Custom
+Categories
+Best Sellers
+Anime
+Movies
+Wall Packs
+Search
+Account
+Cart
+
+Categories dropdown:
+
+Anime
+Movies
+Gaming
+Trading
+Free Fire
+Wall Packs
+View All Collections
+
+Custom NEW badge.
+
+Wall Packs HOT badge.
+
+Mobile:
+
+hamburger menu
+logo
+cart
+
+Create smooth open/close animations.
+
+==================================================
+PHASE 15 — HOMEPAGE
+==================================================
+
+Refine the existing homepage instead of replacing it.
+
+The hero must retain:
+
+- editorial typography
+- gradient heading
+- pill announcement
+- two CTA buttons
+- multi-column poster wall
+- scroll/parallax movement
+
+Then ensure the rest of homepage has:
+
+Best Sellers
+Custom Print
+Gaming
+Collections
+New Arrivals
+FAQ
+Reviews
+Footer
+
+Everything must be connected to the actual product system.
+
+==================================================
+PHASE 16 — VISUAL ACCURACY
+==================================================
+
+This is critical.
+
+Compare the implementation against:
+
+https://www.postgenz.in/
+
+and the supplied screenshots.
+
+Check:
+
+- navbar height
+- max content width
+- typography
+- font weight
+- letter spacing
+- line height
+- hero height
+- heading width
+- button dimensions
+- card radius
+- card shadows
+- product image ratios
+- section spacing
+- dropdown positioning
+- footer spacing
+- mobile layout
+
+Do not simply say "looks similar".
+
+Actually inspect the rendered page and make corrections.
+
+==================================================
+PHASE 17 — RESPONSIVE QA
+==================================================
+
+Test:
+
+1440x900
+1366x768
+1280x800
+1024x768
+768x1024
+430x932
+390x844
+375x812
+
+Fix:
+
+- horizontal overflow
+- broken cards
+- text wrapping
+- navbar overflow
+- image distortion
+- buttons overflowing
+- dropdown positioning
+- mobile menu
+- sticky elements
+
+==================================================
+PHASE 18 — PERFORMANCE
+==================================================
+
+Optimize:
+
+- next/image
+- lazy loading
+- image sizes
+- code splitting
+- client components
+- animations
+- font loading
+
+Avoid huge hero assets.
+
+Avoid unnecessary rerenders.
+
+==================================================
+PHASE 19 — ACCESSIBILITY
+==================================================
+
+Verify:
+
+- keyboard navigation
+- focus states
+- aria labels
+- semantic HTML
+- image alt text
+- accessible dropdown
+- accessible modal
+- accessible accordion
+- reduced motion
+
+==================================================
+PHASE 20 — FINAL QA
+==================================================
+
+Before telling me the project is complete:
+
+Run:
+
+npm run typecheck
+
+npm run build
+
+Then inspect the actual running website.
+
+Check:
+
+- browser console
+- network errors
+- broken images
+- broken routes
+- hydration errors
+- mobile overflow
+- cart persistence
+- product navigation
+- filters
+- search
+- custom upload
+- checkout validation
+- account UI
+- admin UI
+
+Fix every issue you find.
+
+==================================================
+IMPORTANT
+==================================================
+
+Do NOT respond with:
+
+"Optional follow-ups..."
+
+Do NOT stop after the homepage.
+
+Do NOT describe missing ecommerce features as optional.
+
+Continue implementing them now.
+
+The final result should be a complete functioning ecommerce storefront prototype with:
+
+Homepage
+Collections
+Products
+Product details
+Search
+Cart
+Custom posters
+Checkout
+Account
+Orders
+Admin
+Responsive UI
+
+Use original branding and assets while closely reproducing the reference website's design language and UX.
+
+Only after all of the above is implemented and verified should you report completion.
