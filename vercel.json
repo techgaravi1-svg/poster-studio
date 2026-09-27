@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "outputDirectory": "artifacts/poster-studio/dist/public",
+  "outputDirectory": "artifacts/poster-studio/dist",
   "rewrites": [
     {
       "source": "/(.*)",
