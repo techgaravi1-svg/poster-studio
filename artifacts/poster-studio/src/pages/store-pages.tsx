@@ -29,7 +29,7 @@ import {
   Sparkles,
   Info,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, products, searchProducts, type PosterSize, type Product, type Orientation } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, products, searchProducts, storeCategories, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, Toast } from '@/components/storefront';
 import { authService } from '@/services/auth';
@@ -216,46 +216,38 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 2. CATEGORY ICONS ROW (POSTERS, WALL ART, FLAGS, MIRROR) */}
+      {/* 2. CATEGORY ICONS ROW (ALL 9 OFFICIAL CATEGORIES) */}
       <section className="home-categories-row-section">
         <div className="categories-scroll-track">
-          {/* 1. Posters (Available & Clickable) */}
-          <Link href="/collections" className="cat-icon-card cat-clickable">
-            <div className="cat-img-wrap available-ring">
-              <img src="/assets/cat-posters.jpg" alt="Posters" className="cat-img" />
-            </div>
-            <span className="cat-name">Posters</span>
-          </Link>
-
-          {/* 2. Wall Art (Coming Soon & Unclickable) */}
-          <div className="cat-icon-card cat-disabled" role="region" aria-label="Wall Art Coming Soon">
-            <div className="cat-img-wrap disabled-ring">
-              <img src="/assets/cat-wall-art.jpg" alt="Wall Art" className="cat-img" />
-              <div className="coming-soon-pill-overlay">SOON</div>
-            </div>
-            <span className="cat-name">Wall Art</span>
-            <span className="coming-soon-label">Coming Soon</span>
-          </div>
-
-          {/* 3. Flags (Coming Soon & Unclickable) */}
-          <div className="cat-icon-card cat-disabled" role="region" aria-label="Flags Coming Soon">
-            <div className="cat-img-wrap disabled-ring">
-              <img src="/assets/cat-flags.jpg" alt="Flags" className="cat-img" />
-              <div className="coming-soon-pill-overlay">SOON</div>
-            </div>
-            <span className="cat-name">Flags</span>
-            <span className="coming-soon-label">Coming Soon</span>
-          </div>
-
-          {/* 4. Mirror (Coming Soon & Unclickable) */}
-          <div className="cat-icon-card cat-disabled" role="region" aria-label="Mirror Coming Soon">
-            <div className="cat-img-wrap disabled-ring">
-              <img src="/assets/cat-mirror.jpg" alt="Mirror" className="cat-img" />
-              <div className="coming-soon-pill-overlay">SOON</div>
-            </div>
-            <span className="cat-name">Mirror</span>
-            <span className="coming-soon-label">Coming Soon</span>
-          </div>
+          {storeCategories.map((cat) => {
+            if (cat.available) {
+              return (
+                <Link key={cat.id} href="/collections/posters" className="cat-icon-card cat-clickable">
+                  <div className="cat-img-wrap available-ring">
+                    <img src={cat.image} alt={cat.name} className="cat-img" />
+                  </div>
+                  <span className="cat-name">{cat.name}</span>
+                </Link>
+              );
+            }
+            return (
+              <Link
+                key={cat.id}
+                href={`/collections/${cat.slug}`}
+                className="cat-icon-card cat-soon-card"
+                title={`${cat.name} (Coming Soon - Click to view teaser)`}
+              >
+                <div className="cat-img-wrap disabled-ring blur-circle-wrap">
+                  <img src={cat.image} alt={cat.name} className="cat-img blurred-cat-img" />
+                  <div className="circle-blur-glass-overlay">
+                    <span className="blur-circle-badge">COMING SOON</span>
+                  </div>
+                </div>
+                <span className="cat-name">{cat.name}</span>
+                <span className="coming-soon-label">Coming Soon</span>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
@@ -361,22 +353,92 @@ export function HomePage() {
   );
 }
 
+const categoryTeasers: Record<string, { title: string; subtitle: string; priceEstimate: string }[]> = {
+  paintings: [
+    { title: 'Monochrome Texture No. 1', subtitle: 'Heavy Body Acrylic on Gallery Canvas', priceEstimate: 'Rs. 1,499' },
+    { title: 'Golden Hour Horizon', subtitle: 'Oil Paint & 24K Leaf Accent', priceEstimate: 'Rs. 1,899' },
+    { title: 'Abstract Terra Cotta Wave', subtitle: 'Textured Archival Linen', priceEstimate: 'Rs. 1,299' },
+    { title: 'Minimalist Botanical Study', subtitle: 'Ink & Raw Canvas Gallery Wrap', priceEstimate: 'Rs. 1,199' },
+  ],
+  flags: [
+    { title: 'Monaco Grand Prix 1974', subtitle: 'Vintage Motorsport Wall Tapestry', priceEstimate: 'Rs. 499' },
+    { title: 'The Great Wave Indigo', subtitle: 'Traditional Japanese Tapestry', priceEstimate: 'Rs. 549' },
+    { title: 'Cyberpunk Neo Tokyo Flag', subtitle: 'UV Reactive Aesthetic Wall Flag', priceEstimate: 'Rs. 599' },
+    { title: 'Abbey Road Studio Tribute', subtitle: 'Vintage Rock Wall Tapestry', priceEstimate: 'Rs. 499' },
+  ],
+  'bean-bags': [
+    { title: 'Velvet Cloud Lounger XL', subtitle: 'High Density Ergonomic Bean Bag', priceEstimate: 'Rs. 2,499' },
+    { title: 'Ribbed Corduroy Slouch Pod', subtitle: 'Ultra-Soft Living Room Lounger', priceEstimate: 'Rs. 2,199' },
+    { title: 'Charcoal Gaming Recliner Bag', subtitle: 'With Headrest & Side Pocket', priceEstimate: 'Rs. 2,899' },
+    { title: 'Pecan Vegan Leather Lounger', subtitle: 'Waterproof Luxury Aesthetic Bean Bag', priceEstimate: 'Rs. 3,299' },
+  ],
+  curtains: [
+    { title: 'French Washed Linen Sheers', subtitle: 'Natural Daylight Filtering Drape', priceEstimate: 'Rs. 999' },
+    { title: 'Sunlit Ochre Cotton Panels', subtitle: 'Textured Semi-Blackout 2-Pack', priceEstimate: 'Rs. 1,299' },
+    { title: 'Boho Slub Weave Room Divider', subtitle: 'Heavy Organic Cotton Header', priceEstimate: 'Rs. 1,499' },
+    { title: 'Charcoal Minimalist Blackout', subtitle: 'Thermal Insulated Studio Curtains', priceEstimate: 'Rs. 1,699' },
+  ],
+  mirrors: [
+    { title: 'Wavy Ripple Full Body Mirror', subtitle: 'Curved Velvet Frame 160x60cm', priceEstimate: 'Rs. 3,499' },
+    { title: 'Minimalist Arch Vanity Mirror', subtitle: 'Brushed Brass Metal Trim', priceEstimate: 'Rs. 1,899' },
+    { title: 'Asymmetrical Pebble Wall Mirror', subtitle: 'Beveled Edge Float Mount', priceEstimate: 'Rs. 1,599' },
+    { title: 'Sunburst Accent Halo Mirror', subtitle: 'Antique Gold Statement Piece', priceEstimate: 'Rs. 2,199' },
+  ],
+  tables: [
+    { title: 'Nordic Oak Floating Side Table', subtitle: 'Solid White Oak Bedside Accent', priceEstimate: 'Rs. 1,999' },
+    { title: 'Smoked Fluted Glass Coffee Table', subtitle: 'Tempered Glass with Matte Black Legs', priceEstimate: 'Rs. 3,999' },
+    { title: 'Lucite Minimalist Acrylic Cube', subtitle: 'Ultra Clear Gallery Display Stand', priceEstimate: 'Rs. 2,799' },
+    { title: 'Brutalist Concrete Pedestal', subtitle: 'Architectural Accent End Table', priceEstimate: 'Rs. 3,499' },
+  ],
+  'wall-mounts': [
+    { title: 'Solid Oak Floating Print Ledge', subtitle: '100cm Gallery Display Shelf', priceEstimate: 'Rs. 799' },
+    { title: 'Brushed Brass Poster Brackets', subtitle: '4-Piece Clamp Display Set', priceEstimate: 'Rs. 599' },
+    { title: 'Magnetic Teak Print Hanger Rail', subtitle: 'Quick-Change Poster Frame Bar', priceEstimate: 'Rs. 399' },
+    { title: 'Modular Vinyl Record Wall Mounts', subtitle: '6-Pack Clear Acrylic Display', priceEstimate: 'Rs. 699' },
+  ],
+  'rugs-carpets': [
+    { title: 'Moroccan Diamond Berber Rug', subtitle: 'Hand-Tufted Plush Wool 4x6 ft', priceEstimate: 'Rs. 2,999' },
+    { title: 'Minimalist Wavy Line Mat', subtitle: 'Non-Slip Bedside Runner 2x5 ft', priceEstimate: 'Rs. 1,199' },
+    { title: 'Retro Sage Checkered Area Rug', subtitle: 'Ultra-Soft Low Pile Modern Rug', priceEstimate: 'Rs. 2,499' },
+    { title: 'Terracotta Contour Abstract Rug', subtitle: 'Custom Shaped Hand-Carved Rug', priceEstimate: 'Rs. 3,299' },
+  ],
+};
+
 export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean; [key: string]: any } = {}) {
   const params = useParams<{ slug?: string }>();
-  const activeSlug = bestsellers ? 'bestsellers' : params.slug || 'devotional';
   const [viewMode, setViewMode] = useState<'double' | 'single'>('double');
   const [toast, setToast] = useState('');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [selectedSort, setSelectedSort] = useState('featured');
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(1000);
+  const [vipContact, setVipContact] = useState('');
+  const [vipDone, setVipDone] = useState(false);
+
+  const slugParam = params.slug;
+  const matchedCategory = storeCategories.find((c) => c.slug === slugParam);
+
+  const activeCategory: StoreCategory = matchedCategory
+    ? matchedCategory
+    : storeCategories[0]; // Posters by default
+
+  const isPostersActive = activeCategory.available;
+
+  // Active sub-slug for posters
+  const activePosterSubSlug = bestsellers
+    ? 'bestsellers'
+    : slugParam && collections.some((c) => c.slug === slugParam)
+    ? slugParam
+    : slugParam === 'all'
+    ? 'all'
+    : 'devotional';
 
   const notify = (title: string) => {
     setToast(`${title} added to your bag`);
     window.setTimeout(() => setToast(''), 2400);
   };
 
-  const navCategories = [
+  const posterSubCategories = [
     { slug: 'devotional', label: 'DEVOTIONAL' },
     { slug: 'marvel-dc', label: 'MARVEL & DC' },
     { slug: 'cricket', label: 'CRICKET' },
@@ -384,28 +446,45 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     { slug: 'all', label: 'ALL POSTERS' },
   ];
 
-  const currentCategoryLabel =
-    activeSlug === 'bestsellers'
-      ? 'BEST SELLING POSTERS'
-      : activeSlug === 'all'
-      ? 'ALL POSTERS'
-      : collections.find((c) => c.slug === activeSlug)?.title || 'DEVOTIONAL POSTERS';
+  const currentCategoryLabel = !isPostersActive
+    ? `${activeCategory.name} — COMING SOON`
+    : activePosterSubSlug === 'bestsellers'
+    ? 'BEST SELLING POSTERS'
+    : activePosterSubSlug === 'all'
+    ? 'ALL POSTERS'
+    : collections.find((c) => c.slug === activePosterSubSlug)?.title || 'DEVOTIONAL POSTERS';
 
   const filteredProducts = useMemo(() => {
+    if (!isPostersActive) return [];
     let list = products;
-    if (activeSlug === 'bestsellers') {
+    if (activePosterSubSlug === 'bestsellers') {
       list = products.filter((p) => p.bestseller);
-    } else if (activeSlug !== 'all') {
-      list = products.filter((p) => p.collection === activeSlug);
+    } else if (activePosterSubSlug !== 'all') {
+      list = products.filter((p) => p.collection === activePosterSubSlug);
     }
-    // Also filter by price
     list = list.filter((p) => p.price >= minPrice && p.price <= maxPrice);
 
     if (selectedSort === 'low') return [...list].sort((a, b) => a.price - b.price);
     if (selectedSort === 'high') return [...list].sort((a, b) => b.price - a.price);
     if (selectedSort === 'rating') return [...list].sort((a, b) => b.rating - a.rating);
     return list;
-  }, [activeSlug, minPrice, maxPrice, selectedSort]);
+  }, [isPostersActive, activePosterSubSlug, minPrice, maxPrice, selectedSort]);
+
+  const handleVipSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (vipContact.trim()) {
+      setVipDone(true);
+      setToast(`You are on the VIP waitlist for ${activeCategory.name}!`);
+      window.setTimeout(() => setToast(''), 3000);
+    }
+  };
+
+  const teasers = categoryTeasers[activeCategory.slug] || [
+    { title: 'Collector Edition Piece 01', subtitle: 'Crafted with premium materials', priceEstimate: 'Coming Soon' },
+    { title: 'Collector Edition Piece 02', subtitle: 'Exclusive initial launch batch', priceEstimate: 'Coming Soon' },
+    { title: 'Collector Edition Piece 03', subtitle: 'Curated aesthetic studio design', priceEstimate: 'Coming Soon' },
+    { title: 'Collector Edition Piece 04', subtitle: 'Limited first run release', priceEstimate: 'Coming Soon' },
+  ];
 
   return (
     <main className="postgenz-collection-page">
@@ -414,76 +493,219 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
         <h1 className="collection-main-title">{currentCategoryLabel}</h1>
       </div>
 
-      {/* 2. CATEGORY PILL FILTER TABS */}
-      <div className="category-pills-bar">
-        <div className="category-pills-scroll">
-          {navCategories.map((cat) => {
-            const isActive =
-              cat.slug === activeSlug ||
-              (cat.slug === 'all' && activeSlug === '') ||
-              (cat.slug === 'devotional' && !params.slug && !bestsellers);
-            const href = cat.slug === 'all' ? '/collections' : `/collections/${cat.slug}`;
+      {/* 2. TOTAL CATEGORIES SELECTOR BAR (ALL 9 OFFICIAL CATEGORIES) */}
+      <div className="total-categories-nav">
+        <div className="total-cat-header-row">
+          <span className="total-cat-label">TOTAL CATEGORIES (9)</span>
+          <span className="total-cat-sublabel">Only Posters Available • Others Coming Soon</span>
+        </div>
+        <div className="total-categories-scroll">
+          {storeCategories.map((cat) => {
+            const isSelected = activeCategory.slug === cat.slug;
             return (
               <Link
-                key={cat.slug}
-                href={href}
-                className={`category-filter-pill ${isActive ? 'pill-active' : ''}`}
+                key={cat.id}
+                href={cat.available ? '/collections/posters' : `/collections/${cat.slug}`}
+                className={`total-category-tab ${isSelected ? 'tab-active' : ''} ${cat.available ? 'is-available' : 'is-soon'}`}
               >
-                {cat.label}
+                <img
+                  src={cat.image}
+                  alt={cat.name}
+                  className={`tab-cat-thumb ${!cat.available ? 'thumb-blur' : ''}`}
+                />
+                <span className="tab-cat-name">{cat.name}</span>
+                {cat.available ? (
+                  <span className="tab-status-chip chip-active">Active</span>
+                ) : (
+                  <span className="tab-status-chip chip-soon">Soon</span>
+                )}
               </Link>
             );
           })}
         </div>
       </div>
 
-      {/* 3. FILTER & VIEW BAR */}
-      <div className="filter-view-toolbar">
-        <button
-          type="button"
-          className="toolbar-filter-btn"
-          onClick={() => setFilterDrawerOpen(true)}
-        >
-          <SlidersHorizontal size={16} />
-          <span>FILTER</span>
-        </button>
-
-        <div className="view-mode-toggles">
-          <button
-            type="button"
-            className={`view-mode-btn ${viewMode === 'single' ? 'active-view' : ''}`}
-            aria-label="Single column layout"
-            onClick={() => setViewMode('single')}
-          >
-            <Square size={18} />
-          </button>
-          <button
-            type="button"
-            className={`view-mode-btn ${viewMode === 'double' ? 'active-view' : ''}`}
-            aria-label="Two column grid layout"
-            onClick={() => setViewMode('double')}
-          >
-            <LayoutGrid size={18} />
-          </button>
-        </div>
-      </div>
-
-      {/* 4. PRODUCT GRID */}
-      <section className="collection-products-section">
-        {filteredProducts.length === 0 ? (
-          <div className="empty-state">
-            <p>No posters found matching this filter.</p>
-            <Link href="/collections" className="button postgenz-btn">
-              Reset Filters
-            </Link>
+      {/* 3. CONDITIONAL CONTENT: POSTERS (ACTIVE) VS OTHER CATEGORIES (COMING SOON) */}
+      {isPostersActive ? (
+        <>
+          {/* POSTER SUB-CATEGORY FILTER TABS */}
+          <div className="category-pills-bar">
+            <div className="category-pills-scroll">
+              {posterSubCategories.map((sub) => {
+                const isActive =
+                  sub.slug === activePosterSubSlug ||
+                  (sub.slug === 'all' && activePosterSubSlug === '') ||
+                  (sub.slug === 'devotional' && !params.slug && !bestsellers);
+                const href = sub.slug === 'all' ? '/collections/posters' : `/collections/${sub.slug}`;
+                return (
+                  <Link
+                    key={sub.slug}
+                    href={href}
+                    className={`category-filter-pill ${isActive ? 'pill-active' : ''}`}
+                  >
+                    {sub.label}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        ) : (
-          <div className={`collection-grid-container ${viewMode === 'single' ? 'single-col-grid' : 'four-col-laptop-grid'}`}>
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} onAdded={notify} />
-            ))}
+
+          {/* FILTER & VIEW TOOLBAR */}
+          <div className="filter-view-toolbar">
+            <button
+              type="button"
+              className="toolbar-filter-btn"
+              onClick={() => setFilterDrawerOpen(true)}
+            >
+              <SlidersHorizontal size={16} />
+              <span>FILTER & SORT</span>
+            </button>
+
+            <span className="text-xs font-semibold text-gray-500">
+              {filteredProducts.length} POSTERS AVAILABLE
+            </span>
+
+            <div className="view-mode-toggles">
+              <button
+                type="button"
+                className={`view-mode-btn ${viewMode === 'single' ? 'active-view' : ''}`}
+                aria-label="Single column layout"
+                onClick={() => setViewMode('single')}
+              >
+                <Square size={18} />
+              </button>
+              <button
+                type="button"
+                className={`view-mode-btn ${viewMode === 'double' ? 'active-view' : ''}`}
+                aria-label="Two column grid layout"
+                onClick={() => setViewMode('double')}
+              >
+                <LayoutGrid size={18} />
+              </button>
+            </div>
           </div>
-        )}
-      </section>
+
+          {/* POSTERS PRODUCT GRID */}
+          <section className="collection-products-section">
+            {filteredProducts.length === 0 ? (
+              <div className="empty-state">
+                <p>No posters found matching this filter.</p>
+                <Link href="/collections/posters" className="button postgenz-btn">
+                  Reset Filters
+                </Link>
+              </div>
+            ) : (
+              <div className={`collection-grid-container ${viewMode === 'single' ? 'single-col-grid' : 'four-col-laptop-grid'}`}>
+                {filteredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} onAdded={notify} />
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      ) : (
+        /* COMING SOON CATEGORY SHOWCASE */
+        <section className="category-coming-soon-showcase">
+          <div className="cs-hero-card">
+            <div className="cs-hero-img-wrap">
+              <img
+                src={activeCategory.image}
+                alt={activeCategory.name}
+                className="cs-hero-img"
+              />
+              <div className="cs-glass-badge">
+                COMING SOON
+              </div>
+            </div>
+
+            <div className="cs-hero-body">
+              <div className="cs-kicker-badge">
+                <Sparkles size={13} />
+                <span>PRE-LAUNCH DROP • IN DEVELOPMENT</span>
+              </div>
+              <h2 className="cs-hero-title">{activeCategory.name} Collection</h2>
+              <p className="cs-hero-desc">
+                {activeCategory.description || `Our master-crafted ${activeCategory.name} lineup is currently in production. We are curating the finest materials and designs to bring you aesthetic perfection.`}
+              </p>
+
+              <div className="cs-features-list">
+                <div className="cs-feature-item">
+                  <Check size={16} className="text-emerald-600" />
+                  <span>Curated luxury materials & master design craftsmanship</span>
+                </div>
+                <div className="cs-feature-item">
+                  <Check size={16} className="text-emerald-600" />
+                  <span>Flat 15% VIP Early-Bird launch discount code</span>
+                </div>
+                <div className="cs-feature-item">
+                  <Check size={16} className="text-emerald-600" />
+                  <span>First access notification before public drop</span>
+                </div>
+              </div>
+
+              <div className="cs-vip-box">
+                <div className="cs-vip-prompt">Get Notified When {activeCategory.name} Launches:</div>
+                {vipDone ? (
+                  <div className="cs-vip-success">
+                    <Check size={18} />
+                    <span>You're on the VIP waitlist! We will notify you first when {activeCategory.name} drops.</span>
+                  </div>
+                ) : (
+                  <form onSubmit={handleVipSubmit} className="cs-vip-form">
+                    <input
+                      type="text"
+                      placeholder="Enter your email or WhatsApp number"
+                      value={vipContact}
+                      onChange={(e) => setVipContact(e.target.value)}
+                      required
+                      className="cs-vip-input"
+                    />
+                    <button type="submit" className="cs-vip-btn">
+                      Notify Me
+                    </button>
+                  </form>
+                )}
+              </div>
+
+              <div className="cs-action-row">
+                <Link href="/collections/posters" className="btn-back-to-posters">
+                  Explore Posters (Available Now) →
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* TEASERS PREVIEW GRID */}
+          <div className="cs-teasers-section">
+            <div className="cs-teasers-header">
+              <h3 className="cs-teasers-title">Upcoming {activeCategory.name} Teasers</h3>
+              <p className="cs-teasers-subtitle">Sneak peek preview of designs dropping in our initial launch batch</p>
+            </div>
+
+            <div className="cs-teasers-grid">
+              {teasers.map((teaser, idx) => (
+                <div key={idx} className="cs-teaser-card">
+                  <div className="cs-teaser-thumb-wrap">
+                    <img
+                      src={activeCategory.image}
+                      alt={teaser.title}
+                      className="cs-teaser-bg-img"
+                    />
+                    <div className="cs-teaser-badge-overlay">
+                      <span className="cs-teaser-badge">COMING SOON</span>
+                    </div>
+                  </div>
+                  <div className="cs-teaser-body">
+                    <strong className="cs-teaser-item-title">{teaser.title}</strong>
+                    <span className="cs-teaser-item-sub">{teaser.subtitle}</span>
+                    <span className="cs-teaser-price-est">Est: {teaser.priceEstimate}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* FILTER DRAWER */}
       {filterDrawerOpen && (

@@ -264,6 +264,27 @@ export const products: Product[] = [
   },
 ];
 
+export type StoreCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  available: boolean;
+  image: string;
+  description?: string;
+};
+
+export const storeCategories: StoreCategory[] = [
+  { id: 'cat-posters', name: 'Posters', slug: 'posters', available: true, image: '/assets/cat-posters.jpg', description: 'Museum-grade archival 350 GSM matte posters.' },
+  { id: 'cat-paintings', name: 'Paintings', slug: 'paintings', available: false, image: '/assets/cat-paintings.jpg', description: 'Original hand-textured oil and acrylic gallery canvas art.' },
+  { id: 'cat-flags', name: 'Flags', slug: 'flags', available: false, image: '/assets/cat-flags.jpg', description: 'Vintage pop-culture, motorsport, and aesthetic wall tapestry flags.' },
+  { id: 'cat-beanbags', name: 'Bean Bags', slug: 'bean-bags', available: false, image: '/assets/cat-beanbags.jpg', description: 'Ultra-comfortable luxury corduroy and velvet lounger bean bags.' },
+  { id: 'cat-curtains', name: 'Curtains', slug: 'curtains', available: false, image: '/assets/cat-curtains.jpg', description: 'Sun-drenched natural linen and sheer drapery for modern rooms.' },
+  { id: 'cat-mirrors', name: 'Mirrors', slug: 'mirrors', available: false, image: '/assets/cat-mirror.jpg', description: 'Chic wavy and arched statement aesthetic vanity wall mirrors.' },
+  { id: 'cat-tables', name: 'Tables', slug: 'tables', available: false, image: '/assets/cat-tables.jpg', description: 'Minimalist designer side tables and accent coffee tables.' },
+  { id: 'cat-wallmounts', name: 'Wall mounts', slug: 'wall-mounts', available: false, image: '/assets/cat-wallmounts.jpg', description: 'Floating oak shelves, display brackets, and gallery mounts.' },
+  { id: 'cat-rugs', name: 'Rugs / Carpets', slug: 'rugs-carpets', available: false, image: '/assets/cat-rugs.jpg', description: 'Hand-tufted Berber wool area rugs and modern floor tapestries.' },
+];
+
 export const collections = [
   { slug: 'devotional', title: 'DEVOTIONAL POSTERS', description: 'Serene spiritual, aesthetic, and motivational editions.', treatment: 'art-aurora' },
   { slug: 'marvel-dc', title: 'MARVEL & DC', description: 'Cinematic superheroes, comic art, and collector editions.', treatment: 'art-signal' },

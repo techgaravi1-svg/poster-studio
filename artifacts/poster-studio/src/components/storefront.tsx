@@ -20,7 +20,7 @@ import {
   Check,
 } from 'lucide-react';
 import type { Product } from '@/lib/catalog';
-import { formatPrice } from '@/lib/catalog';
+import { formatPrice, storeCategories } from '@/lib/catalog';
 import { cartTotals, store, useStore } from '@/lib/store';
 
 export function PosterArt({
@@ -275,12 +275,19 @@ function MenuDrawer({
                 </button>
                 {categoriesOpen && (
                   <div className="categories-sublist">
-                    <Link href="/collections/devotional" onClick={onClose}>Devotional Posters</Link>
-                    <Link href="/collections/marvel-dc" onClick={onClose}>Marvel & DC</Link>
-                    <Link href="/collections/cricket" onClick={onClose}>Cricket Posters</Link>
-                    <Link href="/collections/football" onClick={onClose}>Football Posters</Link>
-                    <Link href="/collections/wall-packs" onClick={onClose}>Wall Packs</Link>
-                    <Link href="/collections" onClick={onClose} className="sublist-all">View All Collections →</Link>
+                    <div className="sublist-section-title">ACTIVE CATEGORY</div>
+                    <Link href="/collections/posters" onClick={onClose} className="sublist-cat-item available">
+                      <span>Posters</span>
+                      <span className="sublist-status-badge">Available</span>
+                    </Link>
+                    <div className="sublist-section-title">COMING SOON</div>
+                    {storeCategories.filter((c) => !c.available).map((cat) => (
+                      <Link key={cat.id} href={`/collections/${cat.slug}`} onClick={onClose} className="sublist-cat-item coming-soon">
+                        <span>{cat.name}</span>
+                        <span className="sublist-soon-badge">Soon</span>
+                      </Link>
+                    ))}
+                    <Link href="/collections" onClick={onClose} className="sublist-all">View All 9 Categories →</Link>
                   </div>
                 )}
               </div>
@@ -398,12 +405,28 @@ export function Header() {
                 <ChevronDown size={14} />
               </button>
               <div className="desktop-dropdown-menu">
-                <Link href="/collections/devotional">Devotional Posters</Link>
-                <Link href="/collections/marvel-dc">Marvel & DC</Link>
-                <Link href="/collections/cricket">Cricket Posters</Link>
-                <Link href="/collections/football">Football Posters</Link>
-                <Link href="/collections/wall-packs">Wall Packs</Link>
-                <Link href="/collections" className="dropdown-view-all">View All Collections →</Link>
+                <div className="dropdown-section-title">ACTIVE CATEGORY</div>
+                <Link href="/collections/posters" className="dropdown-cat-row available">
+                  <strong>Posters</strong>
+                  <span className="dropdown-status-badge">Available Now</span>
+                </Link>
+                <div className="dropdown-poster-sublinks">
+                  <Link href="/collections/devotional">Devotional</Link>
+                  <Link href="/collections/marvel-dc">Marvel & DC</Link>
+                  <Link href="/collections/cricket">Cricket</Link>
+                  <Link href="/collections/football">Football</Link>
+                  <Link href="/collections/wall-packs">Wall Packs</Link>
+                </div>
+                <div className="dropdown-section-title">COMING SOON CATEGORIES</div>
+                <div className="dropdown-soon-grid">
+                  {storeCategories.filter((c) => !c.available).map((cat) => (
+                    <Link key={cat.id} href={`/collections/${cat.slug}`} className="dropdown-soon-chip">
+                      <span>{cat.name}</span>
+                      <span className="chip-soon-badge">Soon</span>
+                    </Link>
+                  ))}
+                </div>
+                <Link href="/collections" className="dropdown-view-all">All 9 Categories Overview →</Link>
               </div>
             </div>
           </nav>

@@ -29,6 +29,10 @@ function Router() {
     <Route path="/" component={HomePage} />
     <Route path="/collections" component={CollectionPage} />
     <Route path="/collections/:slug" component={CollectionPage} />
+    <Route path="/categories" component={CollectionPage} />
+    <Route path="/categories/:slug" component={CollectionPage} />
+    <Route path="/category" component={CollectionPage} />
+    <Route path="/category/:slug" component={CollectionPage} />
     <Route path="/best-sellers" component={() => <CollectionPage bestsellers />} />
     <Route path="/custom" component={CustomPage} />
     <Route path="/products/:slug" component={ProductPage} />
