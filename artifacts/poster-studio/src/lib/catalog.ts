@@ -1,4 +1,4 @@
-export type PosterSize = 'A4' | 'A3' | '50×70' | '70×100';
+export type PosterSize = 'A5' | 'A4' | 'A3' | '50×70' | '70×100';
 export type Orientation = 'portrait' | 'landscape';
 
 export type Product = {
@@ -21,50 +21,255 @@ export type Product = {
   newArrival: boolean;
   tags: string[];
   rating: number;
+  subtitle?: string;
+  features?: Array<{ title: string; desc: string }>;
+  notes?: Array<{ title: string; desc: string }>;
+  shipping?: Array<{ title: string; desc: string }>;
 };
 
-const treatments = ['art-aurora', 'art-mono', 'art-dive', 'art-signal', 'art-pulse', 'art-night'];
-
-const productSeed: Array<Omit<Product, 'images' | 'artTreatment'>> = [
-  { id: 'p-01', slug: 'moonlit-arcade', title: 'Moonlit Arcade', description: 'A neon-free midnight study of cabinets, rain and the last token in your pocket.', category: 'Gaming', collection: 'gaming', price: 28, compareAtPrice: 34, discount: 18, sizes: ['A4', 'A3', '50×70'], orientation: 'portrait', stock: 18, featured: true, bestseller: true, newArrival: false, tags: ['arcade', 'retro', 'night'], rating: 4.9 },
-  { id: 'p-02', slug: 'parallel-quests', title: 'Parallel Quests', description: 'Four paths, one controller. A graphic map for players who never choose the obvious route.', category: 'Gaming', collection: 'gaming', price: 31, compareAtPrice: 38, discount: 18, sizes: ['A3', '50×70', '70×100'], orientation: 'landscape', stock: 12, featured: true, bestseller: true, newArrival: true, tags: ['gaming', 'map', 'graphic'], rating: 4.8 },
-  { id: 'p-03', slug: 'soft-signal', title: 'Soft Signal', description: 'A warm transmission from somewhere between a loading screen and a dream.', category: 'Abstract', collection: 'wall-packs', price: 26, compareAtPrice: 30, discount: 13, sizes: ['A4', 'A3', '50×70'], orientation: 'portrait', stock: 21, featured: true, bestseller: false, newArrival: true, tags: ['abstract', 'colour', 'minimal'], rating: 4.7 },
-  { id: 'p-04', slug: 'after-hours-tokyo', title: 'After Hours, Tokyo', description: 'Compressed city light and quiet streets for the corner of the room that stays awake.', category: 'Movies', collection: 'movies', price: 32, compareAtPrice: 40, discount: 20, sizes: ['A3', '50×70', '70×100'], orientation: 'portrait', stock: 8, featured: true, bestseller: true, newArrival: false, tags: ['cinema', 'city', 'japan'], rating: 4.9 },
-  { id: 'p-05', slug: 'quiet-forms-no-02', title: 'Quiet Forms No. 02', description: 'A restrained colour field with enough tension to keep a wall interesting.', category: 'Abstract', collection: 'wall-packs', price: 29, compareAtPrice: 35, discount: 17, sizes: ['A4', 'A3', '50×70'], orientation: 'portrait', stock: 30, featured: true, bestseller: false, newArrival: true, tags: ['shape', 'colour', 'studio'], rating: 4.6 },
-  { id: 'p-06', slug: 'orbit-01', title: 'Orbit 01', description: 'A speculative travel poster for the first quiet morning beyond the atmosphere.', category: 'Anime', collection: 'anime', price: 34, compareAtPrice: 42, discount: 19, sizes: ['A3', '50×70', '70×100'], orientation: 'landscape', stock: 14, featured: true, bestseller: true, newArrival: true, tags: ['space', 'anime', 'future'], rating: 4.8 },
-  { id: 'p-07', slug: 'sunday-driver', title: 'Sunday Driver', description: 'Fast lines, soft sky and the feeling of taking the long way home.', category: 'Movies', collection: 'movies', price: 27, compareAtPrice: 32, discount: 16, sizes: ['A4', 'A3', '50×70'], orientation: 'landscape', stock: 24, featured: false, bestseller: true, newArrival: false, tags: ['road', 'film', 'warm'], rating: 4.7 },
-  { id: 'p-08', slug: 'critical-hit', title: 'Critical Hit', description: 'A sharp, typographic celebration of improbable wins.', category: 'Gaming', collection: 'gaming', price: 25, compareAtPrice: 29, discount: 14, sizes: ['A4', 'A3'], orientation: 'portrait', stock: 5, featured: false, bestseller: true, newArrival: false, tags: ['gaming', 'type', 'energy'], rating: 4.8 },
-  { id: 'p-09', slug: 'blue-hour-hero', title: 'Blue Hour Hero', description: 'A cinematic character study in cobalt, coral and an oversized moon.', category: 'Anime', collection: 'anime', price: 30, compareAtPrice: 36, discount: 17, sizes: ['A4', 'A3', '50×70'], orientation: 'portrait', stock: 16, featured: false, bestseller: false, newArrival: true, tags: ['character', 'anime', 'blue'], rating: 4.6 },
-  { id: 'p-10', slug: 'market-open', title: 'Market Open', description: 'Candlesticks become architecture in this optimistic print for patient thinkers.', category: 'Trading', collection: 'trading', price: 33, compareAtPrice: 39, discount: 15, sizes: ['A3', '50×70'], orientation: 'landscape', stock: 11, featured: true, bestseller: false, newArrival: true, tags: ['trading', 'finance', 'abstract'], rating: 4.5 },
-  { id: 'p-11', slug: 'bull-runner', title: 'Bull Runner', description: 'A playful, kinetic chart for desks that need a little momentum.', category: 'Trading', collection: 'trading', price: 24, compareAtPrice: 28, discount: 14, sizes: ['A4', 'A3'], orientation: 'portrait', stock: 19, featured: false, bestseller: false, newArrival: false, tags: ['trading', 'desk', 'graphic'], rating: 4.4 },
-  { id: 'p-12', slug: 'last-safe-zone', title: 'Last Safe Zone', description: 'A field guide to the place where every good match begins.', category: 'Free Fire', collection: 'free-fire', price: 29, compareAtPrice: 36, discount: 19, sizes: ['A3', '50×70'], orientation: 'portrait', stock: 9, featured: true, bestseller: true, newArrival: false, tags: ['free fire', 'battle', 'map'], rating: 4.9 },
-  { id: 'p-13', slug: 'drop-point', title: 'Drop Point', description: 'Aerial geometry and a little danger, composed for a statement wall.', category: 'Free Fire', collection: 'free-fire', price: 27, compareAtPrice: 32, discount: 16, sizes: ['A4', 'A3', '50×70'], orientation: 'landscape', stock: 17, featured: false, bestseller: false, newArrival: true, tags: ['free fire', 'map', 'aerial'], rating: 4.6 },
-  { id: 'p-14', slug: 'the-long-cut', title: 'The Long Cut', description: 'Film grain, a hard crop and the title card of a story you write yourself.', category: 'Movies', collection: 'movies', price: 35, compareAtPrice: 44, discount: 20, sizes: ['A3', '50×70', '70×100'], orientation: 'portrait', stock: 7, featured: true, bestseller: false, newArrival: false, tags: ['cinema', 'editorial', 'black'], rating: 4.8 },
-  { id: 'p-15', slug: 'wall-pack-vol-01', title: 'Wall Pack / Vol. 01', description: 'Three small studies designed to talk to each other across a shelf or hallway.', category: 'Wall Packs', collection: 'wall-packs', price: 48, compareAtPrice: 60, discount: 20, sizes: ['A4', 'A3'], orientation: 'portrait', stock: 13, featured: true, bestseller: true, newArrival: false, tags: ['set', 'wall pack', 'bundle'], rating: 4.9 },
-  { id: 'p-16', slug: 'wall-pack-rush', title: 'Wall Pack / Rush', description: 'A bright trio of rhythm, colour and clipped type.', category: 'Wall Packs', collection: 'wall-packs', price: 52, compareAtPrice: 65, discount: 20, sizes: ['A4', 'A3'], orientation: 'landscape', stock: 6, featured: false, bestseller: true, newArrival: true, tags: ['set', 'wall pack', 'colour'], rating: 4.7 },
-  { id: 'p-17', slug: 'mecha-garden', title: 'Mecha Garden', description: 'Organic shapes meet engineered lines in a poster for gentle futurists.', category: 'Anime', collection: 'anime', price: 31, compareAtPrice: 37, discount: 16, sizes: ['A4', 'A3', '50×70'], orientation: 'portrait', stock: 22, featured: true, bestseller: false, newArrival: true, tags: ['anime', 'mecha', 'garden'], rating: 4.7 },
-  { id: 'p-18', slug: 'controller-study', title: 'Controller Study', description: 'A tactile still life of buttons, hands and the pause before the next level.', category: 'Gaming', collection: 'gaming', price: 28, compareAtPrice: 33, discount: 15, sizes: ['A4', 'A3'], orientation: 'portrait', stock: 20, featured: false, bestseller: false, newArrival: false, tags: ['gaming', 'still life', 'type'], rating: 4.5 },
-  { id: 'p-19', slug: 'night-shift', title: 'Night Shift', description: 'A dark, electric composition for people who do their best work after midnight.', category: 'Abstract', collection: 'wall-packs', price: 30, compareAtPrice: 36, discount: 17, sizes: ['A3', '50×70', '70×100'], orientation: 'landscape', stock: 10, featured: false, bestseller: false, newArrival: true, tags: ['night', 'abstract', 'dark'], rating: 4.6 },
-  { id: 'p-20', slug: 'candles-and-clouds', title: 'Candles & Clouds', description: 'A soft market chart that feels more like weather than finance.', category: 'Trading', collection: 'trading', price: 26, compareAtPrice: 31, discount: 16, sizes: ['A4', 'A3'], orientation: 'portrait', stock: 15, featured: false, bestseller: false, newArrival: true, tags: ['trading', 'soft', 'cloud'], rating: 4.4 },
-  { id: 'p-21', slug: 'squad-symbol', title: 'Squad Symbol', description: 'A bold emblem for the friends who make every lobby feel like home.', category: 'Free Fire', collection: 'free-fire', price: 29, compareAtPrice: 35, discount: 17, sizes: ['A4', 'A3', '50×70'], orientation: 'portrait', stock: 26, featured: false, bestseller: false, newArrival: false, tags: ['free fire', 'squad', 'symbol'], rating: 4.5 },
-  { id: 'p-22', slug: 'still-life-electric', title: 'Still Life, Electric', description: 'A colour study with the exact amount of chaos for a white wall.', category: 'Abstract', collection: 'wall-packs', price: 28, compareAtPrice: 34, discount: 18, sizes: ['A4', 'A3', '50×70'], orientation: 'portrait', stock: 18, featured: false, bestseller: false, newArrival: true, tags: ['colour', 'still life', 'new'], rating: 4.6 },
-  { id: 'p-23', slug: 'opening-credits', title: 'Opening Credits', description: 'A clean title sequence in print: spare, dramatic and ready for the frame.', category: 'Movies', collection: 'movies', price: 25, compareAtPrice: 30, discount: 17, sizes: ['A4', 'A3'], orientation: 'landscape', stock: 31, featured: false, bestseller: false, newArrival: true, tags: ['movie', 'type', 'credits'], rating: 4.5 },
-  { id: 'p-24', slug: 'save-point', title: 'Save Point', description: 'A small reminder to pause, look up and keep the good bits.', category: 'Gaming', collection: 'gaming', price: 23, compareAtPrice: 28, discount: 18, sizes: ['A4', 'A3'], orientation: 'portrait', stock: 28, featured: false, bestseller: false, newArrival: false, tags: ['gaming', 'soft', 'quote'], rating: 4.8 },
+const defaultFeatures = [
+  { title: 'Premium Matte Finish', desc: 'Sharp, vibrant, and stunning under any light, perfect for showcasing every detail.' },
+  { title: '350 GSM Paper', desc: 'Extra-thick, durable, and premium-grade for a high-quality, luxury feel.' },
+  { title: 'Vivid Colors', desc: 'High-quality printing ensures rich tones, crisp details, and long-lasting vibrancy.' },
+  { title: 'Made to Last', desc: 'Designed for luxury, style, and durability so your poster stays looking new for years.' },
+  { title: 'Ready for Framing', desc: 'Sized to fit standard frames perfectly, giving you a clean, professional display.' },
 ];
 
-export const products: Product[] = productSeed.map((product, index) => ({
-  ...product,
-  artTreatment: treatments[index % treatments.length],
-  images: [treatments[index % treatments.length], treatments[(index + 2) % treatments.length], treatments[(index + 4) % treatments.length]],
-}));
+const defaultNotes = [
+  { title: 'No Adhesive Included', desc: 'Posters do not come with stickers or glue. Please use your own double-sided tape, poster glue, or wall-safe mounting solution.' },
+  { title: 'Frames Not Included', desc: 'Posters are sold unframed, but they are fully ready for framing for a polished, gallery-style finish.' },
+];
+
+const defaultShipping = [
+  { title: 'Order Dispatchment', desc: 'Orders are processed within 1-2 business days after order confirmation.' },
+  { title: 'Delivery Timeline', desc: 'Once dispatched, orders are typically delivered within 7 working days. Delivery times may vary depending on your location and courier partner and, in some cases, may take additional days to arrive.' },
+];
+
+export const products: Product[] = [
+  {
+    id: 'prod-spiderman-8',
+    slug: 'spiderman-poster-8',
+    title: 'SPIDERMAN POSTER - 8 | MARVEL POSTERS',
+    description: 'High-energy Spiderman wall art featuring iconic Marvel styling, printed on 350 GSM archival paper with vibrant matte finish.',
+    category: 'MARVEL & DC',
+    collection: 'marvel-dc',
+    images: ['/assets/spiderman-product-hero.jpg', '/assets/poster-spiderman-3piece.jpg'],
+    artTreatment: 'art-signal',
+    price: 79.00,
+    compareAtPrice: 159.00,
+    discount: 50,
+    sizes: ['A5', 'A4', 'A3'],
+    orientation: 'portrait',
+    stock: 24,
+    featured: true,
+    bestseller: true,
+    newArrival: false,
+    tags: ['marvel', 'spiderman', 'superhero', 'comic'],
+    rating: 5.0,
+    features: defaultFeatures,
+    notes: defaultNotes,
+    shipping: defaultShipping,
+  },
+  {
+    id: 'prod-dont-be-like-them',
+    slug: 'dont-be-like-them-poster',
+    title: "DON'T BE LIKE THEM POSTER | GIRL BOSS POSTER",
+    description: "Bold typographic aesthetic poster featuring Coco Chanel quote 'Don't be like the rest of them darling' for chic, modern rooms.",
+    category: 'DEVOTIONAL',
+    collection: 'devotional',
+    images: ['/assets/poster-dont-be-like-them.jpg'],
+    artTreatment: 'art-aurora',
+    price: 79.00,
+    compareAtPrice: 159.00,
+    discount: 50,
+    sizes: ['A5', 'A4', 'A3'],
+    orientation: 'portrait',
+    stock: 35,
+    featured: true,
+    bestseller: true,
+    newArrival: false,
+    tags: ['girl boss', 'aesthetic', 'quote', 'pink', 'fashion'],
+    rating: 5.0,
+    features: defaultFeatures,
+    notes: defaultNotes,
+    shipping: defaultShipping,
+  },
+  {
+    id: 'prod-ronaldo-10',
+    slug: 'ronaldo-poster-10',
+    title: 'RONALDO POSTER - 10 | FOOTBALL POSTERS',
+    description: "Legendary Cristiano Ronaldo wall poster featuring iconic motivational quote 'In my mind I'm always the best'.",
+    category: 'FOOTBALL',
+    collection: 'football',
+    images: ['/assets/poster-ronaldo.jpg'],
+    artTreatment: 'art-pulse',
+    price: 79.00,
+    compareAtPrice: 159.00,
+    discount: 50,
+    sizes: ['A5', 'A4', 'A3'],
+    orientation: 'portrait',
+    stock: 40,
+    featured: true,
+    bestseller: true,
+    newArrival: false,
+    tags: ['football', 'ronaldo', 'cr7', 'sports', 'legend'],
+    rating: 5.0,
+    features: defaultFeatures,
+    notes: defaultNotes,
+    shipping: defaultShipping,
+  },
+  {
+    id: 'prod-neymar-2',
+    slug: 'neymar-jr-poster-2',
+    title: 'NEYMAR JR. POSTER - 2 | FOOTBALL POSTER | 6 PIECE SET',
+    description: 'Dynamic Neymar Jr. collector edition poster with vivid electric background and football motion typography.',
+    category: 'FOOTBALL',
+    collection: 'football',
+    images: ['/assets/poster-neymar-2.jpg'],
+    artTreatment: 'art-night',
+    price: 349.00,
+    compareAtPrice: 549.00,
+    discount: 36,
+    sizes: ['A5', 'A4', 'A3'],
+    orientation: 'portrait',
+    stock: 18,
+    featured: false,
+    bestseller: false,
+    newArrival: true,
+    tags: ['football', 'neymar', 'brazil', 'sports', '6 piece set'],
+    rating: 4.9,
+    features: defaultFeatures,
+    notes: defaultNotes,
+    shipping: defaultShipping,
+  },
+  {
+    id: 'prod-neymar-1',
+    slug: 'neymar-jr-poster-1',
+    title: 'NEYMAR JR. POSTER - 1 | FOOTBALL POSTER | 6 PIECE SET',
+    description: 'Striking red and black graphic Neymar Jr football poster set with high impact match-day energy.',
+    category: 'FOOTBALL',
+    collection: 'football',
+    images: ['/assets/poster-neymar-1.jpg'],
+    artTreatment: 'art-mono',
+    price: 349.00,
+    compareAtPrice: 549.00,
+    discount: 36,
+    sizes: ['A5', 'A4', 'A3'],
+    orientation: 'portrait',
+    stock: 15,
+    featured: false,
+    bestseller: false,
+    newArrival: true,
+    tags: ['football', 'neymar', 'red', 'sports', '6 piece set'],
+    rating: 4.9,
+    features: defaultFeatures,
+    notes: defaultNotes,
+    shipping: defaultShipping,
+  },
+  {
+    id: 'prod-spiderman-5',
+    slug: 'spiderman-poster-5',
+    title: 'SPIDERMAN POSTER - 5 | MARVEL POSTERS | 3 PIECE SET',
+    description: 'Collector 3-piece Spiderman set featuring vintage comic collage backdrop and high saturation web-slinger art.',
+    category: 'MARVEL & DC',
+    collection: 'marvel-dc',
+    images: ['/assets/poster-spiderman-3piece.jpg'],
+    artTreatment: 'art-signal',
+    price: 299.00,
+    compareAtPrice: 549.00,
+    discount: 45,
+    sizes: ['A5', 'A4', 'A3'],
+    orientation: 'portrait',
+    stock: 22,
+    featured: true,
+    bestseller: true,
+    newArrival: false,
+    tags: ['marvel', 'spiderman', 'comic', '3 piece set'],
+    rating: 5.0,
+    features: defaultFeatures,
+    notes: defaultNotes,
+    shipping: defaultShipping,
+  },
+  {
+    id: 'prod-lit',
+    slug: 'lit-poster',
+    title: 'LIT POSTER | GIRL BOSS POSTER',
+    description: 'Moody, cinematographic aesthetic match light art print for contemporary minimalist room walls.',
+    category: 'DEVOTIONAL',
+    collection: 'devotional',
+    images: ['/assets/poster-lit.jpg'],
+    artTreatment: 'art-dive',
+    price: 79.00,
+    compareAtPrice: 159.00,
+    discount: 50,
+    sizes: ['A5', 'A4', 'A3'],
+    orientation: 'portrait',
+    stock: 28,
+    featured: true,
+    bestseller: true,
+    newArrival: false,
+    tags: ['aesthetic', 'moody', 'fire', 'girl boss'],
+    rating: 4.8,
+    features: defaultFeatures,
+    notes: defaultNotes,
+    shipping: defaultShipping,
+  },
+  {
+    id: 'prod-custom-photobooth',
+    slug: 'custom-photobooth-strip',
+    title: 'Custom Photobooth Strip',
+    description: 'Turn your favorite camera roll photos into authentic glossy vintage photobooth strips. Premium custom prints crafted with love.',
+    category: 'CUSTOM',
+    collection: 'custom',
+    images: ['/assets/custom-photobooth.jpg'],
+    artTreatment: 'art-aurora',
+    price: 149.00,
+    compareAtPrice: 299.00,
+    discount: 50,
+    sizes: ['A5', 'A4', 'A3'],
+    orientation: 'portrait',
+    stock: 99,
+    featured: true,
+    bestseller: true,
+    newArrival: true,
+    tags: ['custom', 'photobooth', 'personal', 'gift'],
+    rating: 5.0,
+    features: defaultFeatures,
+    notes: defaultNotes,
+    shipping: defaultShipping,
+  },
+  {
+    id: 'prod-cricket-legends',
+    slug: 'cricket-legends-poster',
+    title: 'VIRAT KOHLI POSTER - 18 | CRICKET POSTERS',
+    description: 'King Kohli celebratory masterclass poster printed in rich tones and crisp details.',
+    category: 'CRICKET',
+    collection: 'cricket',
+    images: ['/assets/poster-ronaldo.jpg'],
+    artTreatment: 'art-pulse',
+    price: 79.00,
+    compareAtPrice: 159.00,
+    discount: 50,
+    sizes: ['A5', 'A4', 'A3'],
+    orientation: 'portrait',
+    stock: 30,
+    featured: true,
+    bestseller: true,
+    newArrival: false,
+    tags: ['cricket', 'virat kohli', 'sports', 'legend'],
+    rating: 4.9,
+    features: defaultFeatures,
+    notes: defaultNotes,
+    shipping: defaultShipping,
+  },
+];
 
 export const collections = [
-  { slug: 'anime', title: 'Anime studies', description: 'Original character energy, speculative worlds and frames from stories that stay with you.', treatment: 'art-mono' },
-  { slug: 'movies', title: 'Movies & cinema', description: 'Poster-sized moods for film people, title-sequence obsessives and late-night viewers.', treatment: 'art-night' },
-  { slug: 'gaming', title: 'Gaming worlds', description: 'For players, builders and anyone who knows the exact feeling of a save point.', treatment: 'art-signal' },
-  { slug: 'trading', title: 'Trading floor', description: 'Graphic studies for desks, charts and patient thinkers.', treatment: 'art-pulse' },
-  { slug: 'free-fire', title: 'Free Fire', description: 'Squad symbols, drop points and original battle-ready graphics.', treatment: 'art-aurora' },
-  { slug: 'wall-packs', title: 'Wall packs', description: 'Small-batch sets made to work together across a real wall.', treatment: 'art-dive' },
+  { slug: 'devotional', title: 'DEVOTIONAL POSTERS', description: 'Serene spiritual, aesthetic, and motivational editions.', treatment: 'art-aurora' },
+  { slug: 'marvel-dc', title: 'MARVEL & DC', description: 'Cinematic superheroes, comic art, and collector editions.', treatment: 'art-signal' },
+  { slug: 'cricket', title: 'CRICKET', description: 'Iconic moments, pitch legends, and cricket history.', treatment: 'art-pulse' },
+  { slug: 'football', title: 'FOOTBALL', description: 'Pitch gods, Ronaldo, Neymar Jr, and match-winning art.', treatment: 'art-night' },
+  { slug: 'wall-packs', title: 'WALL PACKS', description: 'Curated multi-piece sets crafted to transform any wall.', treatment: 'art-dive' },
 ];
 
 export function getProduct(slug?: string) {
@@ -74,9 +279,14 @@ export function getProduct(slug?: string) {
 export function searchProducts(query: string) {
   const needle = query.trim().toLowerCase();
   if (!needle) return [];
-  return products.filter((product) => [product.title, product.category, product.collection, product.description, ...product.tags].join(' ').toLowerCase().includes(needle));
+  return products.filter((product) =>
+    [product.title, product.category, product.collection, product.description, ...product.tags]
+      .join(' ')
+      .toLowerCase()
+      .includes(needle)
+  );
 }
 
 export function formatPrice(value: number) {
-  return `€${value.toFixed(0)}`;
+  return `RS. ${value.toFixed(2)}`;
 }

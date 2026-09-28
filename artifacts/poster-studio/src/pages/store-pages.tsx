@@ -1,96 +1,993 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'wouter';
-import { ArrowRight, ChevronDown, ChevronUp, Minus, Plus, SlidersHorizontal, UploadCloud, X, Check, ZoomIn, Trash2, Pencil, Package, Users, BarChart3, CreditCard } from 'lucide-react';
+import {
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  Minus,
+  Plus,
+  SlidersHorizontal,
+  UploadCloud,
+  X,
+  Check,
+  ZoomIn,
+  Trash2,
+  Pencil,
+  Package,
+  Users,
+  BarChart3,
+  CreditCard,
+  ShoppingBag,
+  Heart,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  Square,
+  ShieldCheck,
+  Truck,
+  Lock,
+  Sparkles,
+  Info,
+} from 'lucide-react';
 import { collections, formatPrice, getProduct, products, searchProducts, type PosterSize, type Product, type Orientation } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, Toast } from '@/components/storefront';
 import { authService } from '@/services/auth';
 import { paymentService } from '@/services/payment';
 
-function PageIntro({ kicker, title, text }: { kicker: string; title: string; text: string }) {
-  return <div className="page-intro"><div className="section-kicker">{kicker}</div><h1>{title}</h1><p>{text}</p></div>;
+// Payment Badges Component (UPI, GPay, Paytm, VISA, RuPay)
+function PaymentTrustBadges() {
+  return (
+    <div className="payment-trust-section">
+      <div className="payment-trust-label">Secure Checkout With</div>
+      <div className="payment-badges-row">
+        <span className="badge-payment upi-badge">UPI</span>
+        <span className="badge-payment gpay-badge">G Pay</span>
+        <span className="badge-payment paytm-badge">Paytm</span>
+        <span className="badge-payment visa-badge">VISA</span>
+        <span className="badge-payment rupay-badge">RuPay</span>
+      </div>
+    </div>
+  );
+}
+
+// Size Chart Modal Component
+function SizeChartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  if (!isOpen) return null;
+  return (
+    <div className="drawer-backdrop" onClick={onClose}>
+      <div className="size-chart-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Poster Size Guide</h3>
+          <button type="button" className="icon-button" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+        <div className="size-chart-content">
+          <p className="size-chart-desc">
+            All POSTGENZ posters are printed with sharp high-resolution pigment on 350 GSM luxury matte stock.
+          </p>
+          <div className="size-table-wrap">
+            <table className="size-table">
+              <thead>
+                <tr>
+                  <th>Size</th>
+                  <th>Centimeters</th>
+                  <th>Inches</th>
+                  <th>Best For</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="highlighted-size-row">
+                  <td><strong>A5</strong></td>
+                  <td>14.8 × 21.0 cm</td>
+                  <td>5.8 × 8.3 in</td>
+                  <td>Desk decor, mini gallery walls</td>
+                </tr>
+                <tr>
+                  <td><strong>A4</strong></td>
+                  <td>21.0 × 29.7 cm</td>
+                  <td>8.3 × 11.7 in</td>
+                  <td>Standard frame, bedrooms & study</td>
+                </tr>
+                <tr>
+                  <td><strong>A3</strong></td>
+                  <td>29.7 × 42.0 cm</td>
+                  <td>11.7 × 16.5 in</td>
+                  <td>Statement wall art, living spaces</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <button type="button" className="button postgenz-btn button-wide" onClick={onClose}>
+            Got It
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function HomePage() {
   const [toast, setToast] = useState('');
-  const [openFaq, setOpenFaq] = useState(0);
-  const featured = products.filter((product) => product.featured).slice(0, 4);
-  const arrivals = products.filter((product) => product.newArrival).slice(0, 4);
-  const notify = (title: string) => { setToast(`${title} added to your bag`); window.setTimeout(() => setToast(''), 2400); };
-  const faqs = [['How are the posters printed?', 'Every edition is printed to order on heavyweight archival matte stock using pigment inks. It has a quiet, velvety finish that holds colour without glare.'], ['How long does delivery take?', 'Orders leave our studio within 2–4 working days. Most European deliveries arrive in 3–6 days with tracking.'], ['Can I upload my own artwork?', 'Yes. Custom print accepts JPG, JPEG, PNG and WEBP files up to 10MB. Build your proof in the custom studio.'], ['What is your return policy?', 'If your print arrives damaged or the quality is not right, email us within 14 days with a photo and we will make it right.']];
-  return <><main id="top">
-    <section className="hero" aria-labelledby="hero-title"><div className="hero-copy"><div className="eyebrow">New work for considered walls</div><h1 id="hero-title">Make a room<br />feel <em>like you.</em></h1><p>Independent art, made tangible. Discover small-batch posters for the corners you keep coming back to.</p><div className="hero-actions"><Link href="/collections" className="button">Explore editions <ArrowRight size={15} /></Link><Link href="/custom" className="button outline">Bring your own art <UploadCloud size={15} /></Link></div><div className="hero-note"><div><strong>01</strong>Curated weekly</div><div><strong>02</strong>Printed to order</div><div><strong>03</strong>Ships worldwide</div></div></div><div className="poster-wall" aria-label="A selection of poster artwork">{products.slice(0, 7).map((product, index) => <div className="wall-poster" key={product.id}><PosterArt treatment={product.artTreatment} title={product.title} /></div>)}</div></section>
-    <div className="ticker"><div className="ticker-track">{['Museum-grade stock', 'Small-batch editions', 'No plastic packaging', 'Made for your wall', 'Museum-grade stock', 'Small-batch editions', 'No plastic packaging', 'Made for your wall'].map((item, index) => <div className="ticker-item" key={`${item}-${index}`}>{item}</div>)}</div></div>
-    <section className="section" aria-labelledby="bestsellers-title"><div className="section-head"><div><div className="section-kicker">The current edit / 01</div><h2 id="bestsellers-title">The ones people keep <em>coming back to.</em></h2></div><Link href="/best-sellers" className="button outline">View best sellers <ArrowRight size={15} /></Link></div><div className="product-grid">{featured.map((product) => <ProductCard key={product.id} product={product} onAdded={notify} />)}</div></section>
-    <section className="custom-section"><div className="custom-inner"><div><div className="eyebrow">Your image, our paper</div><h2>Put something personal on the wall.</h2><p>Upload a photo, a sketch, a screenshot of a feeling. Build an archival print with the right weight and finish.</p><Link href="/custom" className="button outline">Start a custom print <UploadCloud size={15} /></Link></div><div className="upload-box"><UploadCloud size={25} strokeWidth={1.4} /><h3>Make it yours</h3><div className="upload-status">JPG, PNG or WEBP · up to 10MB</div></div></div></section>
-    <section className="feature-band"><div className="section"><div className="section-head"><div><div className="section-kicker">Enter another world / 02</div><h2>For the ones who like their walls with <em>lore.</em></h2></div><p>Visual universes for late-night players, lifelong collectors and anyone with a favourite loading screen.</p></div><div className="collection-grid">{collections.slice(0, 3).map((collection, index) => <Link className="collection-card" href={`/collections/${collection.slug}`} key={collection.slug}><PosterArt treatment={collection.treatment} title={collection.title} compact /><div className="collection-card-copy"><h3>{collection.title}</h3><p>{index === 0 ? 'Cosmic, cinematic, slightly strange →' : index === 1 ? 'Stories worth framing →' : 'For your next level →'}</p></div></Link>)}</div></div></section>
-    <section className="section" aria-labelledby="arrivals-title"><div className="section-head"><div><div className="section-kicker">Fresh off the press / 03</div><h2 id="arrivals-title">New in the <em>studio.</em></h2></div><Link href="/collections" className="button outline">View all editions <ArrowRight size={15} /></Link></div><div className="product-grid">{arrivals.map((product) => <ProductCard key={product.id} product={product} onAdded={notify} />)}</div></section>
-    <div className="marquee-note"><strong>Made slowly.</strong> Shipped with care. <span>Every print is checked by a real human.</span></div>
-    <section className="reviews-band"><div className="section"><div className="section-kicker">Example notes / 04</div><p className="review-disclaimer">Placeholder review copy for the storefront layout — not real customer testimonials.</p><div className="review-grid"><blockquote>“The print is even better in person. It gives the room a point of view without shouting.”<cite>— Example customer, Lisbon</cite></blockquote><blockquote>“Beautiful paper, quick dispatch and the little studio note made it feel genuinely considered.”<cite>— Example customer, London</cite></blockquote><blockquote>“The custom proof was so easy. My favourite photo is now the first thing I see every morning.”<cite>— Example customer, Berlin</cite></blockquote></div></div></section>
-    <section className="section faq-layout" aria-labelledby="faq-title"><div className="faq-intro"><div className="section-kicker">The useful bits / 05</div><h2 id="faq-title">Good to <em>know.</em></h2><p>Still curious? Our studio team is one click away. We answer messages Monday through Friday, 9–5 CET.</p><a className="button outline" href="mailto:hello@posterstudio.example">Ask a question</a></div><div className="faq-list">{faqs.map(([question, answer], index) => { const open = openFaq === index; return <div className="faq-item" key={question}><button className="faq-question" type="button" aria-expanded={open} onClick={() => setOpenFaq(open ? -1 : index)}><span>{question}</span>{open ? <Minus size={17} /> : <Plus size={17} />}</button>{open && <div className="faq-answer">{answer}</div>}</div>; })}</div></section>
-  </main><Toast message={toast} /></>;
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+
+  const bestSellers = products.filter((p) => p.bestseller).slice(0, 4);
+  const trending = products.filter((p) => p.newArrival || p.collection === 'football').slice(0, 4);
+
+  const notify = (title: string) => {
+    setToast(`${title} added to your bag`);
+    window.setTimeout(() => setToast(''), 2400);
+  };
+
+  const [bannerSlide, setBannerSlide] = useState(0);
+
+  const heroSlides = [
+    {
+      kicker: 'END OF',
+      title: 'SEASON SALE',
+      tagline: 'Luxury Decor At Better Prices',
+      discount: 'UP TO 60% OFF',
+      buttonText: 'SHOP NOW →',
+      link: '/collections',
+    },
+    {
+      kicker: 'EXCLUSIVE DROP',
+      title: 'POSTER EDITIONS',
+      tagline: 'Curated 350 GSM Archival Prints',
+      discount: 'UP TO 60% OFF',
+      buttonText: 'EXPLORE NOW →',
+      link: '/collections/devotional',
+    },
+    {
+      kicker: 'PREMIUM CUSTOM',
+      title: 'PHOTOBOOTH STRIPS',
+      tagline: 'Turn Your Memories Into Art',
+      discount: 'FLAT 60% OFF',
+      buttonText: 'DESIGN NOW →',
+      link: '/custom',
+    },
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setBannerSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [heroSlides.length]);
+
+  return (
+    <main className="postgenz-home-page">
+      {/* 1. HD HERO BANNER SLIDER OF 60% */}
+      <section className="home-hero-banner-section">
+        <div className="hd-banner-slider-container">
+          <div className="hd-banner-slide">
+            <img
+              src="/assets/hd-hero-bg.jpg"
+              alt="Luxury Decor Background"
+              className="hd-banner-bg-img"
+            />
+            <div className="hd-banner-overlay-content">
+              <span className="hd-kicker">{heroSlides[bannerSlide].kicker}</span>
+              <h2 className="hd-title">{heroSlides[bannerSlide].title}</h2>
+              <p className="hd-tagline">{heroSlides[bannerSlide].tagline}</p>
+
+              <div className="hd-discount-badge-frame">
+                <span className="hd-badge-label">UP TO</span>
+                <span className="hd-badge-percent">60% OFF</span>
+              </div>
+
+              <Link href={heroSlides[bannerSlide].link} className="hd-shop-now-btn">
+                {heroSlides[bannerSlide].buttonText}
+              </Link>
+            </div>
+
+            {/* Slider Controls */}
+            <button
+              type="button"
+              className="hd-slider-arrow hd-arrow-left"
+              aria-label="Previous slide"
+              onClick={() => setBannerSlide((prev) => (prev === 0 ? heroSlides.length - 1 : prev - 1))}
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+              type="button"
+              className="hd-slider-arrow hd-arrow-right"
+              aria-label="Next slide"
+              onClick={() => setBannerSlide((prev) => (prev + 1) % heroSlides.length)}
+            >
+              <ChevronRight size={20} />
+            </button>
+
+            {/* Dot Indicators */}
+            <div className="hd-slider-dots">
+              {heroSlides.map((_, idx) => (
+                <button
+                  type="button"
+                  key={idx}
+                  className={`hd-dot ${bannerSlide === idx ? 'dot-active' : ''}`}
+                  onClick={() => setBannerSlide(idx)}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. CATEGORY ICONS ROW (POSTERS, WALL ART, FLAGS, MIRROR) */}
+      <section className="home-categories-row-section">
+        <div className="categories-scroll-track">
+          {/* 1. Posters (Available & Clickable) */}
+          <Link href="/collections" className="cat-icon-card cat-clickable">
+            <div className="cat-img-wrap available-ring">
+              <img src="/assets/cat-posters.jpg" alt="Posters" className="cat-img" />
+            </div>
+            <span className="cat-name">Posters</span>
+          </Link>
+
+          {/* 2. Wall Art (Coming Soon & Unclickable) */}
+          <div className="cat-icon-card cat-disabled" role="region" aria-label="Wall Art Coming Soon">
+            <div className="cat-img-wrap disabled-ring">
+              <img src="/assets/cat-wall-art.jpg" alt="Wall Art" className="cat-img" />
+              <div className="coming-soon-pill-overlay">SOON</div>
+            </div>
+            <span className="cat-name">Wall Art</span>
+            <span className="coming-soon-label">Coming Soon</span>
+          </div>
+
+          {/* 3. Flags (Coming Soon & Unclickable) */}
+          <div className="cat-icon-card cat-disabled" role="region" aria-label="Flags Coming Soon">
+            <div className="cat-img-wrap disabled-ring">
+              <img src="/assets/cat-flags.jpg" alt="Flags" className="cat-img" />
+              <div className="coming-soon-pill-overlay">SOON</div>
+            </div>
+            <span className="cat-name">Flags</span>
+            <span className="coming-soon-label">Coming Soon</span>
+          </div>
+
+          {/* 4. Mirror (Coming Soon & Unclickable) */}
+          <div className="cat-icon-card cat-disabled" role="region" aria-label="Mirror Coming Soon">
+            <div className="cat-img-wrap disabled-ring">
+              <img src="/assets/cat-mirror.jpg" alt="Mirror" className="cat-img" />
+              <div className="coming-soon-pill-overlay">SOON</div>
+            </div>
+            <span className="cat-name">Mirror</span>
+            <span className="coming-soon-label">Coming Soon</span>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. SECTION 1: BEST SELLING POSTERS */}
+      <section className="home-poster-section">
+        <div className="poster-section-header">
+          <h2 className="stencil-heading">BEST SELLING POSTERS</h2>
+          <span className="stencil-subheading">HOT RIGHT NOW</span>
+        </div>
+
+        <div className="poster-carousel-wrap">
+          <button
+            type="button"
+            className="carousel-arrow-btn arrow-prev"
+            aria-label="Previous best sellers"
+            onClick={() => setActiveSlideIndex((prev) => Math.max(0, prev - 1))}
+          >
+            <ChevronLeft size={20} />
+          </button>
+
+          <div className="poster-products-grid four-col-laptop-grid">
+            {bestSellers.map((product) => (
+              <ProductCard key={product.id} product={product} onAdded={notify} />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className="carousel-arrow-btn arrow-next mobile-only-arrow"
+            aria-label="Next best sellers"
+            onClick={() => setActiveSlideIndex((prev) => prev + 1)}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+
+        <div className="explore-more-wrap">
+          <Link href="/best-sellers" className="btn-explore-more">
+            EXPLORE MORE
+          </Link>
+        </div>
+      </section>
+
+      {/* 4. SECTION 2: TRENDING POSTERS */}
+      <section className="home-poster-section">
+        <div className="poster-section-header">
+          <h2 className="stencil-heading">TRENDING POSTERS</h2>
+          <span className="stencil-subheading">NEW ARRIVAL</span>
+        </div>
+
+        <div className="poster-carousel-wrap">
+          <div className="poster-products-grid four-col-laptop-grid">
+            {trending.map((product) => (
+              <ProductCard key={product.id} product={product} onAdded={notify} />
+            ))}
+          </div>
+        </div>
+
+        <div className="explore-more-wrap">
+          <Link href="/collections/football" className="btn-explore-more">
+            EXPLORE MORE
+          </Link>
+        </div>
+      </section>
+
+      {/* 5. SECTION 3: DESIGN YOUR OWN */}
+      <section className="home-custom-print-section">
+        <div className="poster-section-header">
+          <h2 className="stencil-heading dark-title">DESIGN YOUR OWN</h2>
+          <span className="stencil-subheading dot-subheading">• PREMIUM CUSTOM PRINTS •</span>
+        </div>
+
+        <div className="custom-photobooth-preview-card">
+          <Link href="/custom" className="photobooth-img-link">
+            <img
+              src="/assets/custom-photobooth.jpg"
+              alt="Custom Photobooth Strip"
+              className="photobooth-preview-img"
+            />
+          </Link>
+          <div className="photobooth-details">
+            <h3 className="photobooth-title">Custom Photobooth Strip</h3>
+            <Link href="/custom" className="btn-design-now">
+              DESIGN NOW
+            </Link>
+          </div>
+        </div>
+
+        <div className="custom-pagination-nav">
+          <button type="button" className="pagination-arrow" aria-label="Previous page">
+            &lt;
+          </button>
+          <span className="pagination-current">1</span>
+          <span className="pagination-total">3</span>
+          <button type="button" className="pagination-arrow" aria-label="Next page">
+            &gt;
+          </button>
+        </div>
+      </section>
+
+      <Toast message={toast} />
+    </main>
+  );
 }
 
-function filterProducts(input: Product[], filters: { category: string; size: string; orientation: string; availability: string; price: string }, sort: string) {
-  let result = input.filter((product) => (!filters.category || product.category === filters.category) && (!filters.size || product.sizes.includes(filters.size as PosterSize)) && (!filters.orientation || product.orientation === filters.orientation) && (!filters.availability || (filters.availability === 'in-stock' ? product.stock > 0 : product.stock <= 0)) && (!filters.price || (filters.price === 'under-28' ? product.price < 28 : filters.price === '28-35' ? product.price >= 28 && product.price <= 35 : product.price > 35)));
-  if (sort === 'newest') result = result.sort((a, b) => Number(b.newArrival) - Number(a.newArrival));
-  if (sort === 'low') result = result.sort((a, b) => a.price - b.price);
-  if (sort === 'high') result = result.sort((a, b) => b.price - a.price);
-  if (sort === 'best') result = result.sort((a, b) => Number(b.bestseller) - Number(a.bestseller) || b.rating - a.rating);
-  if (sort === 'featured') result = result.sort((a, b) => Number(b.featured) - Number(a.featured));
-  return result;
-}
-
-export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean; params?: any }) {
+export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean; [key: string]: any } = {}) {
   const params = useParams<{ slug?: string }>();
-  const collection = collections.find((item) => item.slug === params.slug);
-  const [filters, setFilters] = useState({ category: '', size: '', orientation: '', availability: '', price: '' });
-  const [sort, setSort] = useState(bestsellers ? 'best' : 'featured');
-  const [visible, setVisible] = useState(8);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const input = bestsellers ? products.filter((product) => product.bestseller) : collection ? products.filter((product) => product.collection === collection.slug) : products;
-  const result = useMemo(() => filterProducts(input, filters, sort), [input, filters, sort]);
-  const categories = [...new Set(input.map((product) => product.category))];
-  const title = bestsellers ? 'Best sellers' : collection?.title || 'All editions';
-  const description = bestsellers ? 'The prints with the most stories attached.' : collection?.description || 'Original art for considered spaces, made in small batches.';
-  return <main><div className="collection-hero"><PageIntro kicker={bestsellers ? 'The proven edit' : `Collection / ${collection?.slug || 'all'}`} title={title} text={description} /><div className="collection-stat"><strong>{result.length}</strong><span>editions<br />in this edit</span></div></div><section className="section collection-section"><div className="toolbar"><button className="filter-toggle button outline" type="button" onClick={() => setFiltersOpen((open) => !open)}><SlidersHorizontal size={14} /> Filters</button><span className="results-count">{result.length} results</span><label className="sort-control">Sort by <select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Sort products"><option value="featured">Featured</option><option value="newest">Newest</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option><option value="best">Best selling</option></select></label></div><div className={`collection-body ${filtersOpen ? 'filters-visible' : ''}`}><aside className="filters"><div className="filter-heading">Filter edit <button type="button" className="icon-button" onClick={() => setFilters({ category: '', size: '', orientation: '', availability: '', price: '' })} aria-label="Clear filters"><X size={14} /></button></div><FilterSelect label="Category" value={filters.category} options={categories} onChange={(value) => setFilters({ ...filters, category: value })} /><FilterSelect label="Price" value={filters.price} options={['under-28', '28-35', 'over-35']} labels={['Under €28', '€28 – €35', 'Over €35']} onChange={(value) => setFilters({ ...filters, price: value })} /><FilterSelect label="Size" value={filters.size} options={['A4', 'A3', '50×70', '70×100']} onChange={(value) => setFilters({ ...filters, size: value })} /><FilterSelect label="Orientation" value={filters.orientation} options={['portrait', 'landscape']} onChange={(value) => setFilters({ ...filters, orientation: value })} /><FilterSelect label="Availability" value={filters.availability} options={['in-stock', 'sold-out']} labels={['In stock', 'Sold out']} onChange={(value) => setFilters({ ...filters, availability: value })} /></aside><div className="collection-results">{result.length ? <><div className="product-grid">{result.slice(0, visible).map((product) => <ProductCard key={product.id} product={product} />)}</div>{visible < result.length && <button className="button outline load-more" type="button" onClick={() => setVisible((value) => value + 8)}>Load more editions <ArrowRight size={14} /></button>}</> : <div className="empty-state"><PosterArt treatment="art-mono" title="Nothing here" compact /><h3>No editions match that edit.</h3><p>Try widening your filters and give the wall another look.</p><button className="button" type="button" onClick={() => setFilters({ category: '', size: '', orientation: '', availability: '', price: '' })}>Clear filters</button></div>}</div></div></section></main>;
-}
+  const activeSlug = bestsellers ? 'bestsellers' : params.slug || 'devotional';
+  const [viewMode, setViewMode] = useState<'double' | 'single'>('double');
+  const [toast, setToast] = useState('');
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [selectedSort, setSelectedSort] = useState('featured');
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(1000);
 
-function FilterSelect({ label, value, options, labels = options, onChange }: { label: string; value: string; options: string[]; labels?: string[]; onChange: (value: string) => void }) {
-  return <label className="filter-select"><span>{label}</span><select value={value} onChange={(event) => onChange(event.target.value)}><option value="">All {label.toLowerCase()}</option>{options.map((option, index) => <option key={option} value={option}>{labels[index]}</option>)}</select></label>;
-}
+  const notify = (title: string) => {
+    setToast(`${title} added to your bag`);
+    window.setTimeout(() => setToast(''), 2400);
+  };
 
-export function SearchPage() {
-  const [, navigate] = useLocation();
-  const initial = new URLSearchParams(window.location.search).get('q') || '';
-  const [query, setQuery] = useState(initial);
-  const results = searchProducts(initial);
-  const submit = (event: FormEvent) => { event.preventDefault(); navigate(`/search?q=${encodeURIComponent(query.trim())}`); };
-  return <main><section className="section search-page"><PageIntro kicker="The search desk" title={initial ? `Results for “${initial}”` : 'Find your next wall idea.'} text="Search titles, worlds, collections and tags. Try a mood, a game or a colour." /><form className="large-search" onSubmit={submit}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search the studio..." aria-label="Search the studio" autoFocus /><button className="button" type="submit">Search <ArrowRight size={14} /></button></form>{initial && <div className="search-results"><div className="results-count">{results.length} {results.length === 1 ? 'edition' : 'editions'} found</div>{results.length ? <div className="product-grid">{results.map((product) => <ProductCard key={product.id} product={product} />)}</div> : <div className="empty-state"><PosterArt treatment="art-night" title="Try another route" compact /><h3>Nothing matched that search.</h3><p>Try “anime”, “cinema”, “gaming” or “wall pack”.</p><Link href="/collections" className="button">Browse all editions</Link></div>}</div>}</section></main>;
+  const navCategories = [
+    { slug: 'devotional', label: 'DEVOTIONAL' },
+    { slug: 'marvel-dc', label: 'MARVEL & DC' },
+    { slug: 'cricket', label: 'CRICKET' },
+    { slug: 'football', label: 'FOOTBALL' },
+    { slug: 'all', label: 'ALL POSTERS' },
+  ];
+
+  const currentCategoryLabel =
+    activeSlug === 'bestsellers'
+      ? 'BEST SELLING POSTERS'
+      : activeSlug === 'all'
+      ? 'ALL POSTERS'
+      : collections.find((c) => c.slug === activeSlug)?.title || 'DEVOTIONAL POSTERS';
+
+  const filteredProducts = useMemo(() => {
+    let list = products;
+    if (activeSlug === 'bestsellers') {
+      list = products.filter((p) => p.bestseller);
+    } else if (activeSlug !== 'all') {
+      list = products.filter((p) => p.collection === activeSlug);
+    }
+    // Also filter by price
+    list = list.filter((p) => p.price >= minPrice && p.price <= maxPrice);
+
+    if (selectedSort === 'low') return [...list].sort((a, b) => a.price - b.price);
+    if (selectedSort === 'high') return [...list].sort((a, b) => b.price - a.price);
+    if (selectedSort === 'rating') return [...list].sort((a, b) => b.rating - a.rating);
+    return list;
+  }, [activeSlug, minPrice, maxPrice, selectedSort]);
+
+  return (
+    <main className="postgenz-collection-page">
+      {/* 1. TOP TITLE */}
+      <div className="collection-top-header">
+        <h1 className="collection-main-title">{currentCategoryLabel}</h1>
+      </div>
+
+      {/* 2. CATEGORY PILL FILTER TABS */}
+      <div className="category-pills-bar">
+        <div className="category-pills-scroll">
+          {navCategories.map((cat) => {
+            const isActive =
+              cat.slug === activeSlug ||
+              (cat.slug === 'all' && activeSlug === '') ||
+              (cat.slug === 'devotional' && !params.slug && !bestsellers);
+            const href = cat.slug === 'all' ? '/collections' : `/collections/${cat.slug}`;
+            return (
+              <Link
+                key={cat.slug}
+                href={href}
+                className={`category-filter-pill ${isActive ? 'pill-active' : ''}`}
+              >
+                {cat.label}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. FILTER & VIEW BAR */}
+      <div className="filter-view-toolbar">
+        <button
+          type="button"
+          className="toolbar-filter-btn"
+          onClick={() => setFilterDrawerOpen(true)}
+        >
+          <SlidersHorizontal size={16} />
+          <span>FILTER</span>
+        </button>
+
+        <div className="view-mode-toggles">
+          <button
+            type="button"
+            className={`view-mode-btn ${viewMode === 'single' ? 'active-view' : ''}`}
+            aria-label="Single column layout"
+            onClick={() => setViewMode('single')}
+          >
+            <Square size={18} />
+          </button>
+          <button
+            type="button"
+            className={`view-mode-btn ${viewMode === 'double' ? 'active-view' : ''}`}
+            aria-label="Two column grid layout"
+            onClick={() => setViewMode('double')}
+          >
+            <LayoutGrid size={18} />
+          </button>
+        </div>
+      </div>
+
+      {/* 4. PRODUCT GRID */}
+      <section className="collection-products-section">
+        {filteredProducts.length === 0 ? (
+          <div className="empty-state">
+            <p>No posters found matching this filter.</p>
+            <Link href="/collections" className="button postgenz-btn">
+              Reset Filters
+            </Link>
+          </div>
+        ) : (
+          <div className={`collection-grid-container ${viewMode === 'single' ? 'single-col-grid' : 'four-col-laptop-grid'}`}>
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} onAdded={notify} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* FILTER DRAWER */}
+      {filterDrawerOpen && (
+        <div className="drawer-backdrop" onClick={() => setFilterDrawerOpen(false)}>
+          <aside className="filter-drawer-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="drawer-header">
+              <h3>Filter & Sort</h3>
+              <button type="button" className="icon-button" onClick={() => setFilterDrawerOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="filter-drawer-body">
+              <div className="filter-drawer-group">
+                <label className="filter-group-label">Sort By</label>
+                <select
+                  value={selectedSort}
+                  onChange={(e) => setSelectedSort(e.target.value)}
+                  className="filter-select-input"
+                >
+                  <option value="featured">Featured</option>
+                  <option value="low">Price: Low to High</option>
+                  <option value="high">Price: High to Low</option>
+                  <option value="rating">Highest Rated</option>
+                </select>
+              </div>
+
+              <div className="filter-drawer-group">
+                <label className="filter-group-label">Max Price: RS. {maxPrice}</label>
+                <input
+                  type="range"
+                  min="50"
+                  max="600"
+                  step="50"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(Number(e.target.value))}
+                  className="w-full accent-black cursor-pointer"
+                />
+              </div>
+
+              <button
+                type="button"
+                className="button postgenz-btn button-wide"
+                onClick={() => setFilterDrawerOpen(false)}
+              >
+                Apply Filters ({filteredProducts.length} Results)
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      <Toast message={toast} />
+    </main>
+  );
 }
 
 export function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
-  const product = getProduct(slug);
+  const product = getProduct(slug) || products[0];
   const [, navigate] = useLocation();
-  const { recentlyViewed } = useStore();
-  const [activeImage, setActiveImage] = useState(0);
-  const [size, setSize] = useState<PosterSize>(product?.sizes[0] || 'A3');
+  const [selectedSize, setSelectedSize] = useState<PosterSize>('A5');
   const [quantity, setQuantity] = useState(1);
-  const [zoom, setZoom] = useState(false);
-  const [openDetails, setOpenDetails] = useState('shipping');
+  const [openAccordion, setOpenAccordion] = useState<string | null>('features');
+  const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const [toast, setToast] = useState('');
-  useEffect(() => { if (product) { store.addRecentlyViewed(product.id); setSize(product.sizes[0]); } }, [product]);
-  if (!product) return <main><div className="section empty-state"><h1>Edition not found.</h1><Link href="/collections" className="button">Back to the edit</Link></div></main>;
-  const add = (buyNow = false) => { store.addToCart({ productId: product.id, slug: product.slug, title: product.title, price: product.price, size, quantity, orientation: product.orientation, artTreatment: product.artTreatment }); if (buyNow) navigate('/checkout'); else { setToast(`${product.title} added to your bag`); window.setTimeout(() => setToast(''), 2400); } };
-  const related = products.filter((item) => item.collection === product.collection && item.id !== product.id).slice(0, 4);
-  const viewed = recentlyViewed.map((id) => products.find((item) => item.id === id)).filter((item): item is Product => Boolean(item)).filter((item) => item.id !== product.id).slice(0, 4);
-  return <main><section className="section product-detail"><div className="product-gallery"><div className="product-viewer" onClick={() => setZoom(true)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') setZoom(true); }}><PosterArt treatment={product.images[activeImage]} title={product.title} /><button type="button" className="zoom-button" aria-label="Zoom artwork"><ZoomIn size={17} /></button></div><div className="thumbnail-row">{product.images.map((image, index) => <button key={image} className={activeImage === index ? 'thumbnail active' : 'thumbnail'} type="button" onClick={() => setActiveImage(index)}><PosterArt treatment={image} title={product.title} compact /></button>)}</div></div><div className="product-info"><div className="section-kicker">{product.category} / {product.collection}</div><h1>{product.title}</h1><div className="rating">★★★★★ <span>{product.rating} / 5 · Studio reviews</span></div><div className="detail-price"><strong>{formatPrice(product.price)}</strong><del>{formatPrice(product.compareAtPrice)}</del><span>{product.discount}% off</span></div><p className="detail-description">{product.description}</p><div className="option-block"><div className="option-label">Size <strong>{size} cm</strong></div><div className="size-options">{product.sizes.map((option) => <button type="button" key={option} className={size === option ? 'size-option selected' : 'size-option'} onClick={() => setSize(option)}>{option}</button>)}</div></div><div className="option-block"><div className="option-label">Quantity</div><div className="qty-control qty-large"><button type="button" aria-label="Decrease quantity" onClick={() => setQuantity(Math.max(1, quantity - 1))}><Minus size={14} /></button><span>{quantity}</span><button type="button" aria-label="Increase quantity" onClick={() => setQuantity(quantity + 1)}><Plus size={14} /></button></div></div><div className="detail-actions"><button type="button" className="button button-wide" onClick={() => add(false)}>Add to bag <Plus size={15} /></button><button type="button" className="button lime button-wide" onClick={() => add(true)}>Buy now <ArrowRight size={15} /></button></div><div className="accordion-list">{[['shipping', 'Shipping & delivery', 'Printed to order and dispatched within 2–4 working days. Free shipping over €75.'], ['details', 'Details & materials', 'Archival pigment inks on heavyweight matte stock. Ships rolled in recycled protective packaging.'], ['care', 'Print care', 'Keep away from direct moisture and intense sun. Frame behind glass for the longest life.']].map(([key, label, answer]) => <div className="accordion-item" key={key}><button type="button" onClick={() => setOpenDetails(openDetails === key ? '' : key)}><span>{label}</span>{openDetails === key ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</button>{openDetails === key && <p>{answer}</p>}</div>)}</div></div></section>{zoom && <div className="zoom-modal" role="dialog" aria-modal="true" onClick={() => setZoom(false)}><button type="button" className="icon-button" aria-label="Close zoom"><X size={22} /></button><PosterArt treatment={product.images[activeImage]} title={product.title} /></div>}<Recommendation title="More from this world" products={related} /><Recommendation title="Recently viewed" products={viewed} /><Toast message={toast} /></main>;
+
+  const toggleAccordion = (name: string) => {
+    setOpenAccordion(openAccordion === name ? null : name);
+  };
+
+  const handleAddToCart = (buyNow = false) => {
+    store.addToCart({
+      productId: product.id,
+      slug: product.slug,
+      title: product.title,
+      price: product.price,
+      size: selectedSize,
+      quantity,
+      orientation: product.orientation,
+      artTreatment: product.artTreatment,
+    });
+    if (buyNow) {
+      navigate('/checkout');
+    } else {
+      setToast(`${product.title} added to bag!`);
+      window.setTimeout(() => setToast(''), 2400);
+    }
+  };
+
+  const heroImageSrc = product.images?.[0] || '/assets/spiderman-product-hero.jpg';
+
+  return (
+    <main className="postgenz-product-page">
+      <div className="product-page-laptop-container">
+        {/* 1. MAIN PRODUCT IMAGE WITH BADGE */}
+      <section className="product-hero-media-wrap">
+        {product.bestseller && (
+          <div className="product-badge-overlay">
+            <span className="badge-icon">⚡</span> BEST SELLER
+          </div>
+        )}
+        <img
+          src={heroImageSrc}
+          alt={product.title}
+          className="product-hero-real-img"
+        />
+      </section>
+
+      {/* 2. PRODUCT INFO & DETAILS */}
+      <section className="product-primary-details">
+        <h1 className="product-page-title">{product.title}</h1>
+
+        <div className="product-stars-row">
+          <span className="stars-gold">★★★★★</span>
+        </div>
+
+        <div className="product-price-display-row">
+          <span className="price-bold">{formatPrice(product.price)}</span>
+          <del className="price-strike">{formatPrice(product.compareAtPrice)}</del>
+        </div>
+
+        <button
+          type="button"
+          className="view-size-chart-link"
+          onClick={() => setSizeChartOpen(true)}
+        >
+          View Size Chart →
+        </button>
+
+        {/* 3. SIZE SELECTOR */}
+        <div className="product-size-section">
+          <div className="size-label-heading">SIZE</div>
+          <div className="size-pills-row">
+            {(['A5', 'A4', 'A3'] as PosterSize[]).map((sz) => (
+              <button
+                type="button"
+                key={sz}
+                className={`size-select-pill ${selectedSize === sz ? 'size-active' : ''}`}
+                onClick={() => setSelectedSize(sz)}
+              >
+                {sz}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 4. QUANTITY STEPPER & ADD TO CART */}
+        <div className="quantity-and-add-row">
+          <div className="stepper-box">
+            <button
+              type="button"
+              className="stepper-btn"
+              aria-label="Decrease quantity"
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+            >
+              <Minus size={14} />
+            </button>
+            <span className="stepper-val">{quantity}</span>
+            <button
+              type="button"
+              className="stepper-btn"
+              aria-label="Increase quantity"
+              onClick={() => setQuantity(quantity + 1)}
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            className="btn-add-to-cart-cyan"
+            onClick={() => handleAddToCart(false)}
+          >
+            <ShoppingBag size={18} strokeWidth={2.2} />
+            <span>ADD TO CART</span>
+          </button>
+        </div>
+
+        {/* 5. BUY IT NOW FULL WIDTH */}
+        <button
+          type="button"
+          className="btn-buy-it-now-blue"
+          onClick={() => handleAddToCart(true)}
+        >
+          BUY IT NOW
+        </button>
+
+        {/* 6. SECURE CHECKOUT WITH BADGES */}
+        <PaymentTrustBadges />
+
+        {/* 7. ACCORDIONS (PRODUCT FEATURES, IMPORTANT NOTES, SHIPPING) */}
+        <div className="product-accordions-wrap">
+          {/* ACCORDION 1: PRODUCT FEATURES */}
+          <div className="accordion-block">
+            <button
+              type="button"
+              className="accordion-toggle-btn"
+              onClick={() => toggleAccordion('features')}
+            >
+              <span>PRODUCT FEATURES</span>
+              <span className="accordion-indicator">{openAccordion === 'features' ? '−' : '+'}</span>
+            </button>
+            {openAccordion === 'features' && (
+              <div className="accordion-inner-content">
+                <div className="feature-item">
+                  <strong>Premium Matte Finish</strong>
+                  <p>Sharp, vibrant, and stunning under any light, perfect for showcasing every detail.</p>
+                </div>
+                <div className="feature-item">
+                  <strong>350 GSM Paper</strong>
+                  <p>Extra-thick, durable, and premium-grade for a high-quality, luxury feel.</p>
+                </div>
+                <div className="feature-item">
+                  <strong>Vivid Colors</strong>
+                  <p>High-quality printing ensures rich tones, crisp details, and long-lasting vibrancy.</p>
+                </div>
+                <div className="feature-item">
+                  <strong>Made to Last</strong>
+                  <p>Designed for luxury, style, and durability so your poster stays looking new for years.</p>
+                </div>
+                <div className="feature-item">
+                  <strong>Ready for Framing</strong>
+                  <p>Sized to fit standard frames perfectly, giving you a clean, professional display.</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ACCORDION 2: IMPORTANT NOTES */}
+          <div className="accordion-block">
+            <button
+              type="button"
+              className="accordion-toggle-btn"
+              onClick={() => toggleAccordion('notes')}
+            >
+              <span>IMPORTANT NOTES</span>
+              <span className="accordion-indicator">{openAccordion === 'notes' ? '−' : '+'}</span>
+            </button>
+            {openAccordion === 'notes' && (
+              <div className="accordion-inner-content">
+                <div className="feature-item">
+                  <strong>No Adhesive Included</strong>
+                  <p>Posters do not come with stickers or glue. Please use your own double-sided tape, poster glue, or wall-safe mounting solution.</p>
+                </div>
+                <div className="feature-item">
+                  <strong>Frames Not Included</strong>
+                  <p>Posters are sold unframed, but they are fully ready for framing for a polished, gallery-style finish.</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ACCORDION 3: SHIPPING */}
+          <div className="accordion-block">
+            <button
+              type="button"
+              className="accordion-toggle-btn"
+              onClick={() => toggleAccordion('shipping')}
+            >
+              <span>SHIPPING</span>
+              <span className="accordion-indicator">{openAccordion === 'shipping' ? '−' : '+'}</span>
+            </button>
+            {openAccordion === 'shipping' && (
+              <div className="accordion-inner-content">
+                <div className="feature-item">
+                  <strong>Order Dispatchment</strong>
+                  <p>Orders are processed within 1-2 business days after order confirmation.</p>
+                </div>
+                <div className="feature-item">
+                  <strong>Delivery Timeline</strong>
+                  <p>Once dispatched, orders are typically delivered within 7 working days. Delivery times may vary depending on your location and courier partner and, in some cases, may take additional days to arrive.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 8. TRUST HIGHLIGHTS */}
+        <div className="trust-highlights-list">
+          <div className="trust-highlight-row">
+            <Truck size={20} className="trust-icon" />
+            <span>Free Shipping on Prepaid Orders</span>
+          </div>
+          <div className="trust-highlight-row">
+            <ShieldCheck size={20} className="trust-icon" />
+            <span>Free Damage Replacement</span>
+          </div>
+          <div className="trust-highlight-row">
+            <Lock size={20} className="trust-icon" />
+            <span>Secure Checkout</span>
+          </div>
+        </div>
+
+        {/* 9. NOTICE HIGHLIGHT BOX */}
+        <div className="notice-highlight-card">
+          <h4 className="notice-card-title">No Adhesive Included</h4>
+          <p className="notice-card-desc">
+            Posters do not come with stickers or glue. Please use your own double-sided tape, poster glue, or wall-safe mounting solution.
+          </p>
+        </div>
+      </section>
+    </div>
+
+      {/* SIZE CHART MODAL */}
+      <SizeChartModal isOpen={sizeChartOpen} onClose={() => setSizeChartOpen(false)} />
+
+      <Toast message={toast} />
+    </main>
+  );
 }
 
-function Recommendation({ title, products: items }: { title: string; products: Product[] }) {
-  if (!items.length) return null;
-  return <section className="section recommendation"><div className="section-head"><h2>{title}</h2><Link href="/collections" className="button outline">See all <ArrowRight size={14} /></Link></div><div className="product-grid">{items.map((product) => <ProductCard key={product.id} product={product} />)}</div></section>;
+export function CustomPage() {
+  const [photos, setPhotos] = useState<Array<{ id: string; url: string }>>([]);
+  const [frameStyle, setFrameStyle] = useState<'white' | 'black' | 'pink'>('pink');
+  const [stripType, setStripType] = useState<'3-strip' | '4-strip'>('3-strip');
+  const [quantity, setQuantity] = useState(1);
+  const [toast, setToast] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const pricePerUnit = stripType === '3-strip' ? 149 : 199;
+  const totalPrice = pricePerUnit * quantity;
+
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !files.length) return;
+    const maxPhotos = stripType === '3-strip' ? 3 : 4;
+    Array.from(files).slice(0, maxPhotos - photos.length).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPhotos((prev) => [...prev, { id: Math.random().toString(36), url: String(reader.result) }].slice(0, maxPhotos));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleAddCustomToCart = () => {
+    store.addToCart({
+      productId: 'custom-photobooth',
+      slug: 'custom-photobooth-strip',
+      title: `Custom Photobooth Strip (${stripType.toUpperCase()})`,
+      price: pricePerUnit,
+      size: 'A5',
+      quantity,
+      orientation: 'portrait',
+      artTreatment: 'art-aurora',
+      customUpload: {
+        name: `Photobooth_${photos.length}_photos`,
+        preview: photos[0]?.url || '/assets/custom-photobooth.jpg',
+      },
+    });
+    setToast('Custom Photobooth Strip added to your bag!');
+    window.setTimeout(() => setToast(''), 2400);
+  };
+
+  return (
+    <main className="postgenz-custom-studio">
+      <div className="collection-top-header">
+        <h1 className="collection-main-title">DESIGN YOUR OWN</h1>
+        <p className="collection-sub-text">• PREMIUM CUSTOM PHOTOBOOTH STRIPS •</p>
+      </div>
+
+      <div className="custom-studio-content">
+        {/* PHOTO STRIP MOCKUP DISPLAY */}
+        <div className="photobooth-live-wrapper">
+          <div className={`photobooth-strip-frame frame-${frameStyle}`}>
+            <div className="strip-header-label">Custom Photobooth Strip</div>
+            <div className="strip-slots-column">
+              {Array.from({ length: stripType === '3-strip' ? 3 : 4 }).map((_, idx) => (
+                <div key={idx} className="strip-photo-slot">
+                  {photos[idx] ? (
+                    <img src={photos[idx].url} alt={`Upload ${idx + 1}`} className="uploaded-strip-img" />
+                  ) : (
+                    <button
+                      type="button"
+                      className="upload-placeholder-slot"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <UploadCloud size={24} />
+                      <span>Photo {idx + 1}</span>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="strip-footer-branding">postgenz</div>
+          </div>
+        </div>
+
+        {/* CUSTOMIZATION CONTROLS */}
+        <div className="custom-options-controls">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+
+          <button
+            type="button"
+            className="button postgenz-btn button-wide"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <UploadCloud size={18} />
+            <span>Upload Your Photos ({photos.length}/{stripType === '3-strip' ? 3 : 4})</span>
+          </button>
+
+          {photos.length > 0 && (
+            <button
+              type="button"
+              className="text-button clear-photos-btn"
+              onClick={() => setPhotos([])}
+            >
+              Clear Uploaded Photos
+            </button>
+          )}
+
+          <div className="control-group">
+            <label className="control-label">Strip Format</label>
+            <div className="option-pills-row">
+              <button
+                type="button"
+                className={`option-pill ${stripType === '3-strip' ? 'active-pill' : ''}`}
+                onClick={() => setStripType('3-strip')}
+              >
+                Strip of 3 (Classic)
+              </button>
+              <button
+                type="button"
+                className={`option-pill ${stripType === '4-strip' ? 'active-pill' : ''}`}
+                onClick={() => setStripType('4-strip')}
+              >
+                Strip of 4 (Deluxe)
+              </button>
+            </div>
+          </div>
+
+          <div className="control-group">
+            <label className="control-label">Border Shade</label>
+            <div className="option-pills-row">
+              <button
+                type="button"
+                className={`option-pill ${frameStyle === 'pink' ? 'active-pill' : ''}`}
+                onClick={() => setFrameStyle('pink')}
+              >
+                Pastel Rose
+              </button>
+              <button
+                type="button"
+                className={`option-pill ${frameStyle === 'white' ? 'active-pill' : ''}`}
+                onClick={() => setFrameStyle('white')}
+              >
+                Classic White
+              </button>
+              <button
+                type="button"
+                className={`option-pill ${frameStyle === 'black' ? 'active-pill' : ''}`}
+                onClick={() => setFrameStyle('black')}
+              >
+                Noir Black
+              </button>
+            </div>
+          </div>
+
+          <div className="control-group">
+            <label className="control-label">Quantity</label>
+            <div className="stepper-box">
+              <button
+                type="button"
+                className="stepper-btn"
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              >
+                <Minus size={14} />
+              </button>
+              <span className="stepper-val">{quantity}</span>
+              <button
+                type="button"
+                className="stepper-btn"
+                onClick={() => setQuantity(quantity + 1)}
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          </div>
+
+          <div className="custom-price-total">
+            <span>Price:</span>
+            <strong>{formatPrice(totalPrice)}</strong>
+          </div>
+
+          <button
+            type="button"
+            className="btn-buy-it-now-blue"
+            onClick={handleAddCustomToCart}
+          >
+            ADD TO BAG • {formatPrice(totalPrice)}
+          </button>
+        </div>
+      </div>
+
+      <Toast message={toast} />
+    </main>
+  );
 }
 
 export function CartPage() {
@@ -99,90 +996,579 @@ export function CartPage() {
   const totals = cartTotals(cart, coupon);
   const [couponInput, setCouponInput] = useState(coupon);
   const [couponMessage, setCouponMessage] = useState('');
-  const applyCoupon = () => { store.setCoupon(couponInput.trim().toUpperCase()); setCouponMessage(couponInput.trim().toUpperCase() === 'STUDIO10' ? 'Studio 10 applied.' : 'Try STUDIO10 for a demo discount.'); };
-  return <main><section className="section cart-page"><PageIntro kicker="Your edit" title="A bag with a point of view." text="Review your editions before they make their way to the press." />{cart.length === 0 ? <div className="empty-state cart-empty"><PosterArt treatment="art-aurora" title="Your wall" compact /><h3>Your bag is waiting.</h3><p>Good walls start with one good idea.</p><Link href="/collections" className="button">Explore editions <ArrowRight size={14} /></Link></div> : <div className="cart-layout"><div className="cart-list">{cart.map((item) => <CartLine item={item} key={item.key} />)}</div><aside className="summary-card"><h2>Order summary</h2><div className="coupon-row"><input value={couponInput} onChange={(event) => setCouponInput(event.target.value)} placeholder="Coupon code" aria-label="Coupon code" /><button type="button" onClick={applyCoupon}>Apply</button></div>{couponMessage && <small className="form-note">{couponMessage}</small>}<Summary totals={totals} /><button className="button button-wide" type="button" onClick={() => navigate('/checkout')}>Continue to checkout <ArrowRight size={14} /></button><p className="summary-note">Taxes calculated at checkout. Free shipping over €75.</p></aside></div>}</section></main>;
-}
 
-function CartLine({ item }: { item: CartItem }) {
-  return <div className="cart-line"><PosterArt treatment={item.artTreatment} title={item.title} compact /><div className="cart-line-copy"><Link href={`/products/${item.slug}`}><h3>{item.title}</h3></Link><span>{item.size} / {item.customUpload ? 'Custom print' : 'Edition'}</span><div className="qty-control"><button type="button" aria-label={`Decrease ${item.title}`} onClick={() => store.updateQuantity(item.key, item.quantity - 1)}><Minus size={13} /></button><span>{item.quantity}</span><button type="button" aria-label={`Increase ${item.title}`} onClick={() => store.updateQuantity(item.key, item.quantity + 1)}><Plus size={13} /></button></div></div><strong>{formatPrice(item.price * item.quantity)}</strong><button className="icon-button remove-button" type="button" aria-label={`Remove ${item.title}`} onClick={() => store.removeFromCart(item.key)}><Trash2 size={16} /></button></div>;
-}
+  const applyCoupon = () => {
+    store.setCoupon(couponInput.trim().toUpperCase());
+    setCouponMessage(couponInput.trim().toUpperCase() === 'POSTGENZ10' ? '10% discount applied!' : 'Try coupon POSTGENZ10');
+  };
 
-function Summary({ totals }: { totals: ReturnType<typeof cartTotals> }) {
-  return <div className="summary-lines"><div><span>Subtotal</span><strong>{formatPrice(totals.subtotal)}</strong></div><div><span>Shipping</span><strong>{totals.shipping ? formatPrice(totals.shipping) : 'Free'}</strong></div>{totals.discount > 0 && <div><span>Discount</span><strong>−{formatPrice(totals.discount)}</strong></div>}<div className="summary-total"><span>Total</span><strong>{formatPrice(totals.total)}</strong></div></div>;
+  return (
+    <main className="postgenz-cart-page">
+      <div className="collection-top-header">
+        <h1 className="collection-main-title">SHOPPING BAG</h1>
+      </div>
+
+      {cart.length === 0 ? (
+        <div className="empty-state cart-empty">
+          <ShoppingBag size={48} className="empty-cart-icon" />
+          <h3>Your bag is empty</h3>
+          <p>Explore our best-selling posters and custom photobooth strips.</p>
+          <Link href="/collections" className="button postgenz-btn">
+            Explore Posters <ArrowRight size={14} />
+          </Link>
+        </div>
+      ) : (
+        <div className="cart-container-inner">
+          <div className="cart-items-column">
+            {cart.map((item) => (
+              <div className="cart-card-item" key={item.key}>
+                <div className="cart-item-preview">
+                  <PosterArt treatment={item.artTreatment} title={item.title} compact />
+                </div>
+                <div className="cart-item-info">
+                  <Link href={`/products/${item.slug}`} className="cart-item-name">
+                    {item.title}
+                  </Link>
+                  <div className="cart-item-meta">Size: {item.size}</div>
+                  <div className="cart-item-price-val">{formatPrice(item.price * item.quantity)}</div>
+                  <div className="stepper-box compact-stepper">
+                    <button
+                      type="button"
+                      className="stepper-btn"
+                      onClick={() => store.updateQuantity(item.key, item.quantity - 1)}
+                    >
+                      <Minus size={12} />
+                    </button>
+                    <span className="stepper-val">{item.quantity}</span>
+                    <button
+                      type="button"
+                      className="stepper-btn"
+                      onClick={() => store.updateQuantity(item.key, item.quantity + 1)}
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="cart-remove-btn"
+                  aria-label="Remove item"
+                  onClick={() => store.removeFromCart(item.key)}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <aside className="cart-summary-card">
+            <h3 className="summary-title">Order Summary</h3>
+            <div className="coupon-form-row">
+              <input
+                value={couponInput}
+                onChange={(e) => setCouponInput(e.target.value)}
+                placeholder="Discount Code"
+                className="coupon-input"
+              />
+              <button type="button" className="btn-apply-coupon" onClick={applyCoupon}>
+                Apply
+              </button>
+            </div>
+            {couponMessage && <div className="coupon-alert-text">{couponMessage}</div>}
+
+            <div className="summary-lines-table">
+              <div className="summary-row">
+                <span>Subtotal</span>
+                <strong>{formatPrice(totals.subtotal)}</strong>
+              </div>
+              <div className="summary-row">
+                <span>Shipping</span>
+                <strong className="text-emerald-600">FREE (Prepaid)</strong>
+              </div>
+              {totals.discount > 0 && (
+                <div className="summary-row discount-row">
+                  <span>Discount</span>
+                  <strong>−{formatPrice(totals.discount)}</strong>
+                </div>
+              )}
+              <div className="summary-row total-highlight">
+                <span>Total</span>
+                <strong>{formatPrice(totals.total)}</strong>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="btn-buy-it-now-blue"
+              onClick={() => navigate('/checkout')}
+            >
+              PROCEED TO CHECKOUT
+            </button>
+
+            <PaymentTrustBadges />
+          </aside>
+        </div>
+      )}
+    </main>
+  );
 }
 
 export function CheckoutPage() {
   const [, navigate] = useLocation();
   const { cart, coupon } = useStore();
   const totals = cartTotals(cart, coupon);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', city: '', state: '', pincode: '', country: 'Portugal' });
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    country: 'India',
+  });
   const [error, setError] = useState('');
-  const [paymentNote, setPaymentNote] = useState('');
-  const update = (key: keyof typeof form) => (event: ChangeEvent<HTMLInputElement>) => setForm({ ...form, [key]: event.target.value });
-  const submit = async (event: FormEvent) => { event.preventDefault(); setError(''); if (!cart.length) { setError('Your bag is empty. Add an edition before checkout.'); return; } if (Object.values(form).some((value) => !value.trim())) { setError('Please complete every customer and shipping field.'); return; } const payment = await paymentService.createIntent({ amount: totals.total, customerEmail: form.email }); setPaymentNote(payment.message); const order = makeOrder({ customer: { name: form.name, email: form.email, phone: form.phone }, address: { address: form.address, city: form.city, state: form.state, pincode: form.pincode, country: form.country }, products: cart, customUploads: cart.flatMap((item) => item.customUpload ? [item.customUpload.name] : []), ...totals, paymentStatus: 'pending', fulfillmentStatus: 'pending' }); store.addOrder(order); navigate(`/checkout/success?order=${order.id}`); };
-  return <main><section className="section checkout-page"><PageIntro kicker="Almost there" title="Make it official." text="Your order will be saved locally as a demo order. Payment stays pending until a provider is connected." />{error && <div className="form-error" role="alert">{error}</div>}<form className="checkout-layout" onSubmit={submit}><div className="checkout-fields"><fieldset><legend>Customer information</legend><div className="field-grid"><Field label="Full name" value={form.name} onChange={update('name')} /><Field label="Email" type="email" value={form.email} onChange={update('email')} /><Field label="Phone" value={form.phone} onChange={update('phone')} /></div></fieldset><fieldset><legend>Shipping address</legend><div className="field-grid"><Field label="Address" value={form.address} onChange={update('address')} full /><Field label="City" value={form.city} onChange={update('city')} /><Field label="State / region" value={form.state} onChange={update('state')} /><Field label="Pincode" value={form.pincode} onChange={update('pincode')} /><Field label="Country" value={form.country} onChange={update('country')} /></div></fieldset><fieldset><legend>Payment</legend><div className="payment-placeholder"><CreditCard size={21} /><div><strong>Payment provider not connected</strong><p>Razorpay can be connected behind the paymentService boundary. Submitting creates a pending demo order only.</p></div></div></fieldset><button className="button" type="submit">Place demo order <ArrowRight size={14} /></button>{paymentNote && <p className="form-note">{paymentNote}</p>}</div><aside className="summary-card checkout-summary"><h2>Order summary</h2>{cart.map((item) => <div className="mini-line" key={item.key}><span>{item.title} × {item.quantity}<small>{item.size}</small></span><strong>{formatPrice(item.price * item.quantity)}</strong></div>)}<Summary totals={totals} /></aside></form></section></main>;
-}
 
-function Field({ label, value, onChange, type = 'text', full = false }: { label: string; value: string; onChange: (event: ChangeEvent<HTMLInputElement>) => void; type?: string; full?: boolean }) {
-  return <label className={full ? 'field full' : 'field'}><span>{label}</span><input required type={type} value={value} onChange={onChange} /></label>;
+  const update = (key: keyof typeof form) => (e: ChangeEvent<HTMLInputElement>) =>
+    setForm({ ...form, [key]: e.target.value });
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!cart.length) {
+      setError('Your bag is empty.');
+      return;
+    }
+    if (!form.name || !form.email || !form.phone || !form.address || !form.pincode) {
+      setError('Please fill out all required shipping fields.');
+      return;
+    }
+
+    const order = makeOrder({
+      customer: { name: form.name, email: form.email, phone: form.phone },
+      address: {
+        address: form.address,
+        city: form.city,
+        state: form.state,
+        pincode: form.pincode,
+        country: form.country,
+      },
+      products: cart,
+      customUploads: [],
+      ...totals,
+      paymentStatus: 'paid',
+      fulfillmentStatus: 'processing',
+    });
+
+    store.addOrder(order);
+    navigate(`/checkout/success?order=${order.id}`);
+  };
+
+  return (
+    <main className="postgenz-checkout-page">
+      <div className="collection-top-header">
+        <h1 className="collection-main-title">SECURE CHECKOUT</h1>
+      </div>
+
+      <div className="checkout-content-wrap">
+        <form onSubmit={submit} className="checkout-form-column">
+          {error && <div className="form-error-banner">{error}</div>}
+
+          <div className="form-card-section">
+            <h3 className="section-subheading">Contact Information</h3>
+            <div className="input-field-group">
+              <label>Full Name *</label>
+              <input required value={form.name} onChange={update('name')} placeholder="e.g. Rahul Sharma" />
+            </div>
+            <div className="input-field-group">
+              <label>Email Address *</label>
+              <input required type="email" value={form.email} onChange={update('email')} placeholder="rahul@example.com" />
+            </div>
+            <div className="input-field-group">
+              <label>Phone Number *</label>
+              <input required type="tel" value={form.phone} onChange={update('phone')} placeholder="+91 98765 43210" />
+            </div>
+          </div>
+
+          <div className="form-card-section">
+            <h3 className="section-subheading">Shipping Address</h3>
+            <div className="input-field-group">
+              <label>Address *</label>
+              <input required value={form.address} onChange={update('address')} placeholder="House/Flat No., Street, Area" />
+            </div>
+            <div className="two-inputs-row">
+              <div className="input-field-group">
+                <label>City *</label>
+                <input required value={form.city} onChange={update('city')} placeholder="Mumbai" />
+              </div>
+              <div className="input-field-group">
+                <label>State *</label>
+                <input required value={form.state} onChange={update('state')} placeholder="Maharashtra" />
+              </div>
+            </div>
+            <div className="two-inputs-row">
+              <div className="input-field-group">
+                <label>PIN Code *</label>
+                <input required value={form.pincode} onChange={update('pincode')} placeholder="400001" />
+              </div>
+              <div className="input-field-group">
+                <label>Country</label>
+                <input disabled value="India" />
+              </div>
+            </div>
+          </div>
+
+          <div className="form-card-section">
+            <h3 className="section-subheading">Payment Method</h3>
+            <div className="payment-options-box">
+              <label className="payment-radio-option">
+                <input type="radio" name="payment" defaultChecked />
+                <span>UPI / QR / Google Pay / PhonePe / Paytm</span>
+              </label>
+              <label className="payment-radio-option">
+                <input type="radio" name="payment" />
+                <span>Credit / Debit Card (Visa, RuPay, MasterCard)</span>
+              </label>
+              <label className="payment-radio-option">
+                <input type="radio" name="payment" />
+                <span>Cash on Delivery (COD)</span>
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" className="btn-buy-it-now-blue">
+            PLACE ORDER • {formatPrice(totals.total)}
+          </button>
+        </form>
+
+        <aside className="checkout-summary-column">
+          <div className="cart-summary-card">
+            <h3>Order Summary ({cart.length} items)</h3>
+            <div className="checkout-items-list">
+              {cart.map((item) => (
+                <div key={item.key} className="checkout-mini-item">
+                  <span>{item.title} ({item.size}) × {item.quantity}</span>
+                  <strong>{formatPrice(item.price * item.quantity)}</strong>
+                </div>
+              ))}
+            </div>
+            <div className="summary-lines-table">
+              <div className="summary-row">
+                <span>Subtotal</span>
+                <strong>{formatPrice(totals.subtotal)}</strong>
+              </div>
+              <div className="summary-row">
+                <span>Shipping</span>
+                <strong className="text-emerald-600">FREE</strong>
+              </div>
+              <div className="summary-row total-highlight">
+                <span>Total</span>
+                <strong>{formatPrice(totals.total)}</strong>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  );
 }
 
 export function OrderSuccessPage() {
   const id = new URLSearchParams(window.location.search).get('order');
   const { orders } = useStore();
   const order = orders.find((item) => item.id === id) || orders[0];
-  if (!order) return <main><div className="section empty-state"><h1>No order found.</h1><Link href="/collections" className="button">Browse editions</Link></div></main>;
-  return <main><section className="section confirmation"><div className="confirmation-mark"><Check size={28} /></div><div className="section-kicker">Order received / {order.id}</div><h1>Your wall is in motion.</h1><p>Thanks, {order.customer.name.split(' ')[0]}. This local demo order is pending payment and has been saved to your account surface.</p><div className="confirmation-card"><div><span>Order total</span><strong>{formatPrice(order.total)}</strong></div><div><span>Payment</span><strong>Pending</strong></div><div><span>Delivery to</span><strong>{order.address.city}, {order.address.country}</strong></div></div><div className="hero-actions"><Link href="/account/orders" className="button">View order <ArrowRight size={14} /></Link><Link href="/collections" className="button outline">Keep browsing</Link></div></section></main>;
+
+  return (
+    <main className="postgenz-confirmation-page">
+      <div className="confirmation-card-box">
+        <div className="success-icon-wrap">
+          <Check size={36} />
+        </div>
+        <h1 className="confirmation-title">Order Confirmed!</h1>
+        <p className="confirmation-subtitle">
+          Thank you for your order. We are preparing your prints with premium 350 GSM archival paper.
+        </p>
+        {order && (
+          <div className="order-details-box">
+            <div className="detail-line">
+              <span>Order ID:</span>
+              <strong>#{order.id}</strong>
+            </div>
+            <div className="detail-line">
+              <span>Delivery To:</span>
+              <strong>{order.customer.name}, {order.address.city}</strong>
+            </div>
+            <div className="detail-line">
+              <span>Amount Paid:</span>
+              <strong>{formatPrice(order.total)}</strong>
+            </div>
+            <div className="detail-line">
+              <span>Status:</span>
+              <span className="badge-status-pill">{order.fulfillmentStatus}</span>
+            </div>
+          </div>
+        )}
+        <div className="confirmation-actions">
+          <Link href="/collections" className="button postgenz-btn button-wide">
+            Continue Shopping
+          </Link>
+          <Link href="/account/orders" className="button outline button-wide">
+            Track Orders
+          </Link>
+        </div>
+      </div>
+    </main>
+  );
 }
 
-export function CustomPage() {
-  const [file, setFile] = useState<{ name: string; preview: string } | null>(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [size, setSize] = useState<PosterSize>('A3');
-  const [orientation, setOrientation] = useState<Orientation>('portrait');
-  const [quantity, setQuantity] = useState(1);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const price = (size === 'A4' ? 24 : size === 'A3' ? 32 : size === '50×70' ? 42 : 54) * quantity;
-  const chooseFile = (event: ChangeEvent<HTMLInputElement>) => { const selected = event.target.files?.[0]; if (!selected) return; setError(''); if (!['image/jpeg', 'image/png', 'image/webp'].includes(selected.type)) { setError('Please choose a JPG, JPEG, PNG or WEBP image.'); return; } if (selected.size > 10 * 1024 * 1024) { setError('That file is larger than 10MB.'); return; } setLoading(true); const reader = new FileReader(); reader.onload = () => { setFile({ name: selected.name, preview: String(reader.result) }); setLoading(false); }; reader.onerror = () => { setError('We could not read that file locally. Try another image.'); setLoading(false); }; reader.readAsDataURL(selected); };
-  const add = () => { if (!file) { setError('Upload an image before adding your custom print.'); return; } store.addToCart({ productId: `custom-${file.name}`, slug: 'custom-print', title: `Custom print / ${file.name}`, price: price / quantity, size, quantity, orientation, artTreatment: 'art-aurora', customUpload: file }); };
-  return <main><section className="section custom-page"><PageIntro kicker="Your image, our paper" title="Make the wall personal." text="A local-first proofing flow for the image that deserves more than a camera roll." /><div className="custom-builder"><div className="custom-preview">{loading ? <div className="skeleton-block">Preparing your proof…</div> : file ? <img src={file.preview} alt={`Preview of ${file.name}`} /> : <div className="preview-placeholder"><UploadCloud size={30} /><strong>Your proof appears here</strong><span>JPG, JPEG, PNG or WEBP · max 10MB</span></div>}</div><div className="custom-controls"><div className="upload-control"><input ref={inputRef} type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={chooseFile} aria-label="Upload custom artwork" /><button className="button outline" type="button" onClick={() => inputRef.current?.click()}>{file ? 'Replace image' : 'Upload image'} <UploadCloud size={15} /></button>{file && <button type="button" className="text-button" onClick={() => { setFile(null); if (inputRef.current) inputRef.current.value = ''; }}>Remove</button>}</div>{file && <div className="upload-file"><Check size={14} /> {file.name}</div>} {error && <div className="form-error">{error}</div>}<div className="option-block"><div className="option-label">Size</div><div className="size-options">{(['A4', 'A3', '50×70', '70×100'] as PosterSize[]).map((value) => <button type="button" className={size === value ? 'size-option selected' : 'size-option'} key={value} onClick={() => setSize(value)}>{value}</button>)}</div></div><div className="option-block"><div className="option-label">Orientation</div><div className="size-options">{(['portrait', 'landscape'] as Orientation[]).map((value) => <button type="button" className={orientation === value ? 'size-option selected' : 'size-option'} key={value} onClick={() => setOrientation(value)}>{value}</button>)}</div></div><div className="option-label">Quantity <div className="qty-control qty-large"><button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="Decrease custom quantity"><Minus size={14} /></button><span>{quantity}</span><button type="button" onClick={() => setQuantity(quantity + 1)} aria-label="Increase custom quantity"><Plus size={14} /></button></div></div><div className="custom-price"><span>Your print</span><strong>{formatPrice(price)}</strong></div><button type="button" className="button button-wide" onClick={add}>Add custom print to bag <ArrowRight size={14} /></button></div></div></section></main>;
+export function SearchPage() {
+  const [, navigate] = useLocation();
+  const initial = new URLSearchParams(window.location.search).get('q') || '';
+  const [query, setQuery] = useState(initial);
+  const results = searchProducts(initial);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    }
+  };
+
+  return (
+    <main className="postgenz-search-page">
+      <div className="collection-top-header">
+        <h1 className="collection-main-title">SEARCH POSTERS</h1>
+      </div>
+
+      <div className="search-page-box">
+        <form onSubmit={submit} className="postgenz-search-form">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search anime, spiderman, football, ronaldo..."
+          />
+          <button type="submit" className="button postgenz-btn">
+            Search
+          </button>
+        </form>
+
+        <div className="search-page-results">
+          {initial && (
+            <p className="search-count-text">
+              Found {results.length} poster{results.length === 1 ? '' : 's'} for “{initial}”
+            </p>
+          )}
+          <div className="collection-grid-container two-column-grid">
+            {results.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
 }
 
 export function AccountPage() {
-  const { demoUser, orders } = useStore();
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
-  const [message, setMessage] = useState('');
-  const [name, setName] = useState('');
+  const { demoUser } = useStore();
   const [email, setEmail] = useState('');
-  const submit = async (event: FormEvent) => { event.preventDefault(); try { if (mode === 'forgot') setMessage(await authService.forgotPassword(email)); else if (mode === 'register') await authService.register(name, email, ''); else await authService.login(email, ''); } catch (error) { setMessage(error instanceof Error ? error.message : 'Connect an auth service to continue.'); } };
-  if (demoUser) return <main><section className="section account-page"><PageIntro kicker="Local demo account" title={`Hello, ${demoUser.name.split(' ')[0]}.`} text="This profile is stored on this device until a real auth service is connected." /><div className="account-grid"><div className="profile-card"><div className="avatar">{demoUser.name.slice(0, 2).toUpperCase()}</div><h2>{demoUser.name}</h2><p>{demoUser.email}</p><button type="button" className="button outline" onClick={() => store.setDemoUser(null)}>Log out</button></div><div className="account-links"><Link href="/account/orders" className="account-link"><Package size={19} /><span><strong>Orders</strong><small>{orders.length} local demo orders</small></span><ArrowRight size={15} /></Link><div className="account-note">Account access is intentionally isolated in <code>authService</code>. Connect your provider when ready.</div></div></div></section></main>;
-  return <main><section className="section account-page"><div className="auth-card"><div className="section-kicker">A local demo surface</div><h1>{mode === 'login' ? 'Welcome back.' : mode === 'register' ? 'Make an account.' : 'Reset your password.'}</h1><p>Account access is not connected yet. The interface is ready for an auth provider and will not pretend to log you in.</p>{message && <div className="form-error">{message}</div>}<form onSubmit={submit}>{mode === 'register' && <Field label="Name" value={name} onChange={(event) => setName(event.target.value)} />}<Field label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />{mode !== 'forgot' && <Field label="Password" type="password" value="" onChange={() => undefined} />}<button className="button button-wide" type="submit">{mode === 'forgot' ? 'Request reset' : mode === 'register' ? 'Create account' : 'Continue'} <ArrowRight size={14} /></button></form><div className="auth-switch">{mode !== 'login' && <button type="button" onClick={() => setMode('login')}>Back to login</button>}{mode === 'login' && <><button type="button" onClick={() => setMode('register')}>Create account</button><button type="button" onClick={() => setMode('forgot')}>Forgot password?</button></>}</div></div></section></main>;
+  const [name, setName] = useState('');
+  const [isRegister, setIsRegister] = useState(false);
+
+  const handleAuth = (e: FormEvent) => {
+    e.preventDefault();
+    store.setDemoUser({ name: name || 'Demo User', email: email || 'user@example.com' });
+  };
+
+  return (
+    <main className="postgenz-account-page">
+      <div className="collection-top-header">
+        <h1 className="collection-main-title">{demoUser ? 'MY ACCOUNT' : isRegister ? 'REGISTER' : 'LOG IN'}</h1>
+      </div>
+
+      <div className="account-card-box">
+        {demoUser ? (
+          <div className="profile-logged-in">
+            <div className="user-avatar-circle">
+              {demoUser.name.slice(0, 2).toUpperCase()}
+            </div>
+            <h3>{demoUser.name}</h3>
+            <p className="user-email-text">{demoUser.email}</p>
+            <div className="account-quick-links">
+              <Link href="/account/orders" className="account-link-btn">
+                <Package size={18} />
+                <span>My Orders</span>
+              </Link>
+              <button
+                type="button"
+                className="button outline button-wide mt-4"
+                onClick={() => store.setDemoUser(null)}
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleAuth} className="auth-form-card">
+            {isRegister && (
+              <div className="input-field-group">
+                <label>Your Name</label>
+                <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Full Name" />
+              </div>
+            )}
+            <div className="input-field-group">
+              <label>Email Address</label>
+              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+            </div>
+            <div className="input-field-group">
+              <label>Password</label>
+              <input required type="password" placeholder="••••••••" />
+            </div>
+            <button type="submit" className="button postgenz-btn button-wide">
+              {isRegister ? 'Create Account' : 'Log In'}
+            </button>
+            <div className="auth-toggle-text">
+              <button type="button" onClick={() => setIsRegister(!isRegister)}>
+                {isRegister ? 'Already have an account? Log In' : "Don't have an account? Register"}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </main>
+  );
 }
 
 export function OrdersPage() {
   const { orders } = useStore();
-  return <main><section className="section orders-page"><PageIntro kicker="Your local orders" title="Order history." text="Demo orders created on this device live here with their current local status." />{orders.length ? <div className="orders-list">{orders.map((order) => <Link href={`/account/orders/${order.id}`} className="order-row" key={order.id}><div><strong>{order.id}</strong><span>{new Date(order.createdAt).toLocaleDateString()} · {order.products.length} line items</span></div><div><span className="status-pill">{order.fulfillmentStatus}</span><strong>{formatPrice(order.total)}</strong></div><ArrowRight size={15} /></Link>)}</div> : <div className="empty-state"><Package size={32} /><h3>No local orders yet.</h3><p>When you place a demo order, it will appear here.</p><Link className="button" href="/collections">Shop editions</Link></div>}</section></main>;
+  return (
+    <main className="postgenz-orders-page">
+      <div className="collection-top-header">
+        <h1 className="collection-main-title">MY ORDERS</h1>
+      </div>
+      <div className="orders-list-wrap">
+        {orders.length === 0 ? (
+          <div className="empty-state">
+            <Package size={48} className="empty-cart-icon" />
+            <h3>No orders yet</h3>
+            <p>Your placed orders will show up here.</p>
+            <Link href="/collections" className="button postgenz-btn">
+              Start Shopping
+            </Link>
+          </div>
+        ) : (
+          <div className="orders-cards-column">
+            {orders.map((order) => (
+              <Link href={`/account/orders/${order.id}`} key={order.id} className="order-summary-box">
+                <div className="order-header-line">
+                  <strong>#{order.id}</strong>
+                  <span className="badge-status-pill">{order.fulfillmentStatus}</span>
+                </div>
+                <div className="order-date-line">
+                  {new Date(order.createdAt).toLocaleDateString()} • {order.products.length} Item(s)
+                </div>
+                <div className="order-total-price">
+                  {formatPrice(order.total)}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </main>
+  );
 }
 
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { orders } = useStore();
-  const order = orders.find((item) => item.id === id);
-  if (!order) return <main><section className="section empty-state"><h1>Order not found.</h1><Link href="/account/orders" className="button">Back to orders</Link></section></main>;
-  return <main><section className="section order-detail-page"><Link href="/account/orders" className="back-link">← All orders</Link><PageIntro kicker={order.id} title="A little more detail." text={`Placed ${new Date(order.createdAt).toLocaleString()}. Payment is currently ${order.paymentStatus}.`} /><div className="order-detail-grid"><div className="order-product-lines">{order.products.map((item) => <div className="mini-line" key={item.key}><span>{item.title} × {item.quantity}<small>{item.size}</small></span><strong>{formatPrice(item.price * item.quantity)}</strong></div>)}</div><div className="summary-card"><h2>Delivery</h2><p>{order.customer.name}<br />{order.address.address}<br />{order.address.city}, {order.address.state} {order.address.pincode}<br />{order.address.country}</p><span className="status-pill">{order.fulfillmentStatus}</span><Summary totals={{ subtotal: order.subtotal, shipping: order.shipping, discount: order.discount, total: order.total }} /></div></div></section></main>;
+  const order = orders.find((o) => o.id === id);
+
+  if (!order) {
+    return (
+      <main className="postgenz-orders-page">
+        <div className="empty-state">
+          <h3>Order not found</h3>
+          <Link href="/account/orders" className="button postgenz-btn">
+            Back to Orders
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="postgenz-order-detail-page">
+      <div className="collection-top-header">
+        <Link href="/account/orders" className="back-link">
+          ← Back to Orders
+        </Link>
+        <h1 className="collection-main-title">ORDER #{order.id}</h1>
+      </div>
+      <div className="order-details-card">
+        <div className="order-meta-grid">
+          <div>
+            <span className="meta-label">Status</span>
+            <span className="badge-status-pill">{order.fulfillmentStatus}</span>
+          </div>
+          <div>
+            <span className="meta-label">Date</span>
+            <strong>{new Date(order.createdAt).toLocaleDateString()}</strong>
+          </div>
+          <div>
+            <span className="meta-label">Total Amount</span>
+            <strong>{formatPrice(order.total)}</strong>
+          </div>
+        </div>
+
+        <div className="order-items-table">
+          <h4>Items Ordered</h4>
+          {order.products.map((p) => (
+            <div key={p.key} className="order-item-row">
+              <div>
+                <strong>{p.title}</strong>
+                <span>Size: {p.size} × {p.quantity}</span>
+              </div>
+              <div>{formatPrice(p.price * p.quantity)}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="shipping-address-summary">
+          <h4>Delivery Address</h4>
+          <p>
+            {order.customer.name}<br />
+            {order.address.address}<br />
+            {order.address.city}, {order.address.state} - {order.address.pincode}<br />
+            {order.address.country}<br />
+            Phone: {order.customer.phone}
+          </p>
+        </div>
+      </div>
+    </main>
+  );
 }
 
 export function AdminPage() {
   const { orders } = useStore();
-  const [active, setActive] = useState<'dashboard' | 'products' | 'orders' | 'customers' | 'collections'>('dashboard');
-  const [adminProducts, setAdminProducts] = useState(products);
-  const [editing, setEditing] = useState<Product | null>(null);
-  const [collectionNames, setCollectionNames] = useState(collections.map((collection) => collection.title));
-  const [newCollection, setNewCollection] = useState('');
-  const revenue = orders.reduce((sum, order) => sum + order.total, 0);
-  const saveProduct = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!editing) return; setAdminProducts((current) => current.map((product) => product.id === editing.id ? editing : product)); setEditing(null); };
-  return <main><section className="section admin-page"><div className="admin-head"><PageIntro kicker="Local operations" title="Studio control room." text="A practical admin surface backed by local demo data. Nothing here touches a production database." /><div className="admin-tabs">{(['dashboard', 'products', 'orders', 'customers', 'collections'] as const).map((tab) => <button type="button" className={active === tab ? 'button' : 'button outline'} key={tab} onClick={() => setActive(tab)}>{tab}</button>)}</div></div>{active === 'dashboard' && <><div className="stats-grid"><Stat icon={<BarChart3 size={18} />} label="Revenue" value={formatPrice(revenue)} /><Stat icon={<Package size={18} />} label="Orders" value={String(orders.length)} /><Stat icon={<Users size={18} />} label="Products" value={String(adminProducts.length)} /><Stat icon={<CreditCard size={18} />} label="Pending orders" value={String(orders.filter((order) => order.fulfillmentStatus === 'pending').length)} /></div><div className="admin-panel"><h2>Recent orders</h2>{orders.length ? orders.slice(0, 5).map((order) => <Link href={`/account/orders/${order.id}`} className="order-row" key={order.id}><div><strong>{order.id}</strong><span>{order.customer.name} · {new Date(order.createdAt).toLocaleDateString()}</span></div><strong>{formatPrice(order.total)}</strong><span className="status-pill">{order.fulfillmentStatus}</span></Link>) : <p className="muted-copy">No local orders to review yet.</p>}</div></>}{active === 'products' && <div className="admin-panel"><div className="panel-heading"><h2>Product inventory</h2><span>{adminProducts.length} products</span></div>{adminProducts.slice(0, 12).map((product) => <div className="admin-product-row" key={product.id}><PosterArt treatment={product.artTreatment} title={product.title} compact /><div><strong>{product.title}</strong><span>{product.stock} in stock · {formatPrice(product.price)}</span></div><button type="button" className="icon-button" aria-label={`Edit ${product.title}`} onClick={() => setEditing(product)}><Pencil size={15} /></button><button type="button" className="icon-button" aria-label={`Delete ${product.title}`} onClick={() => setAdminProducts((current) => current.filter((item) => item.id !== product.id))}><Trash2 size={15} /></button></div>)}{editing && <form className="edit-product-form" onSubmit={saveProduct}><h3>Edit product</h3><Field label="Title" value={editing.title} onChange={(event) => setEditing({ ...editing, title: event.target.value })} /><Field label="Price" value={String(editing.price)} onChange={(event) => setEditing({ ...editing, price: Number(event.target.value) || 0 })} /><Field label="Stock" value={String(editing.stock)} onChange={(event) => setEditing({ ...editing, stock: Number(event.target.value) || 0 })} /><button className="button" type="submit">Save changes</button></form>}</div>}{active === 'orders' && <div className="admin-panel"><h2>Order history</h2>{orders.length ? orders.map((order) => <Link className="order-row" href={`/account/orders/${order.id}`} key={order.id}><div><strong>{order.id}</strong><span>{order.customer.email}</span></div><span className="status-pill">{order.paymentStatus} / {order.fulfillmentStatus}</span><strong>{formatPrice(order.total)}</strong></Link>) : <p className="muted-copy">Orders will appear after checkout.</p>}</div>}{active === 'customers' && <div className="admin-panel"><h2>Customers</h2>{orders.length ? [...new Map(orders.map((order) => [order.customer.email, order])).values()].map((order) => <div className="customer-row" key={order.customer.email}><div className="avatar">{order.customer.name.slice(0, 2).toUpperCase()}</div><div><strong>{order.customer.name}</strong><span>{order.customer.email}</span></div><span>{orders.filter((item) => item.customer.email === order.customer.email).length} orders</span></div>) : <p className="muted-copy">No local customers yet.</p>}</div>}{active === 'collections' && <div className="admin-panel"><div className="panel-heading"><h2>Collection concepts</h2><span>{collectionNames.length} local collections</span></div>{collectionNames.map((name, index) => <div className="customer-row" key={`${name}-${index}`}><div className="avatar">{name.slice(0, 1)}</div><div><strong>{name}</strong><span>Editable local collection label</span></div><button type="button" className="icon-button" aria-label={`Edit ${name}`} onClick={() => { const next = window.prompt('Collection name', name); if (next?.trim()) setCollectionNames((current) => current.map((value, itemIndex) => itemIndex === index ? next.trim() : value)); }}><Pencil size={15} /></button><button type="button" className="icon-button" aria-label={`Delete ${name}`} onClick={() => setCollectionNames((current) => current.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={15} /></button></div>)}<form className="collection-add-form" onSubmit={(event) => { event.preventDefault(); if (newCollection.trim()) { setCollectionNames((current) => [...current, newCollection.trim()]); setNewCollection(''); } }}><input value={newCollection} onChange={(event) => setNewCollection(event.target.value)} placeholder="New collection name" aria-label="New collection name" /><button className="button" type="submit">Add collection</button></form></div>}</section></main>;
+  return (
+    <main className="postgenz-admin-page">
+      <div className="collection-top-header">
+        <h1 className="collection-main-title">STORE ADMIN</h1>
+      </div>
+      <div className="admin-stats-grid">
+        <div className="stat-card">
+          <span>Total Orders</span>
+          <strong>{orders.length}</strong>
+        </div>
+        <div className="stat-card">
+          <span>Total Products</span>
+          <strong>{products.length}</strong>
+        </div>
+        <div className="stat-card">
+          <span>Active Collections</span>
+          <strong>{collections.length}</strong>
+        </div>
+      </div>
+    </main>
+  );
 }
-
-function Stat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) { return <div className="stat-card">{icon}<span>{label}</span><strong>{value}</strong></div>; }
