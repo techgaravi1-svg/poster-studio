@@ -31,6 +31,7 @@ export type DemoOrder = {
 
 type StoreState = {
   cart: CartItem[];
+  wishlist: string[];
   recentlyViewed: string[];
   orders: DemoOrder[];
   coupon: string;
@@ -38,7 +39,7 @@ type StoreState = {
 };
 
 const STORAGE_KEY = 'poster-studio-store-v2';
-const emptyState: StoreState = { cart: [], recentlyViewed: [], orders: [], coupon: '', demoUser: null };
+const emptyState: StoreState = { cart: [], wishlist: [], recentlyViewed: [], orders: [], coupon: '', demoUser: null };
 let state: StoreState = load();
 const listeners = new Set<() => void>();
 
@@ -78,6 +79,14 @@ export const store = {
   },
   removeFromCart(key: string) { commit({ ...state, cart: state.cart.filter((item) => item.key !== key) }); },
   clearCart() { commit({ ...state, cart: [] }); },
+  toggleWishlist(productIdOrSlug: string) {
+    const exists = state.wishlist?.includes(productIdOrSlug);
+    const wishlist = exists
+      ? state.wishlist.filter((id) => id !== productIdOrSlug)
+      : [...(state.wishlist || []), productIdOrSlug];
+    commit({ ...state, wishlist });
+    return !exists;
+  },
   setCoupon(coupon: string) { commit({ ...state, coupon }); },
   addRecentlyViewed(productId: string) { commit({ ...state, recentlyViewed: [productId, ...state.recentlyViewed.filter((id) => id !== productId)].slice(0, 8) }); },
   addOrder(order: DemoOrder) { commit({ ...state, orders: [order, ...state.orders], cart: [], coupon: '' }); },

@@ -12,15 +12,16 @@ import {
   ChevronUp,
   ArrowRight,
   ClipboardList,
-  Package,
-  Sparkles,
+  MapPin,
+  Headphones,
+  Trash2,
   Instagram,
   Facebook,
   Linkedin,
   Check,
 } from 'lucide-react';
 import type { Product } from '@/lib/catalog';
-import { formatPrice, storeCategories } from '@/lib/catalog';
+import { formatPrice, products, storeCategories } from '@/lib/catalog';
 import { cartTotals, store, useStore } from '@/lib/store';
 
 export function PosterArt({
@@ -301,14 +302,14 @@ function MenuDrawer({
                 <ClipboardList size={20} className="menu-icon" />
                 <span>Orders</span>
               </Link>
-              <Link href="/collections/wall-packs" className="menu-nav-item with-icon" onClick={onClose}>
-                <Package size={20} className="menu-icon" />
-                <span>Wall Packs</span>
+              <Link href="/account" className="menu-nav-item with-icon" onClick={onClose}>
+                <MapPin size={20} className="menu-icon" />
+                <span>Addresses</span>
               </Link>
-              <Link href="/custom" className="menu-nav-item with-icon" onClick={onClose}>
-                <Sparkles size={20} className="menu-icon" />
-                <span>Custom Art</span>
-              </Link>
+              <a href="mailto:blumun.in@gmail.com" className="menu-nav-item with-icon" onClick={onClose}>
+                <Headphones size={20} className="menu-icon" />
+                <span>Customer Support</span>
+              </a>
             </nav>
           </div>
         </div>
@@ -331,7 +332,7 @@ function MenuDrawer({
 
 export function Header() {
   const [, navigate] = useLocation();
-  const { cart } = useStore();
+  const { cart, wishlist = [] } = useStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -435,18 +436,19 @@ export function Header() {
             <button
               type="button"
               className="header-icon-btn"
-              aria-label="Wishlist"
-              onClick={() => setWishlistOpen(true)}
-            >
-              <Heart size={21} />
-            </button>
-            <button
-              type="button"
-              className="header-icon-btn"
               aria-label="Search"
               onClick={() => setSearchOpen(true)}
             >
               <Search size={21} />
+            </button>
+            <button
+              type="button"
+              className="header-icon-btn header-wishlist-btn"
+              aria-label="Wishlist"
+              onClick={() => setWishlistOpen(true)}
+            >
+              <Heart size={21} />
+              {wishlist.length > 0 && <span className="cart-badge-count">{wishlist.length}</span>}
             </button>
             <button
               type="button"
@@ -509,20 +511,68 @@ export function Header() {
             <div className="drawer-header">
               <div>
                 <span className="section-kicker">POSTGENZ</span>
-                <h2>Your Wishlist</h2>
+                <h2>Your Wishlist {wishlist.length > 0 ? `(${wishlist.length})` : ''}</h2>
               </div>
               <button className="icon-button" onClick={() => setWishlistOpen(false)}>
                 <X size={20} />
               </button>
             </div>
-            <div className="empty-state compact-empty">
-              <Heart size={44} className="empty-cart-icon text-rose-500" />
-              <h3>Saved for Later</h3>
-              <p>Posters you love will appear here.</p>
-              <Link href="/collections" className="button postgenz-btn" onClick={() => setWishlistOpen(false)}>
-                Explore Wall Art
-              </Link>
-            </div>
+            {wishlist.length === 0 ? (
+              <div className="empty-state compact-empty">
+                <Heart size={44} className="empty-cart-icon text-rose-500" />
+                <h3>Saved for Later</h3>
+                <p>Posters you love will appear here.</p>
+                <Link href="/collections" className="button postgenz-btn" onClick={() => setWishlistOpen(false)}>
+                  Explore Wall Art
+                </Link>
+              </div>
+            ) : (
+              <div className="drawer-items-list" style={{ padding: '16px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {products
+                  .filter((p) => wishlist.includes(p.slug) || wishlist.includes(p.id))
+                  .map((item) => (
+                    <div key={item.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', background: '#f9fafb', padding: '10px', borderRadius: '10px' }}>
+                      <Link href={`/products/${item.slug}`} onClick={() => setWishlistOpen(false)} style={{ width: '56px', height: '72px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden' }}>
+                        <img src={item.images[0]} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </Link>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Link href={`/products/${item.slug}`} onClick={() => setWishlistOpen(false)} style={{ fontSize: '13px', fontWeight: 700, color: '#111827', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {item.title}
+                        </Link>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#0284c7', marginTop: '2px' }}>{formatPrice(item.price)}</div>
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            style={{ background: '#111827', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '6px' }}
+                            onClick={() => {
+                              store.addToCart({
+                                productId: item.id,
+                                slug: item.slug,
+                                title: item.title,
+                                price: item.price,
+                                size: 'A5',
+                                quantity: 1,
+                                orientation: item.orientation,
+                                artTreatment: item.artTreatment,
+                              });
+                            }}
+                          >
+                            Add to Bag
+                          </button>
+                          <button
+                            type="button"
+                            style={{ color: '#ef4444', padding: '4px' }}
+                            onClick={() => store.toggleWishlist(item.slug)}
+                            aria-label="Remove from wishlist"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </aside>
         </div>
       )}

@@ -112,8 +112,61 @@ export function HomePage() {
   const [toast, setToast] = useState('');
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
-  const bestSellers = products.filter((p) => p.bestseller).slice(0, 4);
-  const trending = products.filter((p) => p.newArrival || p.collection === 'football').slice(0, 4);
+  const bestSellers = products.filter((p) => p.bestseller).slice(0, 6);
+  const trending = products.filter((p) => p.newArrival || p.collection === 'football').slice(0, 6);
+  const newArrivals = products.filter((p) => p.newArrival || p.collection === 'marvel-dc' || p.tags.includes('sports')).slice(0, 6);
+
+  const customCategories = [
+    {
+      id: 'photo-strip',
+      title: 'Custom Photobooth Strip',
+      subtitle: 'Turn your camera roll into aesthetic 3-strip & 4-strip prints',
+      image: '/assets/custom-photobooth.jpg',
+      link: '/custom?type=strip',
+    },
+    {
+      id: 'mini-pocket',
+      title: 'Mini Pocket Photos (Mini Prints)',
+      subtitle: 'Cute pocket-sized instant polaroid style keepsake memories',
+      image: '/assets/custom-mini-pocket.jpg',
+      link: '/custom?type=pocket',
+    },
+    {
+      id: 'custom-posters',
+      title: 'Custom Wall Posters',
+      subtitle: 'Ultra-HD 350 GSM custom archival gallery prints of your own art',
+      image: '/assets/custom-posters.jpg',
+      link: '/custom?type=poster',
+    },
+  ];
+  const [customSlideIndex, setCustomSlideIndex] = useState(0);
+  const customTrackRef = useRef<HTMLDivElement>(null);
+
+  const handleCustomSlide = (dir: 'prev' | 'next') => {
+    const nextIdx =
+      dir === 'next'
+        ? (customSlideIndex + 1) % customCategories.length
+        : customSlideIndex === 0
+        ? customCategories.length - 1
+        : customSlideIndex - 1;
+    setCustomSlideIndex(nextIdx);
+    if (customTrackRef.current) {
+      const card = customTrackRef.current.children[nextIdx] as HTMLElement;
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    }
+  };
+
+  const handleCustomScroll = () => {
+    if (!customTrackRef.current) return;
+    const scrollLeft = customTrackRef.current.scrollLeft;
+    const cardWidth = (customTrackRef.current.firstElementChild as HTMLElement)?.offsetWidth || 300;
+    const newIdx = Math.round(scrollLeft / (cardWidth + 16));
+    if (newIdx >= 0 && newIdx < customCategories.length && newIdx !== customSlideIndex) {
+      setCustomSlideIndex(newIdx);
+    }
+  };
 
   const notify = (title: string) => {
     setToast(`${title} added to your bag`);
@@ -121,6 +174,22 @@ export function HomePage() {
   };
 
   const [bannerSlide, setBannerSlide] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (diff > 40) {
+      setBannerSlide((prev) => (prev + 1) % heroSlides.length);
+    } else if (diff < -40) {
+      setBannerSlide((prev) => (prev === 0 ? heroSlides.length - 1 : prev - 1));
+    }
+    setTouchStartX(null);
+  };
 
   const heroSlides = [
     {
@@ -130,6 +199,7 @@ export function HomePage() {
       discount: 'UP TO 60% OFF',
       buttonText: 'SHOP NOW →',
       link: '/collections',
+      bg: '/assets/hd-hero-bg.jpg',
     },
     {
       kicker: 'EXCLUSIVE DROP',
@@ -138,6 +208,7 @@ export function HomePage() {
       discount: 'UP TO 60% OFF',
       buttonText: 'EXPLORE NOW →',
       link: '/collections/devotional',
+      bg: '/assets/hd-hero-bg.jpg',
     },
     {
       kicker: 'PREMIUM CUSTOM',
@@ -146,24 +217,29 @@ export function HomePage() {
       discount: 'FLAT 60% OFF',
       buttonText: 'DESIGN NOW →',
       link: '/custom',
+      bg: '/assets/hd-hero-bg.jpg',
     },
   ];
 
   useEffect(() => {
     const timer = setInterval(() => {
       setBannerSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 4500);
+    }, 3800);
     return () => clearInterval(timer);
   }, [heroSlides.length]);
 
   return (
     <main className="postgenz-home-page">
-      {/* 1. HD HERO BANNER SLIDER OF 60% */}
+      {/* 1. HD HERO BANNER SLIDER OF 60% (PAGE 1) */}
       <section className="home-hero-banner-section">
         <div className="hd-banner-slider-container">
-          <div className="hd-banner-slide">
+          <div
+            className="hd-banner-slide"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             <img
-              src="/assets/hd-hero-bg.jpg"
+              src={heroSlides[bannerSlide].bg}
               alt="Luxury Decor Background"
               className="hd-banner-bg-img"
             />
@@ -216,7 +292,7 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 2. CATEGORY ICONS ROW (ALL 9 OFFICIAL CATEGORIES) */}
+      {/* 2. CATEGORY ICONS ROW (ALL 9 OFFICIAL CATEGORIES - MODERN DESIGN) */}
       <section className="home-categories-row-section">
         <div className="categories-scroll-track">
           {storeCategories.map((cat) => {
@@ -225,8 +301,10 @@ export function HomePage() {
                 <Link key={cat.id} href="/collections/posters" className="cat-icon-card cat-clickable">
                   <div className="cat-img-wrap available-ring">
                     <img src={cat.image} alt={cat.name} className="cat-img" />
+                    <span className="cat-pulse-dot" />
                   </div>
                   <span className="cat-name">{cat.name}</span>
+                  <span className="cat-status-chip active-chip">Available</span>
                 </Link>
               );
             }
@@ -237,51 +315,33 @@ export function HomePage() {
                 className="cat-icon-card cat-soon-card"
                 title={`${cat.name} (Coming Soon - Click to view teaser)`}
               >
-                <div className="cat-img-wrap disabled-ring blur-circle-wrap">
-                  <img src={cat.image} alt={cat.name} className="cat-img blurred-cat-img" />
-                  <div className="circle-blur-glass-overlay">
-                    <span className="blur-circle-badge">COMING SOON</span>
-                  </div>
+                <div className="cat-img-wrap disabled-ring">
+                  <img src={cat.image} alt={cat.name} className="cat-img modern-soon-img" />
+                  <span className="cat-soon-pill-badge">SOON</span>
                 </div>
                 <span className="cat-name">{cat.name}</span>
-                <span className="coming-soon-label">Coming Soon</span>
+                <span className="cat-status-chip soon-chip">Coming Soon</span>
               </Link>
             );
           })}
         </div>
       </section>
 
-      {/* 3. SECTION 1: BEST SELLING POSTERS */}
+      {/* 3. SECTION 1: BEST SELLING POSTERS (SINGLE LINE ON MOBILE - PAGE 3) */}
       <section className="home-poster-section">
         <div className="poster-section-header">
           <h2 className="stencil-heading">BEST SELLING POSTERS</h2>
           <span className="stencil-subheading">HOT RIGHT NOW</span>
         </div>
 
-        <div className="poster-carousel-wrap">
-          <button
-            type="button"
-            className="carousel-arrow-btn arrow-prev"
-            aria-label="Previous best sellers"
-            onClick={() => setActiveSlideIndex((prev) => Math.max(0, prev - 1))}
-          >
-            <ChevronLeft size={20} />
-          </button>
-
-          <div className="poster-products-grid four-col-laptop-grid">
+        <div className="poster-single-line-carousel-wrap">
+          <div className="poster-single-line-track">
             {bestSellers.map((product) => (
-              <ProductCard key={product.id} product={product} onAdded={notify} />
+              <div key={product.id} className="single-line-poster-item">
+                <ProductCard product={product} onAdded={notify} />
+              </div>
             ))}
           </div>
-
-          <button
-            type="button"
-            className="carousel-arrow-btn arrow-next mobile-only-arrow"
-            aria-label="Next best sellers"
-            onClick={() => setActiveSlideIndex((prev) => prev + 1)}
-          >
-            <ChevronRight size={20} />
-          </button>
         </div>
 
         <div className="explore-more-wrap">
@@ -291,17 +351,19 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 4. SECTION 2: TRENDING POSTERS */}
+      {/* 4. SECTION 2: TRENDING POSTERS (SINGLE LINE ON MOBILE - PAGE 3) */}
       <section className="home-poster-section">
         <div className="poster-section-header">
           <h2 className="stencil-heading">TRENDING POSTERS</h2>
-          <span className="stencil-subheading">NEW ARRIVAL</span>
+          <span className="stencil-subheading">NEW ARRIVALS</span>
         </div>
 
-        <div className="poster-carousel-wrap">
-          <div className="poster-products-grid four-col-laptop-grid">
+        <div className="poster-single-line-carousel-wrap">
+          <div className="poster-single-line-track">
             {trending.map((product) => (
-              <ProductCard key={product.id} product={product} onAdded={notify} />
+              <div key={product.id} className="single-line-poster-item">
+                <ProductCard product={product} onAdded={notify} />
+              </div>
             ))}
           </div>
         </div>
@@ -313,36 +375,82 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 5. SECTION 3: DESIGN YOUR OWN */}
+      {/* 5. SECTION 3: NEW ARRIVALS POSTERS (SINGLE LINE ON MOBILE - PAGE 3) */}
+      <section className="home-poster-section">
+        <div className="poster-section-header">
+          <h2 className="stencil-heading">NEW ARRIVALS POSTERS</h2>
+          <span className="stencil-subheading">LATEST DROPS</span>
+        </div>
+
+        <div className="poster-single-line-carousel-wrap">
+          <div className="poster-single-line-track">
+            {newArrivals.map((product) => (
+              <div key={product.id} className="single-line-poster-item">
+                <ProductCard product={product} onAdded={notify} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="explore-more-wrap">
+          <Link href="/collections/posters" className="btn-explore-more">
+            EXPLORE MORE
+          </Link>
+        </div>
+      </section>
+
+      {/* 6. SECTION 4: DESIGN YOUR OWN (3 CUSTOM CATEGORIES - PAGE 4) */}
       <section className="home-custom-print-section">
         <div className="poster-section-header">
           <h2 className="stencil-heading dark-title">DESIGN YOUR OWN</h2>
           <span className="stencil-subheading dot-subheading">• PREMIUM CUSTOM PRINTS •</span>
         </div>
 
-        <div className="custom-photobooth-preview-card">
-          <Link href="/custom" className="photobooth-img-link">
-            <img
-              src="/assets/custom-photobooth.jpg"
-              alt="Custom Photobooth Strip"
-              className="photobooth-preview-img"
-            />
-          </Link>
-          <div className="photobooth-details">
-            <h3 className="photobooth-title">Custom Photobooth Strip</h3>
-            <Link href="/custom" className="btn-design-now">
-              DESIGN NOW
-            </Link>
-          </div>
+        <div
+          className="custom-orders-grid-three"
+          ref={customTrackRef}
+          onScroll={handleCustomScroll}
+        >
+          {customCategories.map((item, idx) => (
+            <div
+              key={item.id}
+              className={`custom-photobooth-preview-card ${customSlideIndex === idx ? 'card-active-mobile' : ''}`}
+            >
+              <Link href={item.link} className="photobooth-img-link">
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  className="photobooth-preview-img"
+                />
+              </Link>
+              <div className="photobooth-details">
+                <h3 className="photobooth-title">{item.title}</h3>
+                <Link href={item.link} className="btn-design-now">
+                  DESIGN NOW
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="custom-pagination-nav">
-          <button type="button" className="pagination-arrow" aria-label="Previous page">
+          <button
+            type="button"
+            className="pagination-arrow"
+            aria-label="Previous custom print"
+            onClick={() => handleCustomSlide('prev')}
+          >
             &lt;
           </button>
-          <span className="pagination-current">1</span>
-          <span className="pagination-total">3</span>
-          <button type="button" className="pagination-arrow" aria-label="Next page">
+          <span className="pagination-current">{customSlideIndex + 1}</span>
+          <span className="pagination-slash">/</span>
+          <span className="pagination-total">{customCategories.length}</span>
+          <button
+            type="button"
+            className="pagination-arrow"
+            aria-label="Next custom print"
+            onClick={() => handleCustomSlide('next')}
+          >
             &gt;
           </button>
         </div>
@@ -488,42 +596,12 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
 
   return (
     <main className="postgenz-collection-page">
-      {/* 1. TOP TITLE */}
-      <div className="collection-top-header">
-        <h1 className="collection-main-title">{currentCategoryLabel}</h1>
-      </div>
-
-      {/* 2. TOTAL CATEGORIES SELECTOR BAR (ALL 9 OFFICIAL CATEGORIES) */}
-      <div className="total-categories-nav">
-        <div className="total-cat-header-row">
-          <span className="total-cat-label">TOTAL CATEGORIES (9)</span>
-          <span className="total-cat-sublabel">Only Posters Available • Others Coming Soon</span>
+      {/* Show category teaser header only for coming soon categories */}
+      {!isPostersActive && (
+        <div className="collection-top-header">
+          <h1 className="collection-main-title">{currentCategoryLabel}</h1>
         </div>
-        <div className="total-categories-scroll">
-          {storeCategories.map((cat) => {
-            const isSelected = activeCategory.slug === cat.slug;
-            return (
-              <Link
-                key={cat.id}
-                href={cat.available ? '/collections/posters' : `/collections/${cat.slug}`}
-                className={`total-category-tab ${isSelected ? 'tab-active' : ''} ${cat.available ? 'is-available' : 'is-soon'}`}
-              >
-                <img
-                  src={cat.image}
-                  alt={cat.name}
-                  className={`tab-cat-thumb ${!cat.available ? 'thumb-blur' : ''}`}
-                />
-                <span className="tab-cat-name">{cat.name}</span>
-                {cat.available ? (
-                  <span className="tab-status-chip chip-active">Active</span>
-                ) : (
-                  <span className="tab-status-chip chip-soon">Soon</span>
-                )}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
       {/* 3. CONDITIONAL CONTENT: POSTERS (ACTIVE) VS OTHER CATEGORIES (COMING SOON) */}
       {isPostersActive ? (
@@ -766,11 +844,27 @@ export function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
   const product = getProduct(slug) || products[0];
   const [, navigate] = useLocation();
+  const { wishlist = [] } = useStore();
   const [selectedSize, setSelectedSize] = useState<PosterSize>('A5');
   const [quantity, setQuantity] = useState(1);
   const [openAccordion, setOpenAccordion] = useState<string | null>('features');
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const [toast, setToast] = useState('');
+
+  const isWishlisted = wishlist.includes(product.slug) || wishlist.includes(product.id);
+
+  const toggleWishlist = () => {
+    const added = store.toggleWishlist(product.slug);
+    setToast(added ? `${product.title} saved to Wishlist!` : 'Removed from Wishlist');
+    window.setTimeout(() => setToast(''), 2400);
+  };
+
+  const similarProducts = useMemo(() => {
+    const list = products.filter((p) => p.id !== product.id);
+    const sameCategory = list.filter((p) => p.category === product.category || p.collection === product.collection);
+    const others = list.filter((p) => p.category !== product.category && p.collection !== product.collection);
+    return [...sameCategory, ...others].slice(0, 4);
+  }, [product.id, product.category, product.collection]);
 
   const toggleAccordion = (name: string) => {
     setOpenAccordion(openAccordion === name ? null : name);
@@ -852,7 +946,7 @@ export function ProductPage() {
           </div>
         </div>
 
-        {/* 4. QUANTITY STEPPER & ADD TO CART */}
+        {/* 4. QUANTITY STEPPER & ADD TO CART & WISHLIST */}
         <div className="quantity-and-add-row">
           <div className="stepper-box">
             <button
@@ -881,6 +975,16 @@ export function ProductPage() {
           >
             <ShoppingBag size={18} strokeWidth={2.2} />
             <span>ADD TO CART</span>
+          </button>
+
+          <button
+            type="button"
+            className={`btn-wishlist-pdp ${isWishlisted ? 'wishlist-active' : ''}`}
+            aria-label={isWishlisted ? 'Remove from wishlist' : 'Save to wishlist'}
+            onClick={toggleWishlist}
+            title={isWishlisted ? 'Saved in Wishlist' : 'Save to Wishlist'}
+          >
+            <Heart size={20} fill={isWishlisted ? '#ef4444' : 'none'} color={isWishlisted ? '#ef4444' : '#111827'} />
           </button>
         </div>
 
@@ -1008,6 +1112,29 @@ export function ProductPage() {
         </div>
       </section>
     </div>
+
+      {/* 10. YOU MAY ALSO LIKE / SIMILAR PRODUCTS (PAGE 7) */}
+      <section className="product-similar-section">
+        <div className="poster-section-header">
+          <h2 className="stencil-heading">YOU MAY ALSO LIKE</h2>
+          <span className="stencil-subheading">SIMILAR POSTERS YOU MIGHT LOVE</span>
+        </div>
+
+        <div className="similar-products-row-wrap">
+          <div className="similar-products-grid">
+            {similarProducts.map((p) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                onAdded={(title) => {
+                  setToast(`${title} added to your bag`);
+                  window.setTimeout(() => setToast(''), 2400);
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* SIZE CHART MODAL */}
       <SizeChartModal isOpen={sizeChartOpen} onClose={() => setSizeChartOpen(false)} />
