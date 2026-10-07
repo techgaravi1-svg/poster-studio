@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'wouter';
 import {
+  ArrowLeft,
   ArrowRight,
   ChevronDown,
   ChevronUp,
@@ -257,24 +258,6 @@ export function HomePage() {
                 {heroSlides[bannerSlide].buttonText}
               </Link>
             </div>
-
-            {/* Slider Controls */}
-            <button
-              type="button"
-              className="hd-slider-arrow hd-arrow-left"
-              aria-label="Previous slide"
-              onClick={() => setBannerSlide((prev) => (prev === 0 ? heroSlides.length - 1 : prev - 1))}
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button
-              type="button"
-              className="hd-slider-arrow hd-arrow-right"
-              aria-label="Next slide"
-              onClick={() => setBannerSlide((prev) => (prev + 1) % heroSlides.length)}
-            >
-              <ChevronRight size={20} />
-            </button>
 
             {/* Dot Indicators */}
             <div className="hd-slider-dots">
@@ -1145,194 +1128,931 @@ export function ProductPage() {
 }
 
 export function CustomPage() {
-  const [photos, setPhotos] = useState<Array<{ id: string; url: string }>>([]);
-  const [frameStyle, setFrameStyle] = useState<'white' | 'black' | 'pink'>('pink');
-  const [stripType, setStripType] = useState<'3-strip' | '4-strip'>('3-strip');
-  const [quantity, setQuantity] = useState(1);
+  const [location] = useLocation();
   const [toast, setToast] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const pricePerUnit = stripType === '3-strip' ? 149 : 199;
-  const totalPrice = pricePerUnit * quantity;
+  // Check initial type from query params or URL
+  const getUrlType = (): 'strip' | 'pocket' | 'poster' | null => {
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      const t = sp.get('type');
+      if (t === 'strip' || t === 'pocket' || t === 'poster') return t;
+    } catch { /* ignore */ }
+    return null;
+  };
 
-  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const [selectedType, setSelectedType] = useState<'strip' | 'pocket' | 'poster' | null>(getUrlType);
+
+  useEffect(() => {
+    const t = getUrlType();
+    if (t) setSelectedType(t);
+  }, [location]);
+
+  const selectFormat = (type: 'strip' | 'pocket' | 'poster') => {
+    setSelectedType(type);
+    window.history.pushState(null, '', `/custom?type=${type}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const goBackToHub = () => {
+    setSelectedType(null);
+    window.history.pushState(null, '', '/custom');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // 1. PHOTO STRIP STATE
+  const [stripPhotos, setStripPhotos] = useState<Array<{ id: string; url: string }>>([]);
+  const [stripFormat, setStripFormat] = useState<'3-strip' | '4-strip'>('3-strip');
+  const [stripFrameStyle, setStripFrameStyle] = useState<'pink' | 'white' | 'black' | 'lilac' | 'mint'>('pink');
+  const [stripQuantity, setStripQuantity] = useState(1);
+  const stripInputRef = useRef<HTMLInputElement>(null);
+  const stripSingleInputRef = useRef<HTMLInputElement>(null);
+  const [activeStripSlot, setActiveStripSlot] = useState<number | null>(null);
+
+  const stripPricePerUnit = stripFormat === '3-strip' ? 149 : 199;
+  const stripTotalPrice = stripPricePerUnit * stripQuantity;
+
+  // 2. MINI POCKET PHOTOS STATE (5 OR 7 UPLOAD IMAGES)
+  const [pocketPack, setPocketPack] = useState<'5-pack' | '7-pack'>('5-pack');
+  const maxPocketPhotos = pocketPack === '5-pack' ? 5 : 7;
+  const [pocketPhotos, setPocketPhotos] = useState<Array<{ id: string; url: string }>>([]);
+  const [pocketFrameStyle, setPocketFrameStyle] = useState<'white' | 'cream' | 'black' | 'pink'>('white');
+  const [pocketQuantity, setPocketQuantity] = useState(1);
+  const pocketInputRef = useRef<HTMLInputElement>(null);
+  const pocketSingleInputRef = useRef<HTMLInputElement>(null);
+  const [activePocketSlot, setActivePocketSlot] = useState<number | null>(null);
+
+  const pocketPricePerPack = pocketPack === '5-pack' ? 129 : 169;
+  const pocketTotalPrice = pocketPricePerPack * pocketQuantity;
+
+  // 3. CUSTOM WALL POSTER / WALLPAPER STATE (CUSTOM SIZES ACCORDING TO WALLPAPER)
+  const [posterPhoto, setPosterPhoto] = useState<string | null>(null);
+  const [posterSize, setPosterSize] = useState<'A5' | 'A4' | 'A3' | 'A2' | 'wallpaper-mural'>('A4');
+  const [posterOrientation, setPosterOrientation] = useState<'portrait' | 'landscape' | 'square'>('portrait');
+  const [posterFinish, setPosterFinish] = useState<'matte' | 'gloss' | 'canvas'>('matte');
+  const [posterFrame, setPosterFrame] = useState<'unframed' | 'black-frame' | 'oak-frame'>('unframed');
+  const [posterQuantity, setPosterQuantity] = useState(1);
+  const posterInputRef = useRef<HTMLInputElement>(null);
+
+  const wallpaperSizeOptions = [
+    { id: 'A5', label: 'A5 Small Desk Print', dimensions: '14.8 × 21 cm', basePrice: 79, desc: 'Compact personal frame' },
+    { id: 'A4', label: 'A4 Standard Wall Art', dimensions: '21 × 29.7 cm', basePrice: 149, desc: 'Most popular room wall size' },
+    { id: 'A3', label: 'A3 Gallery Wall Size', dimensions: '29.7 × 42 cm', basePrice: 249, desc: 'Immersive medium wall poster' },
+    { id: 'A2', label: 'A2 Statement Poster', dimensions: '42 × 59.4 cm', basePrice: 449, desc: 'Large statement wall piece' },
+    { id: 'wallpaper-mural', label: 'Custom Wallpaper Mural', dimensions: '60 × 90 cm', basePrice: 799, desc: 'Full premium feature wallpaper' },
+  ] as const;
+
+  const currentSizeConfig = wallpaperSizeOptions.find((s) => s.id === posterSize) || wallpaperSizeOptions[1];
+  const finishExtra = posterFinish === 'gloss' ? 30 : posterFinish === 'canvas' ? 60 : 0;
+  const frameExtra = posterFrame === 'black-frame' ? 199 : posterFrame === 'oak-frame' ? 249 : 0;
+  const posterUnitCost = currentSizeConfig.basePrice + finishExtra + frameExtra;
+  const posterTotalPrice = posterUnitCost * posterQuantity;
+
+  // UPLOAD HANDLERS
+  const handleStripBulkUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || !files.length) return;
-    const maxPhotos = stripType === '3-strip' ? 3 : 4;
-    Array.from(files).slice(0, maxPhotos - photos.length).forEach((file) => {
+    const maxPhotos = stripFormat === '3-strip' ? 3 : 4;
+    Array.from(files).slice(0, maxPhotos - stripPhotos.length).forEach((file) => {
       const reader = new FileReader();
       reader.onload = () => {
-        setPhotos((prev) => [...prev, { id: Math.random().toString(36), url: String(reader.result) }].slice(0, maxPhotos));
+        setStripPhotos((prev) => [...prev, { id: Math.random().toString(36), url: String(reader.result) }].slice(0, maxPhotos));
       };
       reader.readAsDataURL(file);
     });
   };
 
-  const handleAddCustomToCart = () => {
+  const handleStripSingleUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || activeStripSlot === null) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setStripPhotos((prev) => {
+        const next = [...prev];
+        next[activeStripSlot] = { id: Math.random().toString(36), url: String(reader.result) };
+        return next;
+      });
+      setActiveStripSlot(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePocketBulkUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !files.length) return;
+    Array.from(files).slice(0, maxPocketPhotos - pocketPhotos.length).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPocketPhotos((prev) => [...prev, { id: Math.random().toString(36), url: String(reader.result) }].slice(0, maxPocketPhotos));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handlePocketSingleUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || activePocketSlot === null) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPocketPhotos((prev) => {
+        const next = [...prev];
+        next[activePocketSlot] = { id: Math.random().toString(36), url: String(reader.result) };
+        return next;
+      });
+      setActivePocketSlot(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePosterUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPosterPhoto(String(reader.result));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // ADD TO CART HANDLERS
+  const handleAddStripToCart = () => {
     store.addToCart({
       productId: 'custom-photobooth',
       slug: 'custom-photobooth-strip',
-      title: `Custom Photobooth Strip (${stripType.toUpperCase()})`,
-      price: pricePerUnit,
+      title: `Custom Photobooth Strip (${stripFormat.toUpperCase()}) - Qty: ${stripQuantity}`,
+      price: stripPricePerUnit,
       size: 'A5',
-      quantity,
+      quantity: stripQuantity,
       orientation: 'portrait',
       artTreatment: 'art-aurora',
       customUpload: {
-        name: `Photobooth_${photos.length}_photos`,
-        preview: photos[0]?.url || '/assets/custom-photobooth.jpg',
+        name: `Photobooth_${stripPhotos.length}_photos`,
+        preview: stripPhotos[0]?.url || '/assets/custom-photobooth.jpg',
       },
     });
-    setToast('Custom Photobooth Strip added to your bag!');
-    window.setTimeout(() => setToast(''), 2400);
+    setToast(`${stripQuantity} × Custom Photobooth Strip added to your bag!`);
+    window.setTimeout(() => setToast(''), 2500);
   };
 
+  const handleAddPocketToCart = () => {
+    store.addToCart({
+      productId: 'custom-mini-pocket',
+      slug: 'custom-mini-pocket-photos',
+      title: `Mini Pocket Photos (${pocketPack === '5-pack' ? 'Pack of 5' : 'Pack of 7'}) - Qty: ${pocketQuantity}`,
+      price: pocketPricePerPack,
+      size: 'A5',
+      quantity: pocketQuantity,
+      orientation: 'portrait',
+      artTreatment: 'art-pulse',
+      customUpload: {
+        name: `MiniPocket_${pocketPhotos.length}_photos`,
+        preview: pocketPhotos[0]?.url || '/assets/custom-mini-pocket.jpg',
+      },
+    });
+    setToast(`${pocketQuantity} × Mini Pocket Photos added to your bag!`);
+    window.setTimeout(() => setToast(''), 2500);
+  };
+
+  const handleAddPosterToCart = () => {
+    store.addToCart({
+      productId: 'custom-wallpaper-poster',
+      slug: 'custom-wall-poster',
+      title: `Custom Wall Poster (${currentSizeConfig.label} • ${posterFinish.toUpperCase()}) - Qty: ${posterQuantity}`,
+      price: posterUnitCost,
+      size: (posterSize === 'wallpaper-mural' ? 'A3' : posterSize) as any,
+      quantity: posterQuantity,
+      orientation: posterOrientation,
+      artTreatment: 'art-signal',
+      customUpload: {
+        name: `Wallpaper_${posterSize}_${posterFinish}`,
+        preview: posterPhoto || '/assets/custom-posters.jpg',
+      },
+    });
+    setToast(`${posterQuantity} × Custom Wall Poster added to your bag!`);
+    window.setTimeout(() => setToast(''), 2500);
+  };
+
+  // IF NO PRODUCT IS SELECTED: RENDER THE 3 BOXES
+  if (!selectedType) {
+    return (
+      <main className="postgenz-custom-studio">
+        <div className="collection-top-header">
+          <h1 className="collection-main-title">DESIGN YOUR OWN</h1>
+          <p className="collection-sub-text">• SELECT YOUR CUSTOM PRODUCT FORMAT •</p>
+        </div>
+
+        <div className="custom-boxes-selection-grid">
+          {/* Box 1: Custom Photobooth Strip */}
+          <div className="custom-selection-box-card">
+            <div className="box-media-wrap">
+              <img src="/assets/custom-photobooth.jpg" alt="Custom Photobooth Strip" className="box-thumb-img" />
+              <span className="box-tag-pill">HOT FAVORITE</span>
+            </div>
+            <div className="box-body-wrap">
+              <h2 className="box-title">Custom Photobooth Strip</h2>
+              <p className="box-desc">
+                Turn your best moments into vintage photobooth strips. Choose 3 or 4 photos with aesthetic borders.
+              </p>
+              <div className="box-footer-row">
+                <span className="box-price-hint">Starting from Rs. 149</span>
+                <button
+                  type="button"
+                  className="btn-design-now-highlight"
+                  onClick={() => selectFormat('strip')}
+                >
+                  DESIGN NOW →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Box 2: Mini Pocket Photos (Mini Prints) */}
+          <div className="custom-selection-box-card">
+            <div className="box-media-wrap">
+              <img src="/assets/custom-mini-pocket.jpg" alt="Mini Pocket Photos" className="box-thumb-img" />
+              <span className="box-tag-pill">POCKET MEMORIES</span>
+            </div>
+            <div className="box-body-wrap">
+              <h2 className="box-title">Mini Pocket Photos (Mini Prints)</h2>
+              <p className="box-desc">
+                Aesthetic wallet & pocket-sized instant photo prints. Select 5 or 7 photos to print as a cute pack.
+              </p>
+              <div className="box-footer-row">
+                <span className="box-price-hint">Starting from Rs. 129</span>
+                <button
+                  type="button"
+                  className="btn-design-now-highlight"
+                  onClick={() => selectFormat('pocket')}
+                >
+                  DESIGN NOW →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Box 3: Custom Wall Posters / Wallpaper */}
+          <div className="custom-selection-box-card">
+            <div className="box-media-wrap">
+              <img src="/assets/custom-posters.jpg" alt="Custom Wall Posters" className="box-thumb-img" />
+              <span className="box-tag-pill">350 GSM ARCHIVAL</span>
+            </div>
+            <div className="box-body-wrap">
+              <h2 className="box-title">Custom Wall Posters</h2>
+              <p className="box-desc">
+                Your own photos, personal digital art, or wallpaper mural printed in custom sizes according to your room walls.
+              </p>
+              <div className="box-footer-row">
+                <span className="box-price-hint">Starting from Rs. 79</span>
+                <button
+                  type="button"
+                  className="btn-design-now-highlight"
+                  onClick={() => selectFormat('poster')}
+                >
+                  DESIGN NOW →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Toast message={toast} />
+      </main>
+    );
+  }
+
+  // IF PRODUCT IS SELECTED: RENDER DEDICATED CUSTOMIZER
   return (
     <main className="postgenz-custom-studio">
-      <div className="collection-top-header">
-        <h1 className="collection-main-title">DESIGN YOUR OWN</h1>
-        <p className="collection-sub-text">• PREMIUM CUSTOM PHOTOBOOTH STRIPS •</p>
+      {/* TOP HEADER WITH NAVIGATION AND FORMAT SWITCHER */}
+      <div className="customizer-top-bar">
+        <button type="button" className="btn-back-hub" onClick={goBackToHub}>
+          <ArrowLeft size={16} />
+          <span>All Custom Products</span>
+        </button>
+
+        <div className="customizer-format-tabs">
+          <button
+            type="button"
+            className={`format-tab-btn ${selectedType === 'strip' ? 'tab-active' : ''}`}
+            onClick={() => selectFormat('strip')}
+          >
+            Photobooth Strip
+          </button>
+          <button
+            type="button"
+            className={`format-tab-btn ${selectedType === 'pocket' ? 'tab-active' : ''}`}
+            onClick={() => selectFormat('pocket')}
+          >
+            Mini Pocket Photos
+          </button>
+          <button
+            type="button"
+            className={`format-tab-btn ${selectedType === 'poster' ? 'tab-active' : ''}`}
+            onClick={() => selectFormat('poster')}
+          >
+            Wall Posters / Wallpaper
+          </button>
+        </div>
       </div>
 
-      <div className="custom-studio-content">
-        {/* PHOTO STRIP MOCKUP DISPLAY */}
-        <div className="photobooth-live-wrapper">
-          <div className={`photobooth-strip-frame frame-${frameStyle}`}>
-            <div className="strip-header-label">Custom Photobooth Strip</div>
-            <div className="strip-slots-column">
-              {Array.from({ length: stripType === '3-strip' ? 3 : 4 }).map((_, idx) => (
-                <div key={idx} className="strip-photo-slot">
-                  {photos[idx] ? (
-                    <img src={photos[idx].url} alt={`Upload ${idx + 1}`} className="uploaded-strip-img" />
-                  ) : (
-                    <button
-                      type="button"
-                      className="upload-placeholder-slot"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <UploadCloud size={24} />
-                      <span>Photo {idx + 1}</span>
-                    </button>
-                  )}
+      {/* ======================================================== */}
+      {/* 1. CUSTOM PHOTOBOOTH STRIP CUSTOMIZER */}
+      {/* ======================================================== */}
+      {selectedType === 'strip' && (
+        <div className="custom-studio-content">
+          <div className="photobooth-live-wrapper">
+            <div className={`photobooth-strip-frame frame-${stripFrameStyle}`}>
+              <div className="strip-header-label">Custom Photobooth Strip</div>
+              <div className="strip-slots-column">
+                {Array.from({ length: stripFormat === '3-strip' ? 3 : 4 }).map((_, idx) => (
+                  <div key={idx} className="strip-photo-slot">
+                    {stripPhotos[idx] ? (
+                      <div className="uploaded-slot-wrap">
+                        <img src={stripPhotos[idx].url} alt={`Upload ${idx + 1}`} className="uploaded-strip-img" />
+                        <button
+                          type="button"
+                          className="btn-slot-replace"
+                          title="Change this photo"
+                          onClick={() => {
+                            setActiveStripSlot(idx);
+                            stripSingleInputRef.current?.click();
+                          }}
+                        >
+                          Change
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="upload-placeholder-slot"
+                        onClick={() => {
+                          setActiveStripSlot(idx);
+                          stripSingleInputRef.current?.click();
+                        }}
+                      >
+                        <UploadCloud size={22} />
+                        <span>Photo {idx + 1}</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="strip-footer-branding">postgenz</div>
+            </div>
+          </div>
+
+          <div className="custom-options-controls">
+            <h2 className="editor-heading">Customize Photobooth Strip</h2>
+            <p className="editor-subheading">Upload 3 or 4 photos and order multiple copies of your strip</p>
+
+            <input
+              ref={stripInputRef}
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleStripBulkUpload}
+              className="hidden"
+            />
+            <input
+              ref={stripSingleInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleStripSingleUpload}
+              className="hidden"
+            />
+
+            <button
+              type="button"
+              className="button postgenz-btn button-wide"
+              onClick={() => stripInputRef.current?.click()}
+            >
+              <UploadCloud size={18} />
+              <span>Upload Photos ({stripPhotos.length}/{stripFormat === '3-strip' ? 3 : 4})</span>
+            </button>
+
+            {stripPhotos.length > 0 && (
+              <button
+                type="button"
+                className="text-button clear-photos-btn"
+                onClick={() => setStripPhotos([])}
+              >
+                Clear All Uploaded Photos
+              </button>
+            )}
+
+            <div className="control-group">
+              <label className="control-label">Strip Format</label>
+              <div className="option-pills-row">
+                <button
+                  type="button"
+                  className={`option-pill ${stripFormat === '3-strip' ? 'active-pill' : ''}`}
+                  onClick={() => setStripFormat('3-strip')}
+                >
+                  Strip of 3 (Rs. 149)
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${stripFormat === '4-strip' ? 'active-pill' : ''}`}
+                  onClick={() => setStripFormat('4-strip')}
+                >
+                  Strip of 4 (Rs. 199)
+                </button>
+              </div>
+            </div>
+
+            <div className="control-group">
+              <label className="control-label">Border Shade</label>
+              <div className="option-pills-row">
+                <button
+                  type="button"
+                  className={`option-pill ${stripFrameStyle === 'pink' ? 'active-pill' : ''}`}
+                  onClick={() => setStripFrameStyle('pink')}
+                >
+                  Pastel Rose
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${stripFrameStyle === 'white' ? 'active-pill' : ''}`}
+                  onClick={() => setStripFrameStyle('white')}
+                >
+                  Classic White
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${stripFrameStyle === 'black' ? 'active-pill' : ''}`}
+                  onClick={() => setStripFrameStyle('black')}
+                >
+                  Noir Black
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${stripFrameStyle === 'lilac' ? 'active-pill' : ''}`}
+                  onClick={() => setStripFrameStyle('lilac')}
+                >
+                  Lilac
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${stripFrameStyle === 'mint' ? 'active-pill' : ''}`}
+                  onClick={() => setStripFrameStyle('mint')}
+                >
+                  Sage Mint
+                </button>
+              </div>
+            </div>
+
+            {/* QUANTITY STEPPER (ORDER MULTIPLE ITEMS WITH SAME IMAGES) */}
+            <div className="control-group">
+              <label className="control-label">Number of Copies (Quantity)</label>
+              <div className="stepper-box">
+                <button
+                  type="button"
+                  className="stepper-btn"
+                  onClick={() => setStripQuantity(Math.max(1, stripQuantity - 1))}
+                  aria-label="Decrease quantity"
+                >
+                  <Minus size={14} />
+                </button>
+                <span className="stepper-val">{stripQuantity}</span>
+                <button
+                  type="button"
+                  className="stepper-btn"
+                  onClick={() => setStripQuantity(stripQuantity + 1)}
+                  aria-label="Increase quantity"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+              <span className="quantity-hint-text">
+                Order multiple strips with your uploaded photos for friends & family
+              </span>
+            </div>
+
+            <div className="custom-price-total">
+              <span>Total Price:</span>
+              <strong>{formatPrice(stripTotalPrice)}</strong>
+            </div>
+
+            <button
+              type="button"
+              className="btn-buy-it-now-blue"
+              onClick={handleAddStripToCart}
+            >
+              ADD TO BAG • {formatPrice(stripTotalPrice)}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* 2. MINI POCKET PHOTOS CUSTOMIZER (5 AND 7 UPLOADS) */}
+      {/* ======================================================== */}
+      {selectedType === 'pocket' && (
+        <div className="custom-studio-content">
+          <div className="pocket-preview-container">
+            <div className="pocket-preview-card-grid">
+              {Array.from({ length: maxPocketPhotos }).map((_, idx) => (
+                <div key={idx} className={`pocket-mini-card frame-${pocketFrameStyle}`}>
+                  <div className="mini-photo-inner">
+                    {pocketPhotos[idx] ? (
+                      <div className="uploaded-slot-wrap">
+                        <img src={pocketPhotos[idx].url} alt={`Mini ${idx + 1}`} className="mini-polaroid-img" />
+                        <button
+                          type="button"
+                          className="btn-slot-replace mini-replace"
+                          onClick={() => {
+                            setActivePocketSlot(idx);
+                            pocketSingleInputRef.current?.click();
+                          }}
+                        >
+                          Change
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="upload-placeholder-slot"
+                        onClick={() => {
+                          setActivePocketSlot(idx);
+                          pocketSingleInputRef.current?.click();
+                        }}
+                      >
+                        <UploadCloud size={16} />
+                        <span style={{ fontSize: '10px' }}>#{idx + 1}</span>
+                      </button>
+                    )}
+                  </div>
+                  <div className="mini-card-bottom-bar">postgenz</div>
                 </div>
               ))}
             </div>
-            <div className="strip-footer-branding">postgenz</div>
+            <div className="preview-caption-text">
+              Preview of your {pocketPack === '5-pack' ? '5' : '7'} mini pocket prints
+            </div>
           </div>
-        </div>
 
-        {/* CUSTOMIZATION CONTROLS */}
-        <div className="custom-options-controls">
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
+          <div className="custom-options-controls">
+            <h2 className="editor-heading">Customize Mini Pocket Photos</h2>
+            <p className="editor-subheading">
+              Aesthetic mini polaroid prints. Select either 5 or 7 photos to upload!
+            </p>
 
-          <button
-            type="button"
-            className="button postgenz-btn button-wide"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <UploadCloud size={18} />
-            <span>Upload Your Photos ({photos.length}/{stripType === '3-strip' ? 3 : 4})</span>
-          </button>
+            <input
+              ref={pocketInputRef}
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handlePocketBulkUpload}
+              className="hidden"
+            />
+            <input
+              ref={pocketSingleInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePocketSingleUpload}
+              className="hidden"
+            />
 
-          {photos.length > 0 && (
             <button
               type="button"
-              className="text-button clear-photos-btn"
-              onClick={() => setPhotos([])}
+              className="button postgenz-btn button-wide"
+              onClick={() => pocketInputRef.current?.click()}
             >
-              Clear Uploaded Photos
+              <UploadCloud size={18} />
+              <span>Upload Photos ({pocketPhotos.length}/{maxPocketPhotos})</span>
             </button>
-          )}
 
-          <div className="control-group">
-            <label className="control-label">Strip Format</label>
-            <div className="option-pills-row">
+            {pocketPhotos.length > 0 && (
               <button
                 type="button"
-                className={`option-pill ${stripType === '3-strip' ? 'active-pill' : ''}`}
-                onClick={() => setStripType('3-strip')}
+                className="text-button clear-photos-btn"
+                onClick={() => setPocketPhotos([])}
               >
-                Strip of 3 (Classic)
+                Clear All Uploaded Photos
               </button>
-              <button
-                type="button"
-                className={`option-pill ${stripType === '4-strip' ? 'active-pill' : ''}`}
-                onClick={() => setStripType('4-strip')}
-              >
-                Strip of 4 (Deluxe)
-              </button>
+            )}
+
+            {/* PACK SIZE (5 OR 7 UPLOAD IMAGES) */}
+            <div className="control-group">
+              <label className="control-label">Pack Size (Number of Upload Images)</label>
+              <div className="option-pills-row">
+                <button
+                  type="button"
+                  className={`option-pill ${pocketPack === '5-pack' ? 'active-pill' : ''}`}
+                  onClick={() => {
+                    setPocketPack('5-pack');
+                    if (pocketPhotos.length > 5) setPocketPhotos(pocketPhotos.slice(0, 5));
+                  }}
+                >
+                  Pack of 5 Prints (Rs. 129)
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${pocketPack === '7-pack' ? 'active-pill' : ''}`}
+                  onClick={() => setPocketPack('7-pack')}
+                >
+                  Pack of 7 Prints (Rs. 169)
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="control-group">
-            <label className="control-label">Border Shade</label>
-            <div className="option-pills-row">
-              <button
-                type="button"
-                className={`option-pill ${frameStyle === 'pink' ? 'active-pill' : ''}`}
-                onClick={() => setFrameStyle('pink')}
-              >
-                Pastel Rose
-              </button>
-              <button
-                type="button"
-                className={`option-pill ${frameStyle === 'white' ? 'active-pill' : ''}`}
-                onClick={() => setFrameStyle('white')}
-              >
-                Classic White
-              </button>
-              <button
-                type="button"
-                className={`option-pill ${frameStyle === 'black' ? 'active-pill' : ''}`}
-                onClick={() => setFrameStyle('black')}
-              >
-                Noir Black
-              </button>
+            <div className="control-group">
+              <label className="control-label">Border Style</label>
+              <div className="option-pills-row">
+                <button
+                  type="button"
+                  className={`option-pill ${pocketFrameStyle === 'white' ? 'active-pill' : ''}`}
+                  onClick={() => setPocketFrameStyle('white')}
+                >
+                  Polaroid White
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${pocketFrameStyle === 'cream' ? 'active-pill' : ''}`}
+                  onClick={() => setPocketFrameStyle('cream')}
+                >
+                  Vintage Cream
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${pocketFrameStyle === 'black' ? 'active-pill' : ''}`}
+                  onClick={() => setPocketFrameStyle('black')}
+                >
+                  Midnight Black
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${pocketFrameStyle === 'pink' ? 'active-pill' : ''}`}
+                  onClick={() => setPocketFrameStyle('pink')}
+                >
+                  Soft Rose
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="control-group">
-            <label className="control-label">Quantity</label>
-            <div className="stepper-box">
-              <button
-                type="button"
-                className="stepper-btn"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              >
-                <Minus size={14} />
-              </button>
-              <span className="stepper-val">{quantity}</span>
-              <button
-                type="button"
-                className="stepper-btn"
-                onClick={() => setQuantity(quantity + 1)}
-              >
-                <Plus size={14} />
-              </button>
+            {/* QUANTITY STEPPER (ORDER MULTIPLE ITEMS WITH SAME IMAGES) */}
+            <div className="control-group">
+              <label className="control-label">Number of Packs (Quantity)</label>
+              <div className="stepper-box">
+                <button
+                  type="button"
+                  className="stepper-btn"
+                  onClick={() => setPocketQuantity(Math.max(1, pocketQuantity - 1))}
+                  aria-label="Decrease quantity"
+                >
+                  <Minus size={14} />
+                </button>
+                <span className="stepper-val">{pocketQuantity}</span>
+                <button
+                  type="button"
+                  className="stepper-btn"
+                  onClick={() => setPocketQuantity(pocketQuantity + 1)}
+                  aria-label="Increase quantity"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+              <span className="quantity-hint-text">
+                Order multiple sets of your mini prints
+              </span>
             </div>
-          </div>
 
-          <div className="custom-price-total">
-            <span>Price:</span>
-            <strong>{formatPrice(totalPrice)}</strong>
-          </div>
+            <div className="custom-price-total">
+              <span>Total Price:</span>
+              <strong>{formatPrice(pocketTotalPrice)}</strong>
+            </div>
 
-          <button
-            type="button"
-            className="btn-buy-it-now-blue"
-            onClick={handleAddCustomToCart}
-          >
-            ADD TO BAG • {formatPrice(totalPrice)}
-          </button>
+            <button
+              type="button"
+              className="btn-buy-it-now-blue"
+              onClick={handleAddPocketToCart}
+            >
+              ADD TO BAG • {formatPrice(pocketTotalPrice)}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* 3. CUSTOM WALL POSTER / WALLPAPER (CUSTOM SIZES) */}
+      {/* ======================================================== */}
+      {selectedType === 'poster' && (
+        <div className="custom-studio-content">
+          <div className="wallpaper-live-preview-wrap">
+            <div className={`wall-mockup-frame frame-type-${posterFrame} orientation-${posterOrientation}`}>
+              {posterPhoto ? (
+                <div className="wall-poster-art-box">
+                  <img src={posterPhoto} alt="Your Custom Wallpaper" className="wall-poster-custom-img" />
+                  <button
+                    type="button"
+                    className="btn-change-wallpaper-img"
+                    onClick={() => posterInputRef.current?.click()}
+                  >
+                    Change Image
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="wallpaper-upload-box"
+                  onClick={() => posterInputRef.current?.click()}
+                >
+                  <UploadCloud size={32} />
+                  <strong>Upload Your Artwork / Wallpaper</strong>
+                  <span>High-resolution JPG or PNG (Recommended: 300 DPI)</span>
+                </button>
+              )}
+            </div>
+
+            <div className="wall-size-indicator-badge">
+              <span>Selected: <strong>{currentSizeConfig.label}</strong> ({currentSizeConfig.dimensions})</span>
+            </div>
+          </div>
+
+          <div className="custom-options-controls">
+            <h2 className="editor-heading">Customize Wall Poster & Wallpaper</h2>
+            <p className="editor-subheading">
+              Select custom wallpaper sizes according to your room, finish, and framing.
+            </p>
+
+            <input
+              ref={posterInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePosterUpload}
+              className="hidden"
+            />
+
+            {!posterPhoto ? (
+              <button
+                type="button"
+                className="button postgenz-btn button-wide"
+                onClick={() => posterInputRef.current?.click()}
+              >
+                <UploadCloud size={18} />
+                <span>Upload Image / Wallpaper</span>
+              </button>
+            ) : (
+              <div className="photo-uploaded-chip">
+                <Check size={16} className="text-emerald-500" />
+                <span>Image loaded successfully</span>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => posterInputRef.current?.click()}
+                >
+                  Replace
+                </button>
+              </div>
+            )}
+
+            {/* CUSTOM SIZE SELECTION ACCORDING TO WALLPAPER */}
+            <div className="control-group">
+              <label className="control-label">Wallpaper / Poster Size</label>
+              <div className="wallpaper-sizes-list">
+                {wallpaperSizeOptions.map((opt) => (
+                  <button
+                    type="button"
+                    key={opt.id}
+                    className={`size-card-btn ${posterSize === opt.id ? 'size-card-active' : ''}`}
+                    onClick={() => setPosterSize(opt.id as any)}
+                  >
+                    <div className="size-card-left">
+                      <strong>{opt.label}</strong>
+                      <span className="size-card-dim">{opt.dimensions} • {opt.desc}</span>
+                    </div>
+                    <div className="size-card-price">Rs. {opt.basePrice}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ORIENTATION */}
+            <div className="control-group">
+              <label className="control-label">Orientation</label>
+              <div className="option-pills-row">
+                <button
+                  type="button"
+                  className={`option-pill ${posterOrientation === 'portrait' ? 'active-pill' : ''}`}
+                  onClick={() => setPosterOrientation('portrait')}
+                >
+                  Portrait (Vertical)
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${posterOrientation === 'landscape' ? 'active-pill' : ''}`}
+                  onClick={() => setPosterOrientation('landscape')}
+                >
+                  Landscape (Horizontal)
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${posterOrientation === 'square' ? 'active-pill' : ''}`}
+                  onClick={() => setPosterOrientation('square')}
+                >
+                  Square (1:1)
+                </button>
+              </div>
+            </div>
+
+            {/* FINISH */}
+            <div className="control-group">
+              <label className="control-label">Paper Finish</label>
+              <div className="option-pills-row">
+                <button
+                  type="button"
+                  className={`option-pill ${posterFinish === 'matte' ? 'active-pill' : ''}`}
+                  onClick={() => setPosterFinish('matte')}
+                >
+                  350 GSM Matte
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${posterFinish === 'gloss' ? 'active-pill' : ''}`}
+                  onClick={() => setPosterFinish('gloss')}
+                >
+                  Gloss Lamination (+Rs. 30)
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${posterFinish === 'canvas' ? 'active-pill' : ''}`}
+                  onClick={() => setPosterFinish('canvas')}
+                >
+                  Canvas Texture (+Rs. 60)
+                </button>
+              </div>
+            </div>
+
+            {/* FRAMING */}
+            <div className="control-group">
+              <label className="control-label">Framing Option</label>
+              <div className="option-pills-row">
+                <button
+                  type="button"
+                  className={`option-pill ${posterFrame === 'unframed' ? 'active-pill' : ''}`}
+                  onClick={() => setPosterFrame('unframed')}
+                >
+                  Unframed (Print Only)
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${posterFrame === 'black-frame' ? 'active-pill' : ''}`}
+                  onClick={() => setPosterFrame('black-frame')}
+                >
+                  Matte Black Frame (+Rs. 199)
+                </button>
+                <button
+                  type="button"
+                  className={`option-pill ${posterFrame === 'oak-frame' ? 'active-pill' : ''}`}
+                  onClick={() => setPosterFrame('oak-frame')}
+                >
+                  Natural Oak Frame (+Rs. 249)
+                </button>
+              </div>
+            </div>
+
+            {/* QUANTITY STEPPER (ORDER MULTIPLE ITEMS WITH SAME IMAGES) */}
+            <div className="control-group">
+              <label className="control-label">Number of Posters (Quantity)</label>
+              <div className="stepper-box">
+                <button
+                  type="button"
+                  className="stepper-btn"
+                  onClick={() => setPosterQuantity(Math.max(1, posterQuantity - 1))}
+                  aria-label="Decrease quantity"
+                >
+                  <Minus size={14} />
+                </button>
+                <span className="stepper-val">{posterQuantity}</span>
+                <button
+                  type="button"
+                  className="stepper-btn"
+                  onClick={() => setPosterQuantity(posterQuantity + 1)}
+                  aria-label="Increase quantity"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+              <span className="quantity-hint-text">
+                Order multiple posters with the same custom artwork
+              </span>
+            </div>
+
+            <div className="custom-price-total">
+              <span>Total Price:</span>
+              <strong>{formatPrice(posterTotalPrice)}</strong>
+            </div>
+
+            <button
+              type="button"
+              className="btn-buy-it-now-blue"
+              onClick={handleAddPosterToCart}
+            >
+              ADD TO BAG • {formatPrice(posterTotalPrice)}
+            </button>
+          </div>
+        </div>
+      )}
 
       <Toast message={toast} />
     </main>

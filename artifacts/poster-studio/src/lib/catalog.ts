@@ -1,5 +1,5 @@
 export type PosterSize = 'A5' | 'A4' | 'A3' | '50×70' | '70×100';
-export type Orientation = 'portrait' | 'landscape';
+export type Orientation = 'portrait' | 'landscape' | 'square';
 
 export type Product = {
   id: string;
