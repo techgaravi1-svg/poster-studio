@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 680" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#88131b" />
+      <stop offset="100%" stop-color="#4c050a" />
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="600" height="680" rx="16" fill="url(#bgGrad)" />
+
+  <!-- Outer border -->
+  <rect x="8" y="8" width="584" height="664" rx="12" fill="none" stroke="#dc2626" stroke-width="2" stroke-opacity="0.4" />
+
+  <!-- Header -->
+  <text x="300" y="58" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="28" font-weight="900" letter-spacing="3" text-anchor="middle">
+    POSTERS SIZE GUIDE
+  </text>
+  <text x="300" y="84" fill="#fca5a5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" letter-spacing="2" text-anchor="middle">
+    FRAME AND PRINT DIMENSIONS
+  </text>
+  <line x1="160" y1="100" x2="440" y2="100" stroke="#ef4444" stroke-width="2" stroke-opacity="0.6" />
+
+  <!-- Visual Comparison Graphic Area -->
+  <g transform="translate(40, 130)">
+    <!-- A3 Frame -->
+    <g transform="translate(0, 0)">
+      <rect x="0" y="0" width="220" height="310" rx="6" fill="#18181b" stroke="#ffffff" stroke-width="3" filter="url(#shadow)" />
+      <!-- Inner mat/artwork placeholder -->
+      <rect x="15" y="15" width="190" height="280" rx="3" fill="#27272a" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,4" />
+      <text x="110" y="130" fill="#ffffff" font-family="sans-serif" font-size="36" font-weight="900" text-anchor="middle">A3</text>
+      <text x="110" y="160" fill="#f87171" font-family="sans-serif" font-size="14" font-weight="800" text-anchor="middle">29.7 × 42 cm</text>
+      <text x="110" y="180" fill="#a1a1aa" font-family="sans-serif" font-size="11" font-weight="600" text-anchor="middle">11.7 × 16.5 inches</text>
+      <rect x="35" y="235" width="150" height="26" rx="13" fill="#ef4444" />
+      <text x="110" y="252" fill="#ffffff" font-family="sans-serif" font-size="10.5" font-weight="800" letter-spacing="1" text-anchor="middle">GALLERY WALL</text>
+    </g>
+
+    <!-- A4 Frame -->
+    <g transform="translate(250, 45)">
+      <rect x="0" y="0" width="155" height="220" rx="6" fill="#18181b" stroke="#ffffff" stroke-width="2.5" filter="url(#shadow)" />
+      <rect x="12" y="12" width="131" height="196" rx="3" fill="#27272a" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,4" />
+      <text x="77" y="95" fill="#ffffff" font-family="sans-serif" font-size="28" font-weight="900" text-anchor="middle">A4</text>
+      <text x="77" y="120" fill="#f87171" font-family="sans-serif" font-size="12" font-weight="800" text-anchor="middle">21 × 29.7 cm</text>
+      <text x="77" y="138" fill="#a1a1aa" font-family="sans-serif" font-size="10" font-weight="600" text-anchor="middle">8.3 × 11.7 in</text>
+      <rect x="18" y="165" width="120" height="24" rx="12" fill="#ef4444" />
+      <text x="78" y="181" fill="#ffffff" font-family="sans-serif" font-size="9.5" font-weight="800" letter-spacing="1" text-anchor="middle">MOST POPULAR</text>
+    </g>
+
+    <!-- A5 Frame -->
+    <g transform="translate(435, 110)">
+      <rect x="0" y="0" width="110" height="155" rx="5" fill="#18181b" stroke="#ffffff" stroke-width="2" filter="url(#shadow)" />
+      <rect x="8" y="8" width="94" height="139" rx="3" fill="#27272a" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="3,3" />
+      <text x="55" y="65" fill="#ffffff" font-family="sans-serif" font-size="22" font-weight="900" text-anchor="middle">A5</text>
+      <text x="55" y="85" fill="#f87171" font-family="sans-serif" font-size="10" font-weight="800" text-anchor="middle">14.8 × 21 cm</text>
+      <text x="55" y="100" fill="#a1a1aa" font-family="sans-serif" font-size="9" font-weight="600" text-anchor="middle">5.8 × 8.3 in</text>
+      <rect x="10" y="115" width="90" height="20" rx="10" fill="#ef4444" />
+      <text x="55" y="129" fill="#ffffff" font-family="sans-serif" font-size="8.5" font-weight="800" letter-spacing="0.5" text-anchor="middle">DESK PRINT</text>
+    </g>
+  </g>
+
+  <!-- Dimension Information Cards -->
+  <g transform="translate(30, 485)">
+    <!-- A3 Card -->
+    <rect x="0" y="0" width="168" height="100" rx="10" fill="#1e1b1b" stroke="#b91c1c" stroke-width="1.5" />
+    <text x="84" y="28" fill="#f87171" font-family="sans-serif" font-size="13" font-weight="900" text-anchor="middle">A3 LARGE</text>
+    <text x="84" y="52" fill="#ffffff" font-family="sans-serif" font-size="14" font-weight="800" text-anchor="middle">29.7 × 42 cm</text>
+    <text x="84" y="70" fill="#9ca3af" font-family="sans-serif" font-size="10.5" text-anchor="middle">11.7 × 16.5 inches</text>
+    <text x="84" y="88" fill="#fca5a5" font-family="sans-serif" font-size="9.5" font-weight="700" text-anchor="middle">Statement Living Room</text>
+
+    <!-- A4 Card -->
+    <rect x="186" y="0" width="168" height="100" rx="10" fill="#1e1b1b" stroke="#ef4444" stroke-width="2" />
+    <text x="270" y="28" fill="#f87171" font-family="sans-serif" font-size="13" font-weight="900" text-anchor="middle">A4 MEDIUM ★</text>
+    <text x="270" y="52" fill="#ffffff" font-family="sans-serif" font-size="14" font-weight="800" text-anchor="middle">21 × 29.7 cm</text>
+    <text x="270" y="70" fill="#9ca3af" font-family="sans-serif" font-size="10.5" text-anchor="middle">8.3 × 11.7 inches</text>
+    <text x="270" y="88" fill="#fca5a5" font-family="sans-serif" font-size="9.5" font-weight="700" text-anchor="middle">Bedroom &amp; Study Walls</text>
+
+    <!-- A5 Card -->
+    <rect x="372" y="0" width="168" height="100" rx="10" fill="#1e1b1b" stroke="#b91c1c" stroke-width="1.5" />
+    <text x="456" y="28" fill="#f87171" font-family="sans-serif" font-size="13" font-weight="900" text-anchor="middle">A5 SMALL</text>
+    <text x="456" y="52" fill="#ffffff" font-family="sans-serif" font-size="14" font-weight="800" text-anchor="middle">14.8 × 21 cm</text>
+    <text x="456" y="70" fill="#9ca3af" font-family="sans-serif" font-size="10.5" text-anchor="middle">5.8 × 8.3 inches</text>
+    <text x="456" y="88" fill="#fca5a5" font-family="sans-serif" font-size="9.5" font-weight="700" text-anchor="middle">Work Desk &amp; Bookshelf</text>
+  </g>
+
+  <!-- Footer branding -->
+  <text x="300" y="625" fill="#f87171" font-family="sans-serif" font-size="11" font-weight="800" letter-spacing="2" text-anchor="middle">
+    POSTGENZ • 350 GSM ARCHIVAL PRINTS
+  </text>
+  <text x="300" y="645" fill="#9ca3af" font-family="sans-serif" font-size="9.5" font-weight="500" text-anchor="middle">
+    All prints fit standard international A-series photo frames
+  </text>
+</svg>

@@ -255,15 +255,15 @@ function MenuDrawer({
                 className={`menu-nav-item ${location === '/custom' ? 'active-pill' : ''}`}
                 onClick={onClose}
               >
-                <span>Custom</span>
+                <span>Custom Orders</span>
                 <span className="badge-new-pill">NEW</span>
               </Link>
               <Link
-                href="/best-sellers"
-                className={`menu-nav-item ${location === '/best-sellers' ? 'active-pill' : ''}`}
+                href="/collections/wall-packs"
+                className={`menu-nav-item ${location === '/collections/wall-packs' ? 'active-pill' : ''}`}
                 onClick={onClose}
               >
-                Best Sellers
+                Wall Packs
               </Link>
               <div className="menu-categories-accordion">
                 <button
@@ -271,24 +271,36 @@ function MenuDrawer({
                   className="menu-nav-item categories-toggle"
                   onClick={() => setCategoriesOpen(!categoriesOpen)}
                 >
-                  <span>Categories</span>
+                  <span>Poster</span>
                   {categoriesOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </button>
                 {categoriesOpen && (
                   <div className="categories-sublist">
-                    <div className="sublist-section-title">ACTIVE CATEGORY</div>
+                    <div className="sublist-section-title">POSTER COLLECTIONS</div>
                     <Link href="/collections/posters" onClick={onClose} className="sublist-cat-item available">
-                      <span>Posters</span>
+                      <span>All Posters</span>
                       <span className="sublist-status-badge">Available</span>
                     </Link>
-                    <div className="sublist-section-title">COMING SOON</div>
+                    <Link href="/collections/devotional" onClick={onClose} className="sublist-cat-item">
+                      <span>Devotional</span>
+                    </Link>
+                    <Link href="/collections/marvel-dc" onClick={onClose} className="sublist-cat-item">
+                      <span>Marvel & DC</span>
+                    </Link>
+                    <Link href="/collections/cricket" onClick={onClose} className="sublist-cat-item">
+                      <span>Cricket</span>
+                    </Link>
+                    <Link href="/collections/football" onClick={onClose} className="sublist-cat-item">
+                      <span>Football</span>
+                    </Link>
+                    <div className="sublist-section-title">COMING SOON CATEGORIES</div>
                     {storeCategories.filter((c) => !c.available).map((cat) => (
-                      <Link key={cat.id} href={`/collections/${cat.slug}`} onClick={onClose} className="sublist-cat-item coming-soon">
+                      <div key={cat.id} className="sublist-cat-item coming-soon disabled" aria-disabled="true">
                         <span>{cat.name}</span>
                         <span className="sublist-soon-badge">Soon</span>
-                      </Link>
+                      </div>
                     ))}
-                    <Link href="/collections" onClick={onClose} className="sublist-all">View All 9 Categories →</Link>
+                    <Link href="/collections/posters" onClick={onClose} className="sublist-all">View All Available Posters →</Link>
                   </div>
                 )}
               </div>
@@ -394,21 +406,21 @@ export function Header() {
               Home
             </Link>
             <Link href="/custom" className="desktop-nav-item">
-              <span>Custom</span>
+              <span>Custom Orders</span>
               <span className="badge-new-pill">NEW</span>
             </Link>
-            <Link href="/best-sellers" className="desktop-nav-item">
-              Best Sellers
+            <Link href="/collections/wall-packs" className="desktop-nav-item">
+              Wall Packs
             </Link>
             <div className="desktop-categories-dropdown">
               <button type="button" className="desktop-nav-item categories-dropdown-trigger">
-                <span>Categories</span>
+                <span>Poster</span>
                 <ChevronDown size={14} />
               </button>
               <div className="desktop-dropdown-menu">
-                <div className="dropdown-section-title">ACTIVE CATEGORY</div>
+                <div className="dropdown-section-title">POSTER COLLECTIONS</div>
                 <Link href="/collections/posters" className="dropdown-cat-row available">
-                  <strong>Posters</strong>
+                  <strong>All Posters</strong>
                   <span className="dropdown-status-badge">Available Now</span>
                 </Link>
                 <div className="dropdown-poster-sublinks">
@@ -421,13 +433,13 @@ export function Header() {
                 <div className="dropdown-section-title">COMING SOON CATEGORIES</div>
                 <div className="dropdown-soon-grid">
                   {storeCategories.filter((c) => !c.available).map((cat) => (
-                    <Link key={cat.id} href={`/collections/${cat.slug}`} className="dropdown-soon-chip">
+                    <div key={cat.id} className="dropdown-soon-chip disabled" aria-disabled="true">
                       <span>{cat.name}</span>
                       <span className="chip-soon-badge">Soon</span>
-                    </Link>
+                    </div>
                   ))}
                 </div>
-                <Link href="/collections" className="dropdown-view-all">All 9 Categories Overview →</Link>
+                <Link href="/collections/posters" className="dropdown-view-all">All Available Posters →</Link>
               </div>
             </div>
           </nav>

@@ -11,6 +11,7 @@ import {
   UploadCloud,
   X,
   Check,
+  Ruler,
   ZoomIn,
   Trash2,
   Pencil,
@@ -275,16 +276,17 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 2. CATEGORY ICONS ROW (ALL 9 OFFICIAL CATEGORIES - MODERN DESIGN) */}
+      {/* 2. CATEGORY ICONS ROW (ALL 9 OFFICIAL CATEGORIES - INSTA STORY RINGS) */}
       <section className="home-categories-row-section">
         <div className="categories-scroll-track">
           {storeCategories.map((cat) => {
             if (cat.available) {
               return (
                 <Link key={cat.id} href="/collections/posters" className="cat-icon-card cat-clickable">
-                  <div className="cat-img-wrap available-ring">
-                    <img src={cat.image} alt={cat.name} className="cat-img" />
-                    <span className="cat-pulse-dot" />
+                  <div className="cat-img-wrap insta-story-ring available-ring">
+                    <div className="cat-img-inner">
+                      <img src={cat.image} alt={cat.name} className="cat-img" />
+                    </div>
                   </div>
                   <span className="cat-name">{cat.name}</span>
                   <span className="cat-status-chip active-chip">Available</span>
@@ -292,19 +294,21 @@ export function HomePage() {
               );
             }
             return (
-              <Link
+              <div
                 key={cat.id}
-                href={`/collections/${cat.slug}`}
-                className="cat-icon-card cat-soon-card"
-                title={`${cat.name} (Coming Soon - Click to view teaser)`}
+                className="cat-icon-card cat-soon-card not-clickable"
+                title={`${cat.name} (Coming Soon)`}
+                aria-disabled="true"
               >
-                <div className="cat-img-wrap disabled-ring">
-                  <img src={cat.image} alt={cat.name} className="cat-img modern-soon-img" />
+                <div className="cat-img-wrap insta-story-ring disabled-ring">
+                  <div className="cat-img-inner">
+                    <img src={cat.image} alt={cat.name} className="cat-img modern-soon-img" />
+                  </div>
                   <span className="cat-soon-pill-badge">SOON</span>
                 </div>
                 <span className="cat-name">{cat.name}</span>
                 <span className="cat-status-chip soon-chip">Coming Soon</span>
-              </Link>
+              </div>
             );
           })}
         </div>
@@ -497,6 +501,7 @@ const categoryTeasers: Record<string, { title: string; subtitle: string; priceEs
 
 export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean; [key: string]: any } = {}) {
   const params = useParams<{ slug?: string }>();
+  const [, navigate] = useLocation();
   const [viewMode, setViewMode] = useState<'double' | 'single'>('double');
   const [toast, setToast] = useState('');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
@@ -509,11 +514,17 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
   const slugParam = params.slug;
   const matchedCategory = storeCategories.find((c) => c.slug === slugParam);
 
-  const activeCategory: StoreCategory = matchedCategory
+  useEffect(() => {
+    if (matchedCategory && !matchedCategory.available) {
+      navigate('/collections/posters', { replace: true });
+    }
+  }, [matchedCategory, navigate]);
+
+  const activeCategory: StoreCategory = matchedCategory && matchedCategory.available
     ? matchedCategory
     : storeCategories[0]; // Posters by default
 
-  const isPostersActive = activeCategory.available;
+  const isPostersActive = true;
 
   // Active sub-slug for posters
   const activePosterSubSlug = bestsellers
@@ -768,50 +779,118 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
         </section>
       )}
 
-      {/* FILTER DRAWER */}
+      {/* FILTER & SORT BOTTOM SHEET / DRAWER */}
       {filterDrawerOpen && (
-        <div className="drawer-backdrop" onClick={() => setFilterDrawerOpen(false)}>
-          <aside className="filter-drawer-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="drawer-header">
-              <h3>Filter & Sort</h3>
-              <button type="button" className="icon-button" onClick={() => setFilterDrawerOpen(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className="filter-drawer-body">
-              <div className="filter-drawer-group">
-                <label className="filter-group-label">Sort By</label>
-                <select
-                  value={selectedSort}
-                  onChange={(e) => setSelectedSort(e.target.value)}
-                  className="filter-select-input"
+        <div className="filter-drawer-backdrop" onClick={() => setFilterDrawerOpen(false)}>
+          <aside className="filter-drawer-bottom-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="filter-sheet-drag-handle" aria-hidden="true" />
+
+            <div className="filter-sheet-header">
+              <div className="filter-sheet-title">
+                <SlidersHorizontal size={18} className="text-gray-900" />
+                <span>FILTER & SORT</span>
+              </div>
+              <div className="filter-sheet-header-actions">
+                <button
+                  type="button"
+                  className="filter-reset-btn"
+                  onClick={() => {
+                    setSelectedSort('featured');
+                    setMaxPrice(1000);
+                    setMinPrice(0);
+                  }}
                 >
-                  <option value="featured">Featured</option>
-                  <option value="low">Price: Low to High</option>
-                  <option value="high">Price: High to Low</option>
-                  <option value="rating">Highest Rated</option>
-                </select>
+                  Reset All
+                </button>
+                <button
+                  type="button"
+                  className="filter-close-btn"
+                  onClick={() => setFilterDrawerOpen(false)}
+                  aria-label="Close filters"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="filter-sheet-body">
+              {/* 1. SORT BY OPTIONS */}
+              <div className="filter-section">
+                <label className="filter-section-title">SORT POSTERS BY</label>
+                <div className="filter-pills-grid">
+                  {[
+                    { id: 'featured', label: 'Featured' },
+                    { id: 'low', label: 'Price: Low to High' },
+                    { id: 'high', label: 'Price: High to Low' },
+                    { id: 'rating', label: 'Highest Rated' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className={`filter-choice-pill ${selectedSort === opt.id ? 'active-choice' : ''}`}
+                      onClick={() => setSelectedSort(opt.id)}
+                    >
+                      <span>{opt.label}</span>
+                      {selectedSort === opt.id && <Check size={14} className="choice-check" />}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="filter-drawer-group">
-                <label className="filter-group-label">Max Price: RS. {maxPrice}</label>
-                <input
-                  type="range"
-                  min="50"
-                  max="600"
-                  step="50"
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(Number(e.target.value))}
-                  className="w-full accent-black cursor-pointer"
-                />
-              </div>
+              {/* 2. PRICE RANGE */}
+              <div className="filter-section">
+                <div className="filter-section-header-row">
+                  <label className="filter-section-title">PRICE BUDGET</label>
+                  <span className="filter-price-highlight">
+                    {maxPrice >= 1000 ? 'All Prices' : `Up to ₹${maxPrice}`}
+                  </span>
+                </div>
 
+                {/* Quick Presets */}
+                <div className="filter-presets-row">
+                  {[
+                    { label: 'All', max: 1000 },
+                    { label: 'Under ₹150', max: 150 },
+                    { label: 'Under ₹250', max: 250 },
+                    { label: 'Under ₹500', max: 500 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      className={`preset-pill ${maxPrice === preset.max ? 'preset-active' : ''}`}
+                      onClick={() => setMaxPrice(preset.max)}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Interactive Slider */}
+                <div className="filter-slider-wrap">
+                  <input
+                    type="range"
+                    min="50"
+                    max="1000"
+                    step="25"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(Number(e.target.value))}
+                    className="filter-range-input"
+                  />
+                  <div className="slider-range-labels">
+                    <span>₹50</span>
+                    <span>₹1,000+</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="filter-sheet-footer">
               <button
                 type="button"
-                className="button postgenz-btn button-wide"
+                className="btn-apply-filters"
                 onClick={() => setFilterDrawerOpen(false)}
               >
-                Apply Filters ({filteredProducts.length} Results)
+                SHOW {filteredProducts.length} {filteredProducts.length === 1 ? 'POSTER' : 'POSTERS'}
               </button>
             </div>
           </aside>
@@ -1185,27 +1264,20 @@ export function CustomPage() {
   const pocketPricePerPack = pocketPack === '5-pack' ? 129 : 169;
   const pocketTotalPrice = pocketPricePerPack * pocketQuantity;
 
-  // 3. CUSTOM WALL POSTER / WALLPAPER STATE (CUSTOM SIZES ACCORDING TO WALLPAPER)
+  // 3. CUSTOM WALL POSTER / WALLPAPER STATE (IMAGE, ORIENTATION, SIZE, QUANTITY)
   const [posterPhoto, setPosterPhoto] = useState<string | null>(null);
-  const [posterSize, setPosterSize] = useState<'A5' | 'A4' | 'A3' | 'A2' | 'wallpaper-mural'>('A4');
   const [posterOrientation, setPosterOrientation] = useState<'portrait' | 'landscape' | 'square'>('portrait');
-  const [posterFinish, setPosterFinish] = useState<'matte' | 'gloss' | 'canvas'>('matte');
-  const [posterFrame, setPosterFrame] = useState<'unframed' | 'black-frame' | 'oak-frame'>('unframed');
+  const [posterSize, setPosterSize] = useState<'A5' | 'A4' | 'A3'>('A5');
   const [posterQuantity, setPosterQuantity] = useState(1);
+  const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const posterInputRef = useRef<HTMLInputElement>(null);
 
-  const wallpaperSizeOptions = [
-    { id: 'A5', label: 'A5 Small Desk Print', dimensions: '14.8 × 21 cm', basePrice: 79, desc: 'Compact personal frame' },
-    { id: 'A4', label: 'A4 Standard Wall Art', dimensions: '21 × 29.7 cm', basePrice: 149, desc: 'Most popular room wall size' },
-    { id: 'A3', label: 'A3 Gallery Wall Size', dimensions: '29.7 × 42 cm', basePrice: 249, desc: 'Immersive medium wall poster' },
-    { id: 'A2', label: 'A2 Statement Poster', dimensions: '42 × 59.4 cm', basePrice: 449, desc: 'Large statement wall piece' },
-    { id: 'wallpaper-mural', label: 'Custom Wallpaper Mural', dimensions: '60 × 90 cm', basePrice: 799, desc: 'Full premium feature wallpaper' },
-  ] as const;
-
-  const currentSizeConfig = wallpaperSizeOptions.find((s) => s.id === posterSize) || wallpaperSizeOptions[1];
-  const finishExtra = posterFinish === 'gloss' ? 30 : posterFinish === 'canvas' ? 60 : 0;
-  const frameExtra = posterFrame === 'black-frame' ? 199 : posterFrame === 'oak-frame' ? 249 : 0;
-  const posterUnitCost = currentSizeConfig.basePrice + finishExtra + frameExtra;
+  const posterSizePrices: Record<'A5' | 'A4' | 'A3', number> = {
+    A5: 129,
+    A4: 199,
+    A3: 299,
+  };
+  const posterUnitCost = posterSizePrices[posterSize];
   const posterTotalPrice = posterUnitCost * posterQuantity;
 
   // UPLOAD HANDLERS
@@ -1315,21 +1387,30 @@ export function CustomPage() {
 
   const handleAddPosterToCart = () => {
     store.addToCart({
-      productId: 'custom-wallpaper-poster',
+      productId: 'custom-wall-poster',
       slug: 'custom-wall-poster',
-      title: `Custom Wall Poster (${currentSizeConfig.label} • ${posterFinish.toUpperCase()}) - Qty: ${posterQuantity}`,
+      title: `Custom Wall Poster (${posterSize} • ${posterOrientation === 'portrait' ? 'Portrait' : posterOrientation === 'landscape' ? 'Landscape' : 'Square'}) - Qty: ${posterQuantity}`,
       price: posterUnitCost,
-      size: (posterSize === 'wallpaper-mural' ? 'A3' : posterSize) as any,
+      size: posterSize,
       quantity: posterQuantity,
       orientation: posterOrientation,
       artTreatment: 'art-signal',
       customUpload: {
-        name: `Wallpaper_${posterSize}_${posterFinish}`,
+        name: `Poster_${posterSize}_${posterOrientation}`,
         preview: posterPhoto || '/assets/custom-posters.jpg',
       },
     });
-    setToast(`${posterQuantity} × Custom Wall Poster added to your bag!`);
+    setToast(`${posterQuantity} × Custom Wall Poster (${posterSize}) added to your bag!`);
     window.setTimeout(() => setToast(''), 2500);
+  };
+
+  const handleNewPosterOrder = () => {
+    setPosterPhoto(null);
+    setPosterOrientation('portrait');
+    setPosterSize('A5');
+    setPosterQuantity(1);
+    setToast('Ready for new custom poster order!');
+    window.setTimeout(() => setToast(''), 2000);
   };
 
   // IF NO PRODUCT IS SELECTED: RENDER THE 3 BOXES
@@ -1399,10 +1480,10 @@ export function CustomPage() {
             <div className="box-body-wrap">
               <h2 className="box-title">Custom Wall Posters</h2>
               <p className="box-desc">
-                Your own photos, personal digital art, or wallpaper mural printed in custom sizes according to your room walls.
+                Your own photos, personal digital art, or wallpaper mural printed with archival quality.
               </p>
               <div className="box-footer-row">
-                <span className="box-price-hint">Starting from Rs. 79</span>
+                <span className="box-price-hint">Starting from Rs. 129</span>
                 <button
                   type="button"
                   className="btn-design-now-highlight"
@@ -1423,36 +1504,11 @@ export function CustomPage() {
   // IF PRODUCT IS SELECTED: RENDER DEDICATED CUSTOMIZER
   return (
     <main className="postgenz-custom-studio">
-      {/* TOP HEADER WITH NAVIGATION AND FORMAT SWITCHER */}
       <div className="customizer-top-bar">
         <button type="button" className="btn-back-hub" onClick={goBackToHub}>
           <ArrowLeft size={16} />
           <span>All Custom Products</span>
         </button>
-
-        <div className="customizer-format-tabs">
-          <button
-            type="button"
-            className={`format-tab-btn ${selectedType === 'strip' ? 'tab-active' : ''}`}
-            onClick={() => selectFormat('strip')}
-          >
-            Photobooth Strip
-          </button>
-          <button
-            type="button"
-            className={`format-tab-btn ${selectedType === 'pocket' ? 'tab-active' : ''}`}
-            onClick={() => selectFormat('pocket')}
-          >
-            Mini Pocket Photos
-          </button>
-          <button
-            type="button"
-            className={`format-tab-btn ${selectedType === 'poster' ? 'tab-active' : ''}`}
-            onClick={() => selectFormat('poster')}
-          >
-            Wall Posters / Wallpaper
-          </button>
-        </div>
       </div>
 
       {/* ======================================================== */}
@@ -1583,20 +1639,6 @@ export function CustomPage() {
                   onClick={() => setStripFrameStyle('black')}
                 >
                   Noir Black
-                </button>
-                <button
-                  type="button"
-                  className={`option-pill ${stripFrameStyle === 'lilac' ? 'active-pill' : ''}`}
-                  onClick={() => setStripFrameStyle('lilac')}
-                >
-                  Lilac
-                </button>
-                <button
-                  type="button"
-                  className={`option-pill ${stripFrameStyle === 'mint' ? 'active-pill' : ''}`}
-                  onClick={() => setStripFrameStyle('mint')}
-                >
-                  Sage Mint
                 </button>
               </div>
             </div>
@@ -1780,13 +1822,6 @@ export function CustomPage() {
                 >
                   Midnight Black
                 </button>
-                <button
-                  type="button"
-                  className={`option-pill ${pocketFrameStyle === 'pink' ? 'active-pill' : ''}`}
-                  onClick={() => setPocketFrameStyle('pink')}
-                >
-                  Soft Rose
-                </button>
               </div>
             </div>
 
@@ -1839,7 +1874,7 @@ export function CustomPage() {
       {selectedType === 'poster' && (
         <div className="custom-studio-content">
           <div className="wallpaper-live-preview-wrap">
-            <div className={`wall-mockup-frame frame-type-${posterFrame} orientation-${posterOrientation}`}>
+            <div className={`wall-mockup-frame orientation-${posterOrientation}`}>
               {posterPhoto ? (
                 <div className="wall-poster-art-box">
                   <img src={posterPhoto} alt="Your Custom Wallpaper" className="wall-poster-custom-img" />
@@ -1864,15 +1899,12 @@ export function CustomPage() {
               )}
             </div>
 
-            <div className="wall-size-indicator-badge">
-              <span>Selected: <strong>{currentSizeConfig.label}</strong> ({currentSizeConfig.dimensions})</span>
-            </div>
           </div>
 
           <div className="custom-options-controls">
             <h2 className="editor-heading">Customize Wall Poster & Wallpaper</h2>
             <p className="editor-subheading">
-              Select custom wallpaper sizes according to your room, finish, and framing.
+              Upload your custom artwork, select orientation, framing, and quantity.
             </p>
 
             <input
@@ -1906,28 +1938,7 @@ export function CustomPage() {
               </div>
             )}
 
-            {/* CUSTOM SIZE SELECTION ACCORDING TO WALLPAPER */}
-            <div className="control-group">
-              <label className="control-label">Wallpaper / Poster Size</label>
-              <div className="wallpaper-sizes-list">
-                {wallpaperSizeOptions.map((opt) => (
-                  <button
-                    type="button"
-                    key={opt.id}
-                    className={`size-card-btn ${posterSize === opt.id ? 'size-card-active' : ''}`}
-                    onClick={() => setPosterSize(opt.id as any)}
-                  >
-                    <div className="size-card-left">
-                      <strong>{opt.label}</strong>
-                      <span className="size-card-dim">{opt.dimensions} • {opt.desc}</span>
-                    </div>
-                    <div className="size-card-price">Rs. {opt.basePrice}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* ORIENTATION */}
+            {/* 1. ORIENTATION */}
             <div className="control-group">
               <label className="control-label">Orientation</label>
               <div className="option-pills-row">
@@ -1955,65 +1966,46 @@ export function CustomPage() {
               </div>
             </div>
 
-            {/* FINISH */}
+            {/* 2. SIZE (A5, A4, A3) */}
             <div className="control-group">
-              <label className="control-label">Paper Finish</label>
-              <div className="option-pills-row">
+              <label className="control-label">SIZE</label>
+              <div className="option-pills-row size-pills-row">
                 <button
                   type="button"
-                  className={`option-pill ${posterFinish === 'matte' ? 'active-pill' : ''}`}
-                  onClick={() => setPosterFinish('matte')}
+                  className={`option-pill ${posterSize === 'A5' ? 'active-pill' : ''}`}
+                  onClick={() => setPosterSize('A5')}
                 >
-                  350 GSM Matte
+                  A5
                 </button>
                 <button
                   type="button"
-                  className={`option-pill ${posterFinish === 'gloss' ? 'active-pill' : ''}`}
-                  onClick={() => setPosterFinish('gloss')}
+                  className={`option-pill ${posterSize === 'A4' ? 'active-pill' : ''}`}
+                  onClick={() => setPosterSize('A4')}
                 >
-                  Gloss Lamination (+Rs. 30)
+                  A4
                 </button>
                 <button
                   type="button"
-                  className={`option-pill ${posterFinish === 'canvas' ? 'active-pill' : ''}`}
-                  onClick={() => setPosterFinish('canvas')}
+                  className={`option-pill ${posterSize === 'A3' ? 'active-pill' : ''}`}
+                  onClick={() => setPosterSize('A3')}
                 >
-                  Canvas Texture (+Rs. 60)
+                  A3
                 </button>
               </div>
             </div>
 
-            {/* FRAMING */}
-            <div className="control-group">
-              <label className="control-label">Framing Option</label>
-              <div className="option-pills-row">
-                <button
-                  type="button"
-                  className={`option-pill ${posterFrame === 'unframed' ? 'active-pill' : ''}`}
-                  onClick={() => setPosterFrame('unframed')}
-                >
-                  Unframed (Print Only)
-                </button>
-                <button
-                  type="button"
-                  className={`option-pill ${posterFrame === 'black-frame' ? 'active-pill' : ''}`}
-                  onClick={() => setPosterFrame('black-frame')}
-                >
-                  Matte Black Frame (+Rs. 199)
-                </button>
-                <button
-                  type="button"
-                  className={`option-pill ${posterFrame === 'oak-frame' ? 'active-pill' : ''}`}
-                  onClick={() => setPosterFrame('oak-frame')}
-                >
-                  Natural Oak Frame (+Rs. 249)
-                </button>
-              </div>
-            </div>
+            {/* 3. SIZE CHART BUTTON */}
+            <button
+              type="button"
+              className="btn-size-chart-bar"
+              onClick={() => setSizeChartOpen(true)}
+            >
+              SIZE CHART
+            </button>
 
-            {/* QUANTITY STEPPER (ORDER MULTIPLE ITEMS WITH SAME IMAGES) */}
+            {/* 4. QUANTITY */}
             <div className="control-group">
-              <label className="control-label">Number of Posters (Quantity)</label>
+              <label className="control-label">Number of Packs (Quantity)</label>
               <div className="stepper-box">
                 <button
                   type="button"
@@ -2034,22 +2026,110 @@ export function CustomPage() {
                 </button>
               </div>
               <span className="quantity-hint-text">
-                Order multiple posters with the same custom artwork
+                Order multiple sets of your mini prints
               </span>
             </div>
 
+            {/* 5. TOTAL PRICE */}
             <div className="custom-price-total">
               <span>Total Price:</span>
-              <strong>{formatPrice(posterTotalPrice)}</strong>
+              <strong>RS. {posterTotalPrice}.00</strong>
             </div>
 
+            {/* 6. ADD TO BAG */}
             <button
               type="button"
               className="btn-buy-it-now-blue"
               onClick={handleAddPosterToCart}
             >
-              ADD TO BAG • {formatPrice(posterTotalPrice)}
+              ADD TO BAG • RS. {posterTotalPrice}.00
             </button>
+
+            <button
+              type="button"
+              className="btn-new-order-outline"
+              onClick={handleNewPosterOrder}
+            >
+              + Create New Order
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* POSTERS SIZE GUIDE MODAL */}
+      {sizeChartOpen && (
+        <div className="size-guide-modal-backdrop" onClick={() => setSizeChartOpen(false)}>
+          <div className="size-guide-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="size-guide-modal-header">
+              <div className="size-guide-modal-title">
+                <Ruler size={18} className="text-red-500" />
+                <span>POSTERS SIZE GUIDE</span>
+              </div>
+              <button
+                type="button"
+                className="btn-close-modal"
+                onClick={() => setSizeChartOpen(false)}
+                aria-label="Close size guide"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="size-guide-modal-body">
+              <div className="size-guide-image-wrap">
+                <img
+                  src="/assets/poster-size-guide.svg"
+                  alt="Posters Size Guide - A3, A4, A5 Dimensions"
+                  className="size-guide-graphic-img"
+                />
+              </div>
+
+              <div className="size-guide-quick-pills">
+                <button
+                  type="button"
+                  className={`guide-pick-btn ${posterSize === 'A5' ? 'picked' : ''}`}
+                  onClick={() => {
+                    setPosterSize('A5');
+                    setSizeChartOpen(false);
+                  }}
+                >
+                  <strong>A5 Desk Print</strong>
+                  <span>14.8 × 21 cm • Rs. 129</span>
+                </button>
+                <button
+                  type="button"
+                  className={`guide-pick-btn ${posterSize === 'A4' ? 'picked' : ''}`}
+                  onClick={() => {
+                    setPosterSize('A4');
+                    setSizeChartOpen(false);
+                  }}
+                >
+                  <strong>A4 Standard ★</strong>
+                  <span>21 × 29.7 cm • Rs. 199</span>
+                </button>
+                <button
+                  type="button"
+                  className={`guide-pick-btn ${posterSize === 'A3' ? 'picked' : ''}`}
+                  onClick={() => {
+                    setPosterSize('A3');
+                    setSizeChartOpen(false);
+                  }}
+                >
+                  <strong>A3 Statement</strong>
+                  <span>29.7 × 42 cm • Rs. 299</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="size-guide-modal-footer">
+              <button
+                type="button"
+                className="btn-size-guide-done"
+                onClick={() => setSizeChartOpen(false)}
+              >
+                GOT IT • CLOSE GUIDE
+              </button>
+            </div>
           </div>
         </div>
       )}
