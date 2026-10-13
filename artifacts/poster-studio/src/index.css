@@ -744,7 +744,7 @@ button {
   }
 }
 
-/* Authentic Instagram Story Gradient Ring */
+/* Authentic Instagram Story Gradient Ring (Default / Coming Soon) */
 .cat-img-wrap.insta-story-ring {
   background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
   padding: 3px;
@@ -757,6 +757,19 @@ button {
   .cat-img-wrap.insta-story-ring {
     padding: 3.5px;
   }
+}
+
+/* Instagram Close Friends Story Green Ring for Available Items */
+.cat-img-wrap.available-ring,
+.cat-img-wrap.insta-story-ring.available-ring {
+  background: linear-gradient(135deg, #1cd14f 0%, #10d644 40%, #00e676 75%, #00c853 100%) !important;
+  box-shadow: 0 4px 14px rgba(16, 214, 68, 0.35) !important;
+}
+
+.cat-clickable:hover .cat-img-wrap.available-ring,
+.cat-clickable:hover .cat-img-wrap.insta-story-ring.available-ring {
+  transform: scale(1.06);
+  box-shadow: 0 6px 18px rgba(16, 214, 68, 0.52) !important;
 }
 
 .cat-clickable:hover .cat-img-wrap.insta-story-ring,
@@ -836,9 +849,9 @@ button {
 }
 
 .cat-status-chip.active-chip {
-  color: #c026d3;
-  background-color: #fdf4ff;
-  border: 1px solid #f0abfc;
+  color: #047857;
+  background-color: #ecfdf5;
+  border: 1px solid #6ee7b7;
 }
 
 .cat-status-chip.soon-chip {
