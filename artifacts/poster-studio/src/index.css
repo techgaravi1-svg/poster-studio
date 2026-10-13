@@ -651,18 +651,19 @@ button {
 
 /* CATEGORY ICONS ROW (ALL 9 OFFICIAL CATEGORIES - INSTAGRAM STORY STYLE) */
 .home-categories-row-section {
-  padding: 0 12px 0;
+  padding: 0 16px;
   max-width: 1240px;
-  margin: 0 auto;
+  margin: 18px auto 26px;
 }
 
 .categories-scroll-track {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 1px 4px 1px;
+  padding: 6px 4px 10px;
+  scroll-snap-type: x proximity;
   /* Hide scrollbar completely to remove grey divider line */
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
@@ -688,7 +689,7 @@ button {
 @media (min-width: 1024px) {
   .categories-scroll-track {
     justify-content: center;
-    gap: 18px;
+    gap: 22px;
   }
 }
 
@@ -699,14 +700,15 @@ button {
   text-align: center;
   position: relative;
   flex-shrink: 0;
-  width: 72px;
+  width: 86px;
   text-decoration: none;
+  scroll-snap-align: start;
   transition: transform 0.2s ease;
 }
 
 @media (min-width: 768px) {
   .cat-icon-card {
-    width: 86px;
+    width: 94px;
   }
 }
 
@@ -715,7 +717,8 @@ button {
 }
 
 .cat-soon-card {
-  cursor: pointer;
+  cursor: default;
+  pointer-events: none;
 }
 
 .cat-icon-card:hover {
@@ -724,8 +727,8 @@ button {
 
 /* INSTAGRAM STORY RING CONTAINER */
 .cat-img-wrap {
-  width: 66px;
-  height: 66px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
   position: relative;
   display: flex;
@@ -736,23 +739,23 @@ button {
 
 @media (min-width: 768px) {
   .cat-img-wrap {
-    width: 78px;
-    height: 78px;
+    width: 84px;
+    height: 84px;
   }
 }
 
 /* Authentic Instagram Story Gradient Ring */
 .cat-img-wrap.insta-story-ring {
   background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-  padding: 2.5px;
-  box-shadow: 0 3px 10px rgba(220, 39, 67, 0.22);
+  padding: 3px;
+  box-shadow: 0 4px 14px rgba(220, 39, 67, 0.22);
   overflow: visible;
   border: none;
 }
 
 @media (min-width: 768px) {
   .cat-img-wrap.insta-story-ring {
-    padding: 3px;
+    padding: 3.5px;
   }
 }
 
@@ -1093,7 +1096,7 @@ button {
   font-size: 9px;
 }
 
-/* QUICK CART BUTTON */
+/* QUICK WISHLIST BUTTON (REPLACED ADD TO BAG AS PER CLIENT SPEC) */
 .quick-cart-btn {
   position: absolute;
   right: 10px;
@@ -1102,18 +1105,28 @@ button {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
-  color: #ffffff;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  color: #18181b;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  cursor: pointer;
 }
 
 .quick-cart-btn:hover {
   transform: scale(1.14);
-  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.5);
+  background: #ffffff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+.quick-cart-btn.wishlist-active {
+  background: #ffffff;
+  border-color: #fecaca;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25);
 }
 
 .product-info-block {
@@ -2729,8 +2742,44 @@ button {
   background-color: #ffffff;
   border: 1px solid #f3f4f6;
   border-radius: 14px;
-  padding: 18px;
+  padding: 20px;
   margin-bottom: 16px;
+}
+
+.checkout-step-card {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e5e7eb;
+}
+
+.step-badge-number {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: #09090b;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.checkout-input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #111827;
+  outline: none;
+  background-color: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.checkout-input:focus {
+  border-color: #111827;
+  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.1);
 }
 
 .section-subheading {
@@ -4417,4 +4466,397 @@ button {
 
 .btn-size-guide-done:hover {
   opacity: 0.92;
+}
+
+/* ============================================================
+   POLICY PAGES (FAQs, TERMS & CONDITIONS, RETURN POLICY)
+============================================================ */
+.policy-page-container {
+  min-height: 80vh;
+  background-color: #fafafa;
+  color: #18181b;
+  padding-bottom: 60px;
+}
+
+.policy-hero-banner {
+  background: linear-gradient(135deg, #09090b 0%, #18181b 100%);
+  color: #ffffff;
+  padding: 44px 20px 32px;
+  text-align: center;
+  position: relative;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.policy-hero-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.1);
+  color: #a1a1aa;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.policy-hero-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: clamp(22px, 4.5vw, 32px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin: 0 0 8px;
+  color: #ffffff;
+}
+
+.policy-hero-subtitle {
+  font-size: 14px;
+  color: #a1a1aa;
+  max-width: 620px;
+  margin: 0 auto 28px;
+  line-height: 1.5;
+}
+
+.policy-tabs-nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.policy-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #d4d4d8;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.policy-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.policy-tab-btn.active {
+  background: #ffffff;
+  color: #09090b;
+  border-color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.policy-content-wrapper {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 18px;
+}
+
+/* FAQ CONTROLS */
+.faq-controls-bar {
+  margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.faq-search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.faq-search-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: #18181b;
+  background: transparent;
+}
+
+.faq-category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.faq-pill-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #ffffff;
+  color: #52525b;
+  border: 1px solid #e4e4e7;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.faq-pill-btn:hover {
+  border-color: #a1a1aa;
+  color: #18181b;
+}
+
+.faq-pill-btn.active {
+  background: #18181b;
+  color: #ffffff;
+  border-color: #18181b;
+}
+
+/* FAQ ACCORDION LIST */
+.faq-accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faq-card-item {
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.faq-card-item:hover {
+  border-color: #d4d4d8;
+}
+
+.faq-card-item.is-open {
+  border-color: #18181b;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.faq-question-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 20px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.faq-question-text {
+  font-family: var(--font-display, sans-serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: #18181b;
+  line-height: 1.4;
+}
+
+.faq-toggle-icon {
+  color: #71717a;
+  flex-shrink: 0;
+}
+
+.faq-answer-pane {
+  padding: 0 20px 20px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #3f3f46;
+  border-top: 1px solid #f4f4f5;
+  padding-top: 14px;
+}
+
+/* POLICY SUPPORT CALLOUT */
+.policy-support-callout {
+  margin-top: 36px;
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+
+.support-callout-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #f4f4f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #18181b;
+  flex-shrink: 0;
+}
+
+/* TERMS & RETURN DOCUMENT VIEW */
+.terms-doc-container {
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 16px;
+  padding: 32px 28px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+@media (max-width: 640px) {
+  .terms-doc-container {
+    padding: 20px 16px;
+  }
+}
+
+.terms-intro-box {
+  background: #f8fafc;
+  border-left: 4px solid #18181b;
+  padding: 16px 20px;
+  border-radius: 0 10px 10px 0;
+  margin-bottom: 28px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.policy-alert-box {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #f59e0b;
+  padding: 16px 20px;
+  border-radius: 0 10px 10px 0;
+  margin-bottom: 28px;
+}
+
+.policy-badge-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background: #18181b;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.terms-clauses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.terms-clause {
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 24px;
+}
+
+.terms-clause:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.clause-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+}
+
+.terms-clause p {
+  font-size: 14px;
+  line-height: 1.68;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.terms-bullet-list {
+  list-style-type: disc;
+  padding-left: 22px;
+  margin: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13.5px;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.terms-contact-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-top: 10px;
+}
+
+/* HOW TO APPLY OFFER BUTTON ON PDP */
+.how-to-apply-offer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: all 0.2s ease;
+}
+
+.how-to-apply-offer-btn:hover {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* ============================================================
+   PHASE 8: LOGO POSITIONING & CONTRAST CORRECTIONS
+============================================================ */
+.postgenz-logo-img {
+  height: 38px;
+  max-width: 160px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.menu-logo-img {
+  height: 34px;
+  max-width: 150px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.footer-brand-header {
+  margin-bottom: 24px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.footer-blumun-logo {
+  height: 44px;
+  max-width: 180px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  /* High contrast filter to ensure crisp visibility against dark footer background */
+  filter: brightness(1.25) contrast(1.1);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }

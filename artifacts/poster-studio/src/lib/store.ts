@@ -11,7 +11,14 @@ export type CartItem = {
   quantity: number;
   orientation: Orientation;
   artTreatment: string;
-  customUpload?: { name: string; preview: string };
+  customUpload?: {
+    name: string;
+    preview: string;
+    photos?: string[];
+    borderStyle?: string;
+    customType?: string;
+    format?: string;
+  };
 };
 
 export type DemoOrder = {
@@ -66,8 +73,10 @@ function getSnapshot() { return state; }
 export function useStore() { return useSyncExternalStore(subscribe, getSnapshot, getSnapshot); }
 
 export const store = {
-  addToCart(item: Omit<CartItem, 'key'>) {
-    const key = item.customUpload ? `${item.productId}-${item.size}-${item.customUpload.name}` : `${item.productId}-${item.size}`;
+  addToCart(item: Omit<CartItem, 'key'> & { key?: string }) {
+    const key = item.key || (item.customUpload
+      ? `custom-${item.productId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+      : `${item.productId}-${item.size}`);
     const existing = state.cart.find((cartItem) => cartItem.key === key);
     const cart = existing
       ? state.cart.map((cartItem) => cartItem.key === key ? { ...cartItem, quantity: cartItem.quantity + item.quantity } : cartItem)
@@ -96,9 +105,25 @@ export const store = {
 
 export function cartTotals(cart: CartItem[], coupon: string) {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shipping = subtotal === 0 || subtotal >= 75 ? 0 : 6;
-  const discount = coupon.trim().toUpperCase() === 'STUDIO10' ? Math.round(subtotal * 0.1) : 0;
-  return { subtotal, shipping, discount, total: subtotal + shipping - discount };
+  const totalItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const shipping = subtotal === 0 || subtotal >= 299 ? 0 : 49;
+
+  const code = coupon.trim().toUpperCase();
+  let discount = 0;
+  if (code === 'STUDIO10' || code === 'FIRST10') {
+    discount = Math.round(subtotal * 0.1);
+  } else if ((code === 'DUNGEONS3' || code === 'POSTER3') && totalItemCount >= 3) {
+    // Buy 2 Get 1 Free: discount cheapest 1 item
+    const prices = cart.flatMap((item) => Array(item.quantity).fill(item.price)).sort((a, b) => a - b);
+    discount = prices[0] || 0;
+  } else if ((code === 'DUNGEONS5' || code === 'POSTER5') && totalItemCount >= 5) {
+    // Buy 3 Get 2 Free: discount cheapest 2 items
+    const prices = cart.flatMap((item) => Array(item.quantity).fill(item.price)).sort((a, b) => a - b);
+    discount = (prices[0] || 0) + (prices[1] || 0);
+  }
+
+  const total = Math.max(0, subtotal + shipping - discount);
+  return { subtotal, shipping, discount, total, totalItemCount };
 }
 
 export function makeOrder(input: Omit<DemoOrder, 'id' | 'createdAt'>): DemoOrder {

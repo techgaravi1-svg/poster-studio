@@ -67,20 +67,14 @@ export function ProductCard({
   product: Product;
   onAdded?: (title: string) => void;
 }) {
-  const add = (e: React.MouseEvent) => {
+  const { wishlist = [] } = useStore();
+  const isWishlisted = wishlist.includes(product.slug) || wishlist.includes(product.id);
+
+  const toggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    store.addToCart({
-      productId: product.id,
-      slug: product.slug,
-      title: product.title,
-      price: product.price,
-      size: product.sizes[0],
-      quantity: 1,
-      orientation: product.orientation,
-      artTreatment: product.artTreatment,
-    });
-    onAdded?.(product.title);
+    const added = store.toggleWishlist(product.slug);
+    onAdded?.(added ? `${product.title} saved to Wishlist!` : `${product.title} removed from Wishlist`);
   };
 
   const imageSrc = product.images?.[0];
@@ -103,12 +97,18 @@ export function ProductCard({
         </Link>
         <button
           type="button"
-          className="quick-cart-btn"
-          aria-label={`Add ${product.title} to bag`}
-          data-testid={`button-add-${product.id}`}
-          onClick={add}
+          className={`quick-cart-btn quick-wishlist-btn ${isWishlisted ? 'wishlist-active' : ''}`}
+          aria-label={isWishlisted ? `Remove ${product.title} from Wishlist` : `Add ${product.title} to Wishlist`}
+          title={isWishlisted ? 'Saved in Wishlist' : 'Add to Wishlist'}
+          data-testid={`button-wishlist-${product.id}`}
+          onClick={toggleWishlist}
         >
-          <ShoppingBag size={18} strokeWidth={2.2} />
+          <Heart
+            size={18}
+            strokeWidth={2.2}
+            fill={isWishlisted ? '#ef4444' : 'none'}
+            color={isWishlisted ? '#ef4444' : '#18181b'}
+          />
         </button>
       </div>
       <div className="product-info-block">
@@ -217,7 +217,8 @@ function MenuDrawer({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [postersOpen, setPostersOpen] = useState(false);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [location] = useLocation();
 
   if (!isOpen) return null;
@@ -269,38 +270,53 @@ function MenuDrawer({
                 <button
                   type="button"
                   className="menu-nav-item categories-toggle"
-                  onClick={() => setCategoriesOpen(!categoriesOpen)}
+                  onClick={() => setPostersOpen(!postersOpen)}
                 >
-                  <span>Poster</span>
-                  {categoriesOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                  <span>Posters</span>
+                  {postersOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </button>
-                {categoriesOpen && (
+                {postersOpen && (
                   <div className="categories-sublist">
-                    <div className="sublist-section-title">POSTER COLLECTIONS</div>
                     <Link href="/collections/posters" onClick={onClose} className="sublist-cat-item available">
                       <span>All Posters</span>
                       <span className="sublist-status-badge">Available</span>
                     </Link>
                     <Link href="/collections/devotional" onClick={onClose} className="sublist-cat-item">
-                      <span>Devotional</span>
+                      <span>Devotional Posters</span>
                     </Link>
                     <Link href="/collections/marvel-dc" onClick={onClose} className="sublist-cat-item">
-                      <span>Marvel & DC</span>
+                      <span>Marvel & DC Posters</span>
                     </Link>
                     <Link href="/collections/cricket" onClick={onClose} className="sublist-cat-item">
-                      <span>Cricket</span>
+                      <span>Cricket Posters</span>
                     </Link>
                     <Link href="/collections/football" onClick={onClose} className="sublist-cat-item">
-                      <span>Football</span>
+                      <span>Football Posters</span>
                     </Link>
-                    <div className="sublist-section-title">COMING SOON CATEGORIES</div>
+                    <Link href="/collections/wall-packs" onClick={onClose} className="sublist-cat-item">
+                      <span>Wall Packs</span>
+                    </Link>
+                    <Link href="/collections/posters" onClick={onClose} className="sublist-all">View All Available Posters →</Link>
+                  </div>
+                )}
+              </div>
+              <div className="menu-categories-accordion">
+                <button
+                  type="button"
+                  className="menu-nav-item categories-toggle"
+                  onClick={() => setComingSoonOpen(!comingSoonOpen)}
+                >
+                  <span>Coming Soon</span>
+                  {comingSoonOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </button>
+                {comingSoonOpen && (
+                  <div className="categories-sublist">
                     {storeCategories.filter((c) => !c.available).map((cat) => (
                       <div key={cat.id} className="sublist-cat-item coming-soon disabled" aria-disabled="true">
                         <span>{cat.name}</span>
-                        <span className="sublist-soon-badge">Soon</span>
+                        <span className="sublist-soon-badge">Coming Soon</span>
                       </div>
                     ))}
-                    <Link href="/collections/posters" onClick={onClose} className="sublist-all">View All Available Posters →</Link>
                   </div>
                 )}
               </div>
@@ -412,9 +428,10 @@ export function Header() {
             <Link href="/collections/wall-packs" className="desktop-nav-item">
               Wall Packs
             </Link>
+            {/* 4. Posters Dropdown */}
             <div className="desktop-categories-dropdown">
               <button type="button" className="desktop-nav-item categories-dropdown-trigger">
-                <span>Poster</span>
+                <span>Posters</span>
                 <ChevronDown size={14} />
               </button>
               <div className="desktop-dropdown-menu">
@@ -424,22 +441,33 @@ export function Header() {
                   <span className="dropdown-status-badge">Available Now</span>
                 </Link>
                 <div className="dropdown-poster-sublinks">
-                  <Link href="/collections/devotional">Devotional</Link>
-                  <Link href="/collections/marvel-dc">Marvel & DC</Link>
-                  <Link href="/collections/cricket">Cricket</Link>
-                  <Link href="/collections/football">Football</Link>
+                  <Link href="/collections/devotional">Devotional Posters</Link>
+                  <Link href="/collections/marvel-dc">Marvel & DC Posters</Link>
+                  <Link href="/collections/cricket">Cricket Posters</Link>
+                  <Link href="/collections/football">Football Posters</Link>
                   <Link href="/collections/wall-packs">Wall Packs</Link>
                 </div>
-                <div className="dropdown-section-title">COMING SOON CATEGORIES</div>
+                <Link href="/collections/posters" className="dropdown-view-all">All Available Posters →</Link>
+              </div>
+            </div>
+
+            {/* 5. Coming Soon Dropdown */}
+            <div className="desktop-categories-dropdown">
+              <button type="button" className="desktop-nav-item categories-dropdown-trigger">
+                <span>Coming Soon</span>
+                <ChevronDown size={14} />
+              </button>
+              <div className="desktop-dropdown-menu">
+                <div className="dropdown-section-title">UPCOMING LUXURY COLLECTIONS</div>
                 <div className="dropdown-soon-grid">
                   {storeCategories.filter((c) => !c.available).map((cat) => (
-                    <div key={cat.id} className="dropdown-soon-chip disabled" aria-disabled="true">
+                    <div key={cat.id} className="dropdown-soon-chip disabled" aria-disabled="true" title={`${cat.name} (Coming Soon)`}>
                       <span>{cat.name}</span>
-                      <span className="chip-soon-badge">Soon</span>
+                      <span className="chip-soon-badge">Coming Soon</span>
                     </div>
                   ))}
                 </div>
-                <Link href="/collections/posters" className="dropdown-view-all">All Available Posters →</Link>
+                <div className="dropdown-view-all text-neutral-400 font-normal">Launching soon • Pre-order notification available</div>
               </div>
             </div>
           </nav>
@@ -623,9 +651,12 @@ export function Footer() {
             <h4 className="footer-title">Contact info</h4>
             <div className="footer-subitem">Support</div>
             <div className="footer-subitem">
-              <a href="mailto:blumun.in@gmail.com" className="footer-link">
-                Mail: blumun.in@gmail.com
+              <a href="mailto:dungeons.support@gmail.com" className="footer-link">
+                Mail: dungeons.support@gmail.com
               </a>
+            </div>
+            <div className="footer-subitem" style={{ fontSize: '13px', color: '#9ca3af' }}>
+              Ahmedabad, Gujarat, India
             </div>
           </div>
 
@@ -633,9 +664,10 @@ export function Footer() {
             <h4 className="footer-title">Quick links</h4>
             <ul className="footer-links-list">
               <li><Link href="/account/orders">Track your order</Link></li>
-              <li><a href="mailto:blumun.in@gmail.com">Contact Us</a></li>
+              <li><a href="mailto:dungeons.support@gmail.com">Contact Us</a></li>
               <li><Link href="/terms">Terms and Conditions</Link></li>
-              <li><Link href="/shipping-policy">Exchange and Shipping Policy</Link></li>
+              <li><Link href="/returns">Return &amp; Refund Policy</Link></li>
+              <li><Link href="/shipping-policy">Shipping Policy</Link></li>
               <li><Link href="/faqs">FAQs</Link></li>
             </ul>
           </div>

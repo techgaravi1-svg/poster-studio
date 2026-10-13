@@ -17,6 +17,7 @@ import {
   ProductPage,
   SearchPage,
 } from '@/pages/store-pages';
+import { FaqPage, TermsPage, ReturnPolicyPage } from '@/pages/policy-pages';
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -44,6 +45,14 @@ function Router() {
     <Route path="/account" component={AccountPage} />
     <Route path="/search" component={SearchPage} />
     <Route path="/admin" component={AdminPage} />
+    <Route path="/faqs" component={FaqPage} />
+    <Route path="/faq" component={FaqPage} />
+    <Route path="/terms" component={TermsPage} />
+    <Route path="/terms-and-conditions" component={TermsPage} />
+    <Route path="/returns" component={ReturnPolicyPage} />
+    <Route path="/return-policy" component={ReturnPolicyPage} />
+    <Route path="/refund-policy" component={ReturnPolicyPage} />
+    <Route path="/shipping-policy" component={ReturnPolicyPage} />
     <Route component={NotFound} />
   </Switch></SiteShell></RoutedErrorBoundary>;
 }
