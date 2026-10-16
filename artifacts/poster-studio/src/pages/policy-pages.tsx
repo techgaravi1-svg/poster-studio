@@ -188,7 +188,8 @@ const FAQS_DATA: FaqItem[] = [
 // 1. FAQS PAGE (CLEAN POINT 1 FORMAT - PAGE 7)
 // -------------------------------------------------------------
 export function FaqPage() {
-  const [openIds, setOpenIds] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+  const [openIds, setOpenIds] = useState<number[]>([1]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const toggle = (id: number) => {
     setOpenIds((prev) =>
@@ -196,39 +197,125 @@ export function FaqPage() {
     );
   };
 
+  const filteredFaqs = FAQS_DATA.filter(
+    (faq) =>
+      faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (typeof faq.answer === 'string' && faq.answer.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const toggleAll = () => {
+    if (openIds.length === filteredFaqs.length) {
+      setOpenIds([]);
+    } else {
+      setOpenIds(filteredFaqs.map((f) => f.id));
+    }
+  };
+
   return (
     <div className="simple-policy-container max-w-3xl mx-auto px-4 py-8">
-      <h1 className="simple-policy-title text-2xl md:text-3xl font-extrabold text-neutral-900 mb-6 tracking-tight uppercase border-b border-neutral-200 pb-3">
-        FAQs
-      </h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 pb-4 mb-6">
+        <div>
+          <h1 className="simple-policy-title text-2xl md:text-3xl font-extrabold text-neutral-900 tracking-tight uppercase">
+            Frequently Asked Questions
+          </h1>
+          <p className="text-xs md:text-sm text-neutral-500 mt-1">
+            Find quick answers regarding orders, custom prints, shipping, and materials.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={toggleAll}
+          className="self-start sm:self-auto text-xs font-bold text-sky-600 hover:text-sky-700 underline shrink-0"
+        >
+          {openIds.length === filteredFaqs.length ? 'Collapse All' : 'Expand All'}
+        </button>
+      </div>
 
-      <div className="faq-simple-list space-y-3">
-        {FAQS_DATA.map((faq) => {
-          const isOpen = openIds.includes(faq.id);
-          return (
-            <div
-              key={faq.id}
-              className="border border-neutral-200 rounded-xl overflow-hidden bg-white shadow-sm"
+      {/* Interactive FAQ Search Bar */}
+      <div className="mb-6">
+        <div className="header-trans-search-form !w-full !rounded-xl !py-2.5 !px-3.5 shadow-sm">
+          <Search size={18} className="text-neutral-400 shrink-0" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search questions (e.g. return policy, shipping time, materials)..."
+            aria-label="Search FAQs"
+            className="text-sm"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="text-neutral-400 hover:text-neutral-600 text-xs font-bold p-1"
             >
-              <button
-                type="button"
-                onClick={() => toggle(faq.id)}
-                className="w-full text-left p-4 flex items-center justify-between font-bold text-neutral-900 hover:bg-neutral-50 transition-colors"
-                aria-expanded={isOpen}
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="faq-modern-list space-y-3">
+        {filteredFaqs.length === 0 ? (
+          <div className="text-center py-12 bg-neutral-50 rounded-2xl border border-dashed border-neutral-300">
+            <p className="text-neutral-500 text-sm font-medium">
+              No matching questions found for &quot;{searchQuery}&quot;.
+            </p>
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="mt-3 text-xs font-bold text-sky-600 hover:underline"
+            >
+              View all {FAQS_DATA.length} questions
+            </button>
+          </div>
+        ) : (
+          filteredFaqs.map((faq) => {
+            const isOpen = openIds.includes(faq.id);
+            return (
+              <div
+                key={faq.id}
+                className={`faq-card-modern ${isOpen ? 'faq-active' : ''}`}
               >
-                <span className="text-sm md:text-base pr-3">{faq.question}</span>
-                <span className="text-neutral-400 shrink-0">
-                  {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                </span>
-              </button>
-              {isOpen && (
-                <div className="px-4 pb-4 pt-1 text-sm text-neutral-600 border-t border-neutral-100 bg-neutral-50/40">
-                  {faq.answer}
-                </div>
-              )}
-            </div>
-          );
-        })}
+                <button
+                  type="button"
+                  onClick={() => toggle(faq.id)}
+                  className="faq-trigger-btn"
+                  aria-expanded={isOpen}
+                >
+                  <div className="flex items-center gap-2 pr-3">
+                    <span className="faq-num-badge">{faq.id}</span>
+                    <span className="font-bold text-sm md:text-base text-neutral-900 leading-snug">
+                      {faq.question.replace(/^\d+\.\s*/, '')}
+                    </span>
+                  </div>
+                  <span className="text-neutral-400 shrink-0 transition-transform duration-200">
+                    {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                  </span>
+                </button>
+                {isOpen && (
+                  <div className="faq-answer-content">
+                    {faq.answer}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Help Banner at bottom */}
+      <div className="mt-8 p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+        <div>
+          <h4 className="font-bold text-sm text-neutral-900">Still have questions?</h4>
+          <p className="text-xs text-neutral-500">Our customer support team is here to help 24/7.</p>
+        </div>
+        <a
+          href="mailto:dungeons.support@gmail.com"
+          className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider shrink-0 transition-all"
+        >
+          Contact Support
+        </a>
       </div>
     </div>
   );

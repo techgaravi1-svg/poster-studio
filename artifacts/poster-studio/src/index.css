@@ -26,12 +26,14 @@
   padding: 0;
 }
 
+html,
 body {
   font-family: var(--font-sans);
   background-color: #ffffff;
   color: var(--color-text-main);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 a {
@@ -63,7 +65,7 @@ button {
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow-x: hidden;
+  overflow-x: clip; /* clip prevents horizontal scroll without breaking sticky positioning */
 }
 
 .main-content-flow {
@@ -71,14 +73,18 @@ button {
   width: 100%;
 }
 
-/* 1. HEADER (POSTGENZ) */
+/* 1. HEADER (POSTGENZ) - STICKY TRANSPARENT FROSTED GLASS */
 .postgenz-header {
   position: sticky;
   top: 0;
-  z-index: 40;
-  background-color: #ffffff;
-  border-bottom: 1px solid #f3f4f6;
+  z-index: 1000;
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
   width: 100%;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .header-inner {
@@ -4876,4 +4882,317 @@ button {
   padding: 6px 12px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================================
+   TRANSPARENT HEADER & SEARCH BAR STYLES
+============================================================ */
+.header-inline-search-wrap {
+  display: none;
+}
+
+@media (min-width: 860px) {
+  .header-inline-search-wrap {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    max-width: 320px;
+    margin: 0 16px;
+  }
+}
+
+.header-trans-search-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1.5px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 9999px;
+  padding: 6px 14px;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.header-trans-search-form:focus-within {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.header-trans-search-form input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  width: 100%;
+  color: #111827;
+}
+
+.header-search-bar-dropdown {
+  position: sticky;
+  top: 62px;
+  z-index: 998;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 10px 16px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ============================================================
+   CART / BAG PAGE RESPONSIVENESS & PROCEED TO CHECKOUT BUTTON
+============================================================ */
+.postgenz-cart-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 16px 100px;
+}
+
+@media (min-width: 1024px) {
+  .postgenz-cart-page {
+    padding-bottom: 48px;
+  }
+}
+
+.bag-checkout-btn,
+.btn-primary-checkout {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  padding: 14px 20px !important;
+  background-color: #111827 !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  cursor: pointer !important;
+  border: none !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2) !important;
+}
+
+.bag-checkout-btn:hover,
+.btn-primary-checkout:hover {
+  background-color: #000000 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Mobile Sticky Checkout Bar on Cart / Bag */
+.cart-mobile-sticky-checkout {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 1024px) {
+  .cart-mobile-sticky-checkout {
+    display: none !important;
+  }
+}
+
+.cart-mobile-buy-btn {
+  background-color: #111827 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 13.5px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 12px 22px !important;
+  border-radius: 10px !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ============================================================
+   CHECKOUT PAGE RESPONSIVE 2-COLUMN & STICKY PLACE ORDER BAR
+============================================================ */
+.postgenz-checkout-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 16px 110px;
+}
+
+@media (min-width: 1024px) {
+  .postgenz-checkout-page {
+    padding-bottom: 50px;
+  }
+}
+
+.checkout-grid-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .checkout-grid-container {
+    grid-template-columns: 1.4fr 1fr;
+    gap: 32px;
+  }
+}
+
+.mobile-checkout-sticky-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 1024px) {
+  .mobile-checkout-sticky-bar {
+    display: none !important;
+  }
+}
+
+.mobile-place-order-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 13.5px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 12px 22px !important;
+  border-radius: 10px !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
+}
+
+/* ============================================================
+   MODERN RESPONSIVE FAQS STYLING
+============================================================ */
+.faq-card-modern {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.faq-card-modern:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.faq-card-modern.faq-active {
+  border-color: #38bdf8;
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.12);
+}
+
+.faq-trigger-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #ffffff;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14.5px;
+  color: #111827;
+  transition: background 0.15s ease;
+}
+
+.faq-trigger-btn:hover {
+  background: #f8fafc;
+}
+
+.faq-answer-content {
+  padding: 0 20px 18px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #4b5563;
+  border-top: 1px solid #f1f5f9;
+  background: #fcfcfd;
+}
+
+.faq-num-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 12px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.faq-active .faq-num-badge {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+/* ============================================================
+   PDP BUY NOW BUTTON
+============================================================ */
+.btn-buy-now-accent {
+  flex: 1;
+  height: 48px;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+  font-size: 13.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.btn-buy-now-accent:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45) !important;
 }

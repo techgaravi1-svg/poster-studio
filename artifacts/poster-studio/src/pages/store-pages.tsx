@@ -30,6 +30,7 @@ import {
   Lock,
   Sparkles,
   Info,
+  Zap,
 } from 'lucide-react';
 import { collections, formatPrice, getProduct, products, searchProducts, storeCategories, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
@@ -1058,7 +1059,8 @@ export function ProductPage() {
           className="btn-buy-it-now-blue"
           onClick={() => handleAddToCart(true)}
         >
-          BUY IT NOW
+          <Zap size={18} strokeWidth={2.4} />
+          <span>BUY NOW • FAST CHECKOUT</span>
         </button>
 
         {/* 6. SECURE CHECKOUT WITH BADGES */}
@@ -2499,13 +2501,33 @@ export function CartPage() {
 
               <button
                 type="button"
-                className="w-full py-3.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-sm font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                className="bag-checkout-btn"
                 onClick={() => navigate('/checkout')}
               >
-                <span>Proceed to Checkout</span>
+                <span>PROCEED TO BUY / CHECKOUT</span>
                 <ArrowRight size={16} />
               </button>
             </div>
+          </div>
+
+          {/* Mobile Sticky Checkout Bar */}
+          <div className="cart-mobile-sticky-checkout">
+            <div>
+              <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider block">
+                Total ({totals.totalItemCount} Items)
+              </span>
+              <span className="text-lg font-black text-neutral-900">
+                {formatPrice(totals.total)}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="cart-mobile-buy-btn"
+              onClick={() => navigate('/checkout')}
+            >
+              <span>PROCEED TO BUY</span>
+              <ArrowRight size={15} />
+            </button>
           </div>
         </div>
       )}
@@ -2659,7 +2681,7 @@ export function CheckoutPage() {
         <p className="collection-sub-text">• COMPLETE YOUR ORDER IN 5 SIMPLE STEPS •</p>
       </div>
 
-      <div className="checkout-content-wrap max-w-2xl mx-auto px-4 py-4">
+      <div className="checkout-content-wrap max-w-5xl mx-auto px-4 py-4">
         {error && (
           <div className="form-error-banner mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs md:text-sm font-semibold flex items-center gap-2.5">
             <span>⚠️</span>
@@ -2667,7 +2689,8 @@ export function CheckoutPage() {
           </div>
         )}
 
-        <form onSubmit={handlePlaceOrder} className="checkout-flow flex flex-col gap-4">
+        <form onSubmit={handlePlaceOrder} className="checkout-grid-container">
+          <div className="checkout-left-col flex flex-col gap-4">
           {/* ============================================================== */}
           {/* 1. ADDRESS SECTION (MYNTRA STYLE - PAGE 6) */}
           {/* ============================================================== */}
@@ -2960,10 +2983,13 @@ export function CheckoutPage() {
               </p>
             )}
           </div>
+        </div>
 
-          {/* ============================================================== */}
+        {/* ============================================================== */}
+        {/* RIGHT COLUMN: PRICE DETAILS & PAYMENT CONFIRMATION */}
+        {/* ============================================================== */}
+        <div className="checkout-right-col flex flex-col gap-4 lg:sticky lg:top-24">
           {/* 4. PRICE DETAILS (PAGE 6) */}
-          {/* ============================================================== */}
           <div className="checkout-card bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
             <h3 className="font-extrabold text-sm text-neutral-900 uppercase tracking-wide mb-3">
               Price Details
@@ -3021,7 +3047,29 @@ export function CheckoutPage() {
               🔒 100% Safe &amp; Secure Payments via Razorpay.
             </p>
           </div>
+        </div>
         </form>
+
+        {/* Mobile Sticky Place Order Bar */}
+        <div className="mobile-checkout-sticky-bar">
+          <div>
+            <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider block">
+              Total Amount
+            </span>
+            <span className="text-lg font-black text-neutral-900">
+              {formatPrice(totals.total)}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handlePlaceOrder}
+            disabled={isProcessing || cart.length === 0}
+            className="mobile-place-order-btn"
+          >
+            <Lock size={15} />
+            <span>{isProcessing ? 'PROCESSING...' : 'PLACE ORDER'}</span>
+          </button>
+        </div>
       </div>
     </main>
   );

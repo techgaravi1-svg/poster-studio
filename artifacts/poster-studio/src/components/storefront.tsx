@@ -460,12 +460,25 @@ export function Header() {
             </div>
           </nav>
 
+          {/* Transparent inline search on desktop */}
+          <div className="header-inline-search-wrap">
+            <form onSubmit={submitSearch} className="header-trans-search-form">
+              <Search size={16} className="text-neutral-500 shrink-0" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search posters, football, anime..."
+                aria-label="Search posters"
+              />
+            </form>
+          </div>
+
           <div className="header-actions-right">
             <button
               type="button"
               className="header-icon-btn"
               aria-label="Search"
-              onClick={() => setSearchOpen(true)}
+              onClick={() => setSearchOpen((prev) => !prev)}
             >
               <Search size={21} />
             </button>
@@ -487,49 +500,53 @@ export function Header() {
             </Link>
           </div>
         </div>
+
+        {/* Transparent search bar dropdown under header */}
+        {searchOpen && (
+          <div className="header-search-bar-dropdown">
+            <div className="max-w-xl mx-auto flex flex-col gap-2">
+              <form onSubmit={submitSearch} className="header-trans-search-form">
+                <Search size={18} className="text-neutral-500 shrink-0" />
+                <input
+                  ref={inputRef}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search posters, anime, marvel, spiderman..."
+                  autoFocus
+                  aria-label="Search posters"
+                />
+                <button
+                  type="button"
+                  className="p-1 text-neutral-400 hover:text-neutral-700"
+                  onClick={() => setSearchOpen(false)}
+                  aria-label="Close search"
+                >
+                  <X size={18} />
+                </button>
+              </form>
+              <div className="flex items-center gap-1.5 flex-wrap pt-0.5 text-xs">
+                <span className="text-neutral-400 font-semibold text-[11px]">Popular:</span>
+                {['Spiderman', 'Ronaldo', 'Neymar', 'Girl Boss', 'Marvel'].map((tag) => (
+                  <button
+                    type="button"
+                    key={tag}
+                    className="px-2.5 py-0.5 rounded-full bg-neutral-100/90 hover:bg-neutral-200 text-neutral-700 text-[11px] font-medium"
+                    onClick={() => {
+                      setQuery(tag);
+                      navigate(`/search?q=${encodeURIComponent(tag)}`);
+                      setSearchOpen(false);
+                    }}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {menuOpen && <MenuDrawer isOpen={menuOpen} onClose={() => setMenuOpen(false)} />}
-
-      {searchOpen && (
-        <div className="search-overlay" onClick={() => setSearchOpen(false)}>
-          <div className="search-box" onClick={(e) => e.stopPropagation()}>
-            <form onSubmit={submitSearch} className="postgenz-search-form">
-              <Search size={20} className="search-icon-inside" />
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search posters, football, anime, spiderman..."
-                aria-label="Search posters"
-              />
-              <button
-                type="button"
-                className="icon-button"
-                aria-label="Close search"
-                onClick={() => setSearchOpen(false)}
-              >
-                <X size={20} />
-              </button>
-            </form>
-            <div className="search-suggestions">
-              <span>Trending Searches:</span>
-              {['Spiderman', 'Ronaldo', 'Neymar', 'Girl Boss', 'Marvel', 'Photobooth'].map((tag) => (
-                <button
-                  type="button"
-                  key={tag}
-                  onClick={() => {
-                    navigate(`/search?q=${tag}`);
-                    setSearchOpen(false);
-                  }}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {wishlistOpen && (
         <div className="drawer-backdrop" onClick={() => setWishlistOpen(false)}>
