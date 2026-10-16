@@ -6,6 +6,7 @@ import NotFound from '@/pages/not-found';
 import {
   AccountPage,
   AdminPage,
+  BagPage,
   CartPage,
   CheckoutPage,
   CollectionPage,
@@ -16,6 +17,7 @@ import {
   OrdersPage,
   ProductPage,
   SearchPage,
+  WishlistPage,
 } from '@/pages/store-pages';
 import { FaqPage, TermsPage, ReturnPolicyPage } from '@/pages/policy-pages';
 
@@ -37,6 +39,8 @@ function Router() {
     <Route path="/best-sellers" component={() => <CollectionPage bestsellers />} />
     <Route path="/custom" component={CustomPage} />
     <Route path="/products/:slug" component={ProductPage} />
+    <Route path="/wishlist" component={WishlistPage} />
+    <Route path="/bag" component={BagPage} />
     <Route path="/cart" component={CartPage} />
     <Route path="/checkout/success" component={OrderSuccessPage} />
     <Route path="/checkout" component={CheckoutPage} />

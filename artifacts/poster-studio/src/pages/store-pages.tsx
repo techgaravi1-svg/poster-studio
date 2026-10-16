@@ -991,13 +991,6 @@ export function ProductPage() {
           >
             View Size Chart →
           </button>
-          <button
-            type="button"
-            className="how-to-apply-offer-btn"
-            onClick={() => setOfferModalOpen(true)}
-          >
-            🎁 How to Apply Offer
-          </button>
         </div>
 
         {/* 3. SIZE SELECTOR */}
@@ -1537,7 +1530,7 @@ export function CustomPage() {
       title: `Custom Wall Poster (${posterSize} • ${posterOrientation.toUpperCase()})`,
       price: posterUnitCost,
       size: posterSize,
-      quantity: posterQuantity,
+      quantity: 1,
       orientation: posterOrientation,
       artTreatment: 'art-signal',
       customUpload: {
@@ -1547,10 +1540,11 @@ export function CustomPage() {
         format: posterSize,
       },
     });
-    setToast(`${posterQuantity} × Custom Wall Poster (${posterSize}) added to bag! Ready for another order.`);
+    setToast(`Custom Wall Poster (${posterSize}) added to bag! Ready for another order.`);
     // Reset builder to blank state
     setPosterPhoto(null);
-    setPosterQuantity(1);
+    setPosterOrientation('portrait');
+    setPosterSize('A4');
     window.setTimeout(() => setToast(''), 3000);
   };
 
@@ -2106,13 +2100,6 @@ export function CustomPage() {
                 >
                   Landscape (Horizontal)
                 </button>
-                <button
-                  type="button"
-                  className={`option-pill ${posterOrientation === 'square' ? 'active-pill' : ''}`}
-                  onClick={() => setPosterOrientation('square')}
-                >
-                  Square (1:1)
-                </button>
               </div>
             </div>
 
@@ -2153,46 +2140,13 @@ export function CustomPage() {
               SIZE CHART
             </button>
 
-            {/* 4. QUANTITY */}
-            <div className="control-group">
-              <label className="control-label">Number of Packs (Quantity)</label>
-              <div className="stepper-box">
-                <button
-                  type="button"
-                  className="stepper-btn"
-                  onClick={() => setPosterQuantity(Math.max(1, posterQuantity - 1))}
-                  aria-label="Decrease quantity"
-                >
-                  <Minus size={14} />
-                </button>
-                <span className="stepper-val">{posterQuantity}</span>
-                <button
-                  type="button"
-                  className="stepper-btn"
-                  onClick={() => setPosterQuantity(posterQuantity + 1)}
-                  aria-label="Increase quantity"
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-              <span className="quantity-hint-text">
-                Order multiple sets of your mini prints
-              </span>
-            </div>
-
-            {/* 5. TOTAL PRICE */}
-            <div className="custom-price-total">
-              <span>Total Price:</span>
-              <strong>RS. {posterTotalPrice}.00</strong>
-            </div>
-
-            {/* 6. ADD TO BAG */}
+            {/* 4. ADD TO BAG (DIRECTLY AFTER SIZE CHART PER PAGE 11) */}
             <button
               type="button"
-              className="btn-buy-it-now-blue"
+              className="btn-buy-it-now-blue mt-4"
               onClick={handleAddPosterToCart}
             >
-              ADD TO BAG • RS. {posterTotalPrice}.00
+              ADD TO BAG • RS. {posterUnitCost}.00
             </button>
 
             <button
@@ -2270,16 +2224,6 @@ export function CustomPage() {
                 </button>
               </div>
             </div>
-
-            <div className="size-guide-modal-footer">
-              <button
-                type="button"
-                className="btn-size-guide-done"
-                onClick={() => setSizeChartOpen(false)}
-              >
-                GOT IT • CLOSE GUIDE
-              </button>
-            </div>
           </div>
         </div>
       )}
@@ -2289,145 +2233,309 @@ export function CustomPage() {
   );
 }
 
-export function CartPage() {
-  const [, navigate] = useLocation();
-  const { cart, coupon } = useStore();
-  const totals = cartTotals(cart, coupon);
-  const [couponInput, setCouponInput] = useState(coupon);
-  const [couponMessage, setCouponMessage] = useState('');
+// =============================================================
+// DEDICATED WISHLIST PAGE (PAGE 5)
+// =============================================================
+export function WishlistPage() {
+  const { wishlist = [] } = useStore();
+  const [toast, setToast] = useState('');
 
-  const applyCoupon = () => {
-    store.setCoupon(couponInput.trim().toUpperCase());
-    setCouponMessage(couponInput.trim().toUpperCase() === 'POSTGENZ10' ? '10% discount applied!' : 'Try coupon POSTGENZ10');
+  const wishlistProducts = products.filter(
+    (p) => wishlist.includes(p.slug) || wishlist.includes(p.id)
+  );
+
+  const handleMoveToBag = (product: Product) => {
+    store.addToCart({
+      productId: product.id,
+      slug: product.slug,
+      title: product.title,
+      price: product.price,
+      size: 'A5',
+      quantity: 1,
+      orientation: product.orientation,
+      artTreatment: product.artTreatment,
+    });
+    setToast(`${product.title} added to bag!`);
+    window.setTimeout(() => setToast(''), 2500);
+  };
+
+  const handleRemove = (product: Product) => {
+    store.toggleWishlist(product.slug);
+    setToast(`${product.title} removed from Wishlist`);
+    window.setTimeout(() => setToast(''), 2500);
   };
 
   return (
-    <main className="postgenz-cart-page">
+    <main className="postgenz-wishlist-page">
       <div className="collection-top-header">
-        <h1 className="collection-main-title">SHOPPING BAG</h1>
+        <h1 className="collection-main-title">
+          MY WISHLIST {wishlistProducts.length > 0 ? `(${wishlistProducts.length} ITEMS)` : ''}
+        </h1>
+        <p className="collection-sub-text">ALL YOUR SAVED POSTERS IN ONE PLACE</p>
       </div>
 
-      {cart.length === 0 ? (
-        <div className="empty-state cart-empty">
-          <ShoppingBag size={48} className="empty-cart-icon" />
-          <h3>Your bag is empty</h3>
-          <p>Explore our best-selling posters and custom photobooth strips.</p>
-          <Link href="/collections" className="button postgenz-btn">
-            Explore Posters <ArrowRight size={14} />
-          </Link>
-        </div>
-      ) : (
-        <div className="cart-container-inner">
-          <div className="cart-items-column">
-            {cart.map((item) => (
-              <div className="cart-card-item" key={item.key}>
-                <div className="cart-item-preview">
-                  <PosterArt treatment={item.artTreatment} title={item.title} compact />
-                </div>
-                <div className="cart-item-info">
-                  <Link href={`/products/${item.slug}`} className="cart-item-name">
-                    {item.title}
-                  </Link>
-                  <div className="cart-item-meta">Size: {item.size}</div>
-                  <div className="cart-item-price-val">{formatPrice(item.price * item.quantity)}</div>
-                  <div className="stepper-box compact-stepper">
+      <div className="wishlist-page-content max-w-5xl mx-auto px-4 py-6">
+        {wishlistProducts.length === 0 ? (
+          <div className="empty-state wishlist-empty py-16 text-center">
+            <Heart size={56} className="empty-cart-icon text-rose-500 mx-auto mb-4 stroke-1" />
+            <h3 className="text-xl font-bold text-neutral-900 mb-2">YOUR WISHLIST IS EMPTY</h3>
+            <p className="text-neutral-500 max-w-md mx-auto mb-6 text-sm">
+              Explore our trending posters and custom photobooth prints, and tap the heart icon to save what you love!
+            </p>
+            <Link href="/collections/posters" className="btn-explore-more inline-block">
+              EXPLORE POSTERS →
+            </Link>
+          </div>
+        ) : (
+          <div className="wishlist-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {wishlistProducts.map((product) => (
+              <div key={product.id} className="wishlist-card border border-neutral-200 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="wishlist-card-media relative aspect-[3/4] bg-neutral-100 overflow-hidden">
+                    <Link href={`/products/${product.slug}`} className="block w-full h-full">
+                      <img
+                        src={product.images?.[0] || '/assets/spiderman-product-hero.jpg'}
+                        alt={product.title}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      />
+                    </Link>
                     <button
                       type="button"
-                      className="stepper-btn"
-                      onClick={() => store.updateQuantity(item.key, item.quantity - 1)}
+                      onClick={() => handleRemove(product)}
+                      className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/90 text-neutral-600 hover:text-red-600 flex items-center justify-center shadow-md transition-colors"
+                      aria-label={`Remove ${product.title} from wishlist`}
                     >
-                      <Minus size={12} />
+                      <Trash2 size={16} />
                     </button>
-                    <span className="stepper-val">{item.quantity}</span>
-                    <button
-                      type="button"
-                      className="stepper-btn"
-                      onClick={() => store.updateQuantity(item.key, item.quantity + 1)}
+                    {product.bestseller && (
+                      <span className="badge-best-seller absolute bottom-2 left-2 text-[9px] py-0.5 px-2">
+                        ⚡ BEST SELLER
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-3">
+                    <Link
+                      href={`/products/${product.slug}`}
+                      className="font-bold text-xs md:text-sm text-neutral-900 line-clamp-2 hover:underline"
                     >
-                      <Plus size={12} />
-                    </button>
+                      {product.title}
+                    </Link>
+                    <div className="flex items-baseline gap-2 mt-1.5">
+                      <span className="font-extrabold text-sm text-neutral-900">
+                        {formatPrice(product.price)}
+                      </span>
+                      {product.compareAtPrice > product.price && (
+                        <del className="text-xs text-neutral-400">
+                          {formatPrice(product.compareAtPrice)}
+                        </del>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="cart-remove-btn"
-                  aria-label="Remove item"
-                  onClick={() => store.removeFromCart(item.key)}
-                >
-                  <Trash2 size={16} />
-                </button>
+
+                <div className="p-3 pt-0">
+                  <button
+                    type="button"
+                    onClick={() => handleMoveToBag(product)}
+                    className="w-full py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <ShoppingBag size={14} />
+                    <span>Move to Bag</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
-
-          <aside className="cart-summary-card">
-            <h3 className="summary-title">Order Summary</h3>
-            <div className="coupon-form-row">
-              <input
-                value={couponInput}
-                onChange={(e) => setCouponInput(e.target.value)}
-                placeholder="Discount Code"
-                className="coupon-input"
-              />
-              <button type="button" className="btn-apply-coupon" onClick={applyCoupon}>
-                Apply
-              </button>
-            </div>
-            {couponMessage && <div className="coupon-alert-text">{couponMessage}</div>}
-
-            <div className="summary-lines-table">
-              <div className="summary-row">
-                <span>Subtotal</span>
-                <strong>{formatPrice(totals.subtotal)}</strong>
-              </div>
-              <div className="summary-row">
-                <span>Shipping</span>
-                <strong className="text-emerald-600">FREE (Prepaid)</strong>
-              </div>
-              {totals.discount > 0 && (
-                <div className="summary-row discount-row">
-                  <span>Discount</span>
-                  <strong>−{formatPrice(totals.discount)}</strong>
-                </div>
-              )}
-              <div className="summary-row total-highlight">
-                <span>Total</span>
-                <strong>{formatPrice(totals.total)}</strong>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="btn-buy-it-now-blue"
-              onClick={() => navigate('/checkout')}
-            >
-              PROCEED TO CHECKOUT
-            </button>
-
-            <PaymentTrustBadges />
-          </aside>
-        </div>
-      )}
+        )}
+      </div>
+      <Toast message={toast} />
     </main>
   );
 }
 
+// =============================================================
+// DEDICATED YOUR BAG PAGE (PAGE 5)
+// =============================================================
+export function CartPage() {
+  const [, navigate] = useLocation();
+  const { cart, coupon } = useStore();
+  const totals = cartTotals(cart, coupon);
+  const [toast, setToast] = useState('');
+
+  const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  return (
+    <main className="postgenz-cart-page">
+      <div className="collection-top-header">
+        <h1 className="collection-main-title">
+          YOUR BAG {totalCount > 0 ? `(${totalCount})` : ''}
+        </h1>
+        <p className="collection-sub-text">REVIEW YOUR ITEMS BEFORE CHECKOUT</p>
+      </div>
+
+      {cart.length === 0 ? (
+        <div className="empty-state cart-empty py-16 text-center">
+          <ShoppingBag size={56} className="empty-cart-icon text-neutral-400 mx-auto mb-4 stroke-1" />
+          <h3 className="text-xl font-bold text-neutral-900 mb-2">HEY, YOUR BAG IS EMPTY!</h3>
+          <p className="text-neutral-500 max-w-md mx-auto mb-6 text-sm">
+            There is nothing in your bag. Let&apos;s add some awesome posters and custom photobooth prints.
+          </p>
+          <Link href="/collections/posters" className="btn-explore-more inline-block">
+            EXPLORE POSTERS →
+          </Link>
+        </div>
+      ) : (
+        <div className="dedicated-bag-container max-w-4xl mx-auto px-4 py-6">
+          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-3 text-xs md:text-sm font-semibold flex items-center gap-2 mb-6 shadow-sm">
+            <span>🎉</span>
+            <span>Free shipping on prepaid orders across India!</span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            {/* Bag Items List */}
+            <div className="lg:col-span-2 flex flex-col gap-4">
+              {cart.map((item) => (
+                <div
+                  key={item.key}
+                  className="bag-item-card bg-white border border-neutral-200 rounded-xl p-3.5 md:p-4 flex gap-4 items-center shadow-sm"
+                >
+                  <div className="w-16 h-20 md:w-20 md:h-24 rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-neutral-200">
+                    {item.customUpload?.preview ? (
+                      <img
+                        src={item.customUpload.preview}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs font-bold bg-neutral-900 text-white p-1 text-center">
+                        {item.title.split(' ')[0]}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-sm md:text-base text-neutral-900 line-clamp-1">
+                      {item.title}
+                    </h4>
+                    <div className="text-xs text-neutral-500 mt-1 space-x-2">
+                      <span>Size: <strong className="text-neutral-700">{item.size}</strong></span>
+                      {item.customUpload?.borderStyle && (
+                        <span>• Border: <strong className="text-neutral-700 capitalize">{item.customUpload.borderStyle}</strong></span>
+                      )}
+                    </div>
+                    <div className="font-extrabold text-sm md:text-base text-neutral-900 mt-2">
+                      {formatPrice(item.price * item.quantity)}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-3 shrink-0">
+                    <button
+                      type="button"
+                      className="text-neutral-400 hover:text-red-500 p-1 transition-colors"
+                      aria-label="Remove item"
+                      onClick={() => {
+                        store.removeFromCart(item.key);
+                        setToast('Item removed from bag');
+                        window.setTimeout(() => setToast(''), 2000);
+                      }}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+
+                    <div className="stepper-box flex items-center border border-neutral-300 rounded-lg overflow-hidden h-8">
+                      <button
+                        type="button"
+                        className="stepper-btn px-2 text-neutral-600 hover:bg-neutral-100"
+                        onClick={() => store.updateQuantity(item.key, item.quantity - 1)}
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus size={12} />
+                      </button>
+                      <span className="stepper-val px-2 text-xs font-bold text-neutral-900">
+                        {item.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        className="stepper-btn px-2 text-neutral-600 hover:bg-neutral-100"
+                        onClick={() => store.updateQuantity(item.key, item.quantity + 1)}
+                        aria-label="Increase quantity"
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Bag Order Summary */}
+            <div className="bag-summary-card bg-neutral-50 border border-neutral-200 rounded-2xl p-5 shadow-sm sticky top-24">
+              <h3 className="font-bold text-base text-neutral-900 uppercase tracking-wide mb-4">
+                Order Summary
+              </h3>
+
+              <div className="space-y-3 text-sm border-b border-neutral-200 pb-4 mb-4">
+                <div className="flex justify-between">
+                  <span className="text-neutral-600">Subtotal ({totals.totalItemCount} items)</span>
+                  <span className="font-bold text-neutral-900">{formatPrice(totals.subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-600">Standard Delivery</span>
+                  <span className="font-bold text-emerald-600">FREE</span>
+                </div>
+                {totals.discount > 0 && (
+                  <div className="flex justify-between text-emerald-600 font-bold">
+                    <span>Discount</span>
+                    <span>−{formatPrice(totals.discount)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between items-baseline mb-6">
+                <span className="text-base font-bold text-neutral-900">Subtotal</span>
+                <span className="text-xl font-extrabold text-neutral-900">{formatPrice(totals.total)}</span>
+              </div>
+
+              <button
+                type="button"
+                className="w-full py-3.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-sm font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                onClick={() => navigate('/checkout')}
+              >
+                <span>Proceed to Checkout</span>
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <Toast message={toast} />
+    </main>
+  );
+}
+
+export const BagPage = CartPage;
+
+// =============================================================
+// CHECKOUT PAGE (MYNTRA-STYLE REDESIGN - PAGE 6)
+// =============================================================
 export function CheckoutPage() {
   const [, navigate] = useLocation();
   const { cart, coupon } = useStore();
   const totals = cartTotals(cart, coupon);
 
   const [form, setForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
+    name: 'Kaushik Vansh',
+    email: 'kaushik@dungeons.in',
+    phone: '9265964547',
+    address: '417, Satyamev Eminence, Near Shukan Mall, Science City, Sola',
+    city: 'Ahmedabad',
+    state: 'Gujarat',
+    pincode: '380060',
     country: 'India',
   });
 
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [couponInput, setCouponInput] = useState('');
@@ -2452,7 +2560,7 @@ export function CheckoutPage() {
       setCouponFeedback({ type: 'error', text: 'Please enter a coupon code.' });
       return;
     }
-    const validCodes = ['STUDIO10', 'FIRST10', 'DUNGEONS3', 'DUNGEONS5', 'POSTER3', 'POSTER5'];
+    const validCodes = ['STUDIO10', 'FIRST10', 'DUNGEONS3', 'DUNGEONS5', 'POSTER3', 'POSTER5', 'HMCLUB', 'MYNH15'];
     if (!validCodes.includes(code)) {
       setCouponFeedback({ type: 'error', text: 'Invalid coupon code. Try STUDIO10 for 10% off.' });
       return;
@@ -2474,7 +2582,7 @@ export function CheckoutPage() {
     else if (!/^\+?[0-9\s-]{10,14}$/.test(form.phone.trim())) errs.phone = 'Enter a valid 10-digit mobile number';
     if (!form.email.trim()) errs.email = 'Email address is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errs.email = 'Enter a valid email address';
-    if (!form.address.trim()) errs.address = 'Street address / Flat number is required';
+    if (!form.address.trim()) errs.address = 'Street address is required';
     if (!form.city.trim()) errs.city = 'City is required';
     if (!form.state.trim()) errs.state = 'State is required';
     if (!form.pincode.trim()) errs.pincode = 'PIN code is required';
@@ -2541,159 +2649,147 @@ export function CheckoutPage() {
     }
   };
 
+  const calculatedMRP = totals.subtotal + 120 * totals.totalItemCount;
+  const calculatedSavings = calculatedMRP - totals.total;
+
   return (
-    <main className="postgenz-checkout-page">
+    <main className="postgenz-checkout-page bg-neutral-50/50 min-h-screen pb-20">
       <div className="collection-top-header">
-        <h1 className="collection-main-title">SECURE CHECKOUT</h1>
-        <p className="collection-sub-text">• COMPLETE YOUR ORDER IN 5 EASY STEPS •</p>
+        <h1 className="collection-main-title">CHECKOUT</h1>
+        <p className="collection-sub-text">• COMPLETE YOUR ORDER IN 5 SIMPLE STEPS •</p>
       </div>
 
-      <div className="checkout-content-wrap max-w-4xl mx-auto px-4 pb-16">
+      <div className="checkout-content-wrap max-w-2xl mx-auto px-4 py-4">
         {error && (
-          <div className="form-error-banner mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-semibold flex items-center gap-3">
+          <div className="form-error-banner mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs md:text-sm font-semibold flex items-center gap-2.5">
             <span>⚠️</span>
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handlePlaceOrder} className="checkout-five-steps-flow flex flex-col gap-8">
+        <form onSubmit={handlePlaceOrder} className="checkout-flow flex flex-col gap-4">
           {/* ============================================================== */}
-          {/* 1. ADDRESS SECTION */}
+          {/* 1. ADDRESS SECTION (MYNTRA STYLE - PAGE 6) */}
           {/* ============================================================== */}
-          <div className="form-card-section checkout-step-card" id="step-address">
-            <div className="step-header-row flex items-center justify-between pb-3 mb-4 border-b border-neutral-100">
-              <div className="flex items-center gap-2.5">
-                <span className="step-badge-number">1</span>
-                <h2 className="step-title font-bold text-lg text-neutral-900 uppercase tracking-wide">
-                  Delivery Address
-                </h2>
+          <div className="checkout-card bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-sm text-neutral-900">{form.name || 'Delivery Address'}</span>
+                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
+                  HOME
+                </span>
               </div>
-              <span className="text-xs text-neutral-400 font-medium">* Required fields</span>
+              <button
+                type="button"
+                onClick={() => setIsEditingAddress(!isEditingAddress)}
+                className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline uppercase tracking-wider"
+              >
+                {isEditingAddress ? 'Done' : 'Change'}
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="input-field-group">
-                <label className="text-xs font-bold text-neutral-700">Full Name *</label>
-                <input
-                  required
-                  value={form.name}
-                  onChange={update('name')}
-                  placeholder="e.g. Rahul Sharma"
-                  className={`checkout-input ${formErrors.name ? 'border-red-500 bg-red-50/30' : ''}`}
-                />
-                {formErrors.name && <span className="text-xs text-red-600 mt-1">{formErrors.name}</span>}
+            {!isEditingAddress ? (
+              <div className="pt-3 text-xs md:text-sm text-neutral-600 space-y-1">
+                <p className="leading-relaxed">{form.address}, {form.city}, {form.state} {form.pincode}</p>
+                <p className="font-medium text-neutral-800">Mobile: <strong className="font-bold">{form.phone}</strong></p>
               </div>
-
-              <div className="input-field-group">
-                <label className="text-xs font-bold text-neutral-700">Phone Number (For Delivery Updates) *</label>
-                <input
-                  required
-                  type="tel"
-                  value={form.phone}
-                  onChange={update('phone')}
-                  placeholder="+91 98765 43210"
-                  className={`checkout-input ${formErrors.phone ? 'border-red-500 bg-red-50/30' : ''}`}
-                />
-                {formErrors.phone && <span className="text-xs text-red-600 mt-1">{formErrors.phone}</span>}
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4">
+                <div className="input-field-group">
+                  <label className="text-[11px] font-bold text-neutral-700">Full Name *</label>
+                  <input
+                    required
+                    value={form.name}
+                    onChange={update('name')}
+                    placeholder="e.g. Kaushik Vansh"
+                    className={`checkout-input text-xs ${formErrors.name ? 'border-red-500 bg-red-50/30' : ''}`}
+                  />
+                </div>
+                <div className="input-field-group">
+                  <label className="text-[11px] font-bold text-neutral-700">Mobile Number *</label>
+                  <input
+                    required
+                    type="tel"
+                    value={form.phone}
+                    onChange={update('phone')}
+                    placeholder="9265964547"
+                    className={`checkout-input text-xs ${formErrors.phone ? 'border-red-500 bg-red-50/30' : ''}`}
+                  />
+                </div>
+                <div className="input-field-group md:col-span-2">
+                  <label className="text-[11px] font-bold text-neutral-700">Email Address *</label>
+                  <input
+                    required
+                    type="email"
+                    value={form.email}
+                    onChange={update('email')}
+                    placeholder="kaushik@dungeons.in"
+                    className={`checkout-input text-xs ${formErrors.email ? 'border-red-500 bg-red-50/30' : ''}`}
+                  />
+                </div>
+                <div className="input-field-group md:col-span-2">
+                  <label className="text-[11px] font-bold text-neutral-700">Delivery Address *</label>
+                  <input
+                    required
+                    value={form.address}
+                    onChange={update('address')}
+                    placeholder="417, Satyamev Eminence, Near Shukan Mall..."
+                    className={`checkout-input text-xs ${formErrors.address ? 'border-red-500 bg-red-50/30' : ''}`}
+                  />
+                </div>
+                <div className="input-field-group">
+                  <label className="text-[11px] font-bold text-neutral-700">City *</label>
+                  <input
+                    required
+                    value={form.city}
+                    onChange={update('city')}
+                    placeholder="Ahmedabad"
+                    className={`checkout-input text-xs ${formErrors.city ? 'border-red-500 bg-red-50/30' : ''}`}
+                  />
+                </div>
+                <div className="input-field-group">
+                  <label className="text-[11px] font-bold text-neutral-700">PIN Code *</label>
+                  <input
+                    required
+                    value={form.pincode}
+                    onChange={update('pincode')}
+                    placeholder="380060"
+                    className={`checkout-input text-xs ${formErrors.pincode ? 'border-red-500 bg-red-50/30' : ''}`}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (validate()) setIsEditingAddress(false);
+                  }}
+                  className="md:col-span-2 py-2 bg-neutral-900 text-white rounded-lg text-xs font-bold uppercase tracking-wider"
+                >
+                  Save &amp; Deliver Here
+                </button>
               </div>
-
-              <div className="input-field-group md:col-span-2">
-                <label className="text-xs font-bold text-neutral-700">Email Address (For Invoice &amp; Tracking) *</label>
-                <input
-                  required
-                  type="email"
-                  value={form.email}
-                  onChange={update('email')}
-                  placeholder="rahul@example.com"
-                  className={`checkout-input ${formErrors.email ? 'border-red-500 bg-red-50/30' : ''}`}
-                />
-                {formErrors.email && <span className="text-xs text-red-600 mt-1">{formErrors.email}</span>}
-              </div>
-
-              <div className="input-field-group md:col-span-2">
-                <label className="text-xs font-bold text-neutral-700">Delivery Address (House No, Building, Street, Area) *</label>
-                <input
-                  required
-                  value={form.address}
-                  onChange={update('address')}
-                  placeholder="Flat 402, Royal Residency, S.G. Highway"
-                  className={`checkout-input ${formErrors.address ? 'border-red-500 bg-red-50/30' : ''}`}
-                />
-                {formErrors.address && <span className="text-xs text-red-600 mt-1">{formErrors.address}</span>}
-              </div>
-
-              <div className="input-field-group">
-                <label className="text-xs font-bold text-neutral-700">City *</label>
-                <input
-                  required
-                  value={form.city}
-                  onChange={update('city')}
-                  placeholder="Ahmedabad"
-                  className={`checkout-input ${formErrors.city ? 'border-red-500 bg-red-50/30' : ''}`}
-                />
-                {formErrors.city && <span className="text-xs text-red-600 mt-1">{formErrors.city}</span>}
-              </div>
-
-              <div className="input-field-group">
-                <label className="text-xs font-bold text-neutral-700">State *</label>
-                <input
-                  required
-                  value={form.state}
-                  onChange={update('state')}
-                  placeholder="Gujarat"
-                  className={`checkout-input ${formErrors.state ? 'border-red-500 bg-red-50/30' : ''}`}
-                />
-                {formErrors.state && <span className="text-xs text-red-600 mt-1">{formErrors.state}</span>}
-              </div>
-
-              <div className="input-field-group">
-                <label className="text-xs font-bold text-neutral-700">PIN Code *</label>
-                <input
-                  required
-                  value={form.pincode}
-                  onChange={update('pincode')}
-                  placeholder="380015"
-                  className={`checkout-input ${formErrors.pincode ? 'border-red-500 bg-red-50/30' : ''}`}
-                />
-                {formErrors.pincode && <span className="text-xs text-red-600 mt-1">{formErrors.pincode}</span>}
-              </div>
-
-              <div className="input-field-group">
-                <label className="text-xs font-bold text-neutral-700">Country</label>
-                <input disabled value="India" className="checkout-input bg-neutral-100 text-neutral-500 cursor-not-allowed" />
-              </div>
-            </div>
+            )}
           </div>
 
           {/* ============================================================== */}
-          {/* 2. YOUR BAG */}
+          {/* 2. YOUR BAG (MYNTRA STYLE CARDS - PAGE 6) */}
           {/* ============================================================== */}
-          <div className="form-card-section checkout-step-card" id="step-bag">
-            <div className="step-header-row flex items-center justify-between pb-3 mb-4 border-b border-neutral-100">
-              <div className="flex items-center gap-2.5">
-                <span className="step-badge-number">2</span>
-                <h2 className="step-title font-bold text-lg text-neutral-900 uppercase tracking-wide">
-                  Your Bag ({totals.totalItemCount} {totals.totalItemCount === 1 ? 'item' : 'items'})
-                </h2>
-              </div>
-              <Link href="/cart" className="text-xs text-blue-600 font-bold hover:underline">
-                Edit Cart →
-              </Link>
-            </div>
+          <div className="checkout-card bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
+            <h3 className="font-extrabold text-sm text-neutral-900 uppercase tracking-wide mb-3">
+              Order Items ({totals.totalItemCount})
+            </h3>
 
             {cart.length === 0 ? (
-              <div className="text-center py-8 text-neutral-500 text-sm">
+              <div className="text-center py-6 text-neutral-500 text-xs">
                 Your order bag is empty.{' '}
                 <Link href="/collections/posters" className="text-blue-600 font-bold underline">
                   Explore Posters
                 </Link>
               </div>
             ) : (
-              <div className="checkout-bag-items-list flex flex-col divide-y divide-neutral-100">
+              <div className="space-y-3 divide-y divide-neutral-100">
                 {cart.map((item) => (
-                  <div key={item.key} className="checkout-bag-item-row py-4 flex items-center gap-4">
-                    {/* Item Thumbnail / Preview */}
-                    <div className="bag-item-thumb-frame w-16 h-20 rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-neutral-200">
+                  <div key={item.key} className="pt-3 first:pt-0 flex gap-3.5 items-center">
+                    <div className="w-16 h-20 rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-neutral-200">
                       {item.customUpload?.preview ? (
                         <img
                           src={item.customUpload.preview}
@@ -2701,36 +2797,52 @@ export function CheckoutPage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs font-bold bg-neutral-800 text-white">
+                        <div className="w-full h-full flex items-center justify-center text-[10px] font-bold bg-neutral-900 text-white p-1 text-center">
                           POSTER
                         </div>
                       )}
                     </div>
 
-                    {/* Details */}
-                    <div className="bag-item-info flex-1 min-w-0">
-                      <h4 className="font-bold text-sm text-neutral-900 truncate">{item.title}</h4>
-                      <div className="text-xs text-neutral-500 mt-0.5 space-x-2">
-                        <span>Size: <strong className="text-neutral-700">{item.size}</strong></span>
-                        {item.customUpload?.borderStyle && (
-                          <span>• Border: <strong className="text-neutral-700 capitalize">{item.customUpload.borderStyle}</strong></span>
-                        )}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-xs md:text-sm text-neutral-900 uppercase line-clamp-1">
+                        {item.title}
+                      </h4>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] bg-neutral-100 text-neutral-700 font-bold px-1.5 py-0.5 rounded">
+                          ⚡ BUY 1 GET 1 FREE
+                        </span>
                       </div>
-                      <div className="font-bold text-sm text-neutral-900 mt-1">
-                        {formatPrice(item.price)} each
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-xs text-neutral-400 line-through">
+                          {formatPrice(item.price + 80)}
+                        </span>
+                        <strong className="text-sm font-extrabold text-neutral-900">
+                          {formatPrice(item.price)}
+                        </strong>
+                      </div>
+                      <div className="text-[11px] text-neutral-500 mt-0.5 font-medium">
+                        Size: <span className="text-neutral-800 font-bold">{item.size}</span>
                       </div>
                     </div>
 
-                    {/* Quantity Stepper & Actions */}
-                    <div className="flex items-center gap-3">
-                      <div className="stepper-box flex items-center border border-neutral-300 rounded-lg overflow-hidden h-8">
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => store.removeFromCart(item.key)}
+                        className="text-neutral-400 hover:text-red-500 p-1"
+                        aria-label="Remove item"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+
+                      <div className="stepper-box flex items-center border border-neutral-300 rounded-lg overflow-hidden h-7">
                         <button
                           type="button"
                           className="stepper-btn px-2 text-neutral-600 hover:bg-neutral-100"
                           onClick={() => store.updateQuantity(item.key, item.quantity - 1)}
                           aria-label="Decrease quantity"
                         >
-                          <Minus size={12} />
+                          <Minus size={11} />
                         </button>
                         <span className="stepper-val px-2 text-xs font-bold text-neutral-900">
                           {item.quantity}
@@ -2741,24 +2853,9 @@ export function CheckoutPage() {
                           onClick={() => store.updateQuantity(item.key, item.quantity + 1)}
                           aria-label="Increase quantity"
                         >
-                          <Plus size={12} />
+                          <Plus size={11} />
                         </button>
                       </div>
-
-                      <div className="text-right min-w-[70px]">
-                        <strong className="text-sm font-extrabold text-neutral-900">
-                          {formatPrice(item.price * item.quantity)}
-                        </strong>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => store.removeFromCart(item.key)}
-                        className="text-neutral-400 hover:text-red-600 p-1 transition-colors"
-                        title="Remove item"
-                      >
-                        <Trash2 size={16} />
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -2767,170 +2864,161 @@ export function CheckoutPage() {
           </div>
 
           {/* ============================================================== */}
-          {/* 3. COUPONS AND PROMO CODE SECTION */}
+          {/* 3. COUPONS & BANK OFFERS (PAGE 6) */}
           {/* ============================================================== */}
-          <div className="form-card-section checkout-step-card" id="step-coupon">
-            <div className="step-header-row flex items-center justify-between pb-3 mb-4 border-b border-neutral-100">
-              <div className="flex items-center gap-2.5">
-                <span className="step-badge-number">3</span>
-                <h2 className="step-title font-bold text-lg text-neutral-900 uppercase tracking-wide">
-                  Coupons &amp; Offers
-                </h2>
+          <div className="checkout-card bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-extrabold text-sm text-neutral-900 uppercase tracking-wide">
+                Coupons &amp; Bank Offers
+              </h3>
+              <span className="text-xs text-blue-600 font-bold">View All Offers</span>
+            </div>
+
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-2.5 flex items-center justify-between text-xs font-bold mb-3">
+              <div className="flex items-center gap-2">
+                <span>🪙</span>
+                <span>Save upto ₹740 • 2 Coupons &amp; Offers Available</span>
               </div>
+              <ChevronDown size={16} />
             </div>
 
             {coupon ? (
               <div className="applied-coupon-card p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-emerald-700 text-lg">🎉</span>
-                  <div>
-                    <span className="font-extrabold text-sm text-emerald-900 uppercase tracking-wide">
-                      {coupon}
-                    </span>
-                    <p className="text-xs text-emerald-700">Coupon applied! Discount reflected in price.</p>
-                  </div>
+                <div>
+                  <span className="font-extrabold text-xs text-emerald-900 uppercase">
+                    {coupon} APPLIED
+                  </span>
+                  <p className="text-[11px] text-emerald-700">Discount has been calculated in your total.</p>
                 </div>
                 <button
                   type="button"
                   onClick={handleRemoveCoupon}
-                  className="text-xs font-bold text-emerald-800 hover:text-red-700 underline"
+                  className="text-xs font-bold text-red-600 hover:underline"
                 >
                   Remove
                 </button>
               </div>
             ) : (
-              <div className="coupon-entry-wrap">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={couponInput}
-                    onChange={(e) => setCouponInput(e.target.value)}
-                    placeholder="Enter Coupon / Promo Code (e.g. STUDIO10)"
-                    className="checkout-input uppercase flex-1"
-                  />
+              <div className="space-y-2">
+                {/* Coupon option 1 */}
+                <div className="flex items-center justify-between p-2.5 border border-dashed border-neutral-300 rounded-xl bg-neutral-50/50">
+                  <div>
+                    <span className="font-extrabold text-xs text-neutral-900">STUDIO10</span>
+                    <span className="text-[11px] text-neutral-500 ml-2">Extra 10% OFF on all orders</span>
+                  </div>
                   <button
                     type="button"
-                    onClick={handleApplyCoupon}
-                    className="px-5 py-2.5 bg-neutral-900 text-white font-bold text-xs uppercase tracking-wider rounded-lg hover:bg-neutral-800 transition-colors"
+                    onClick={() => {
+                      store.setCoupon('STUDIO10');
+                      setCouponFeedback({ type: 'success', text: 'STUDIO10 applied!' });
+                    }}
+                    className="text-xs font-bold text-rose-600 hover:text-rose-700 uppercase"
                   >
                     Apply
                   </button>
                 </div>
 
-                {couponFeedback && (
-                  <p
-                    className={`text-xs mt-2 font-medium ${
-                      couponFeedback.type === 'success' ? 'text-emerald-600' : 'text-red-600'
-                    }`}
-                  >
-                    {couponFeedback.text}
-                  </p>
-                )}
-
-                <div className="live-offers-quick-chips mt-3 flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-neutral-500 font-semibold">Available Deals:</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      store.setCoupon('STUDIO10');
-                      setCouponFeedback({ type: 'success', text: 'STUDIO10 applied: 10% Discount!' });
-                    }}
-                    className="text-xs px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-800 font-bold hover:bg-neutral-200"
-                  >
-                    STUDIO10 (10% OFF)
-                  </button>
+                {/* Coupon option 2 */}
+                <div className="flex items-center justify-between p-2.5 border border-dashed border-neutral-300 rounded-xl bg-neutral-50/50">
+                  <div>
+                    <span className="font-extrabold text-xs text-neutral-900">DUNGEONS3</span>
+                    <span className="text-[11px] text-neutral-500 ml-2">Buy 2 Get 1 Free on 3+ posters</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
                       store.setCoupon('DUNGEONS3');
-                      setCouponFeedback({ type: 'success', text: 'DUNGEONS3 applied: Buy 2 Get 1 Free on 3+ items!' });
+                      setCouponFeedback({ type: 'success', text: 'DUNGEONS3 applied!' });
                     }}
-                    className="text-xs px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-800 font-bold hover:bg-neutral-200"
+                    className="text-xs font-bold text-rose-600 hover:text-rose-700 uppercase"
                   >
-                    DUNGEONS3 (Buy 2 Get 1 Free)
+                    Apply
+                  </button>
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    placeholder="Enter Coupon Code"
+                    className="checkout-input uppercase flex-1 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    className="px-4 py-2 bg-neutral-900 text-white font-bold text-xs uppercase tracking-wider rounded-lg"
+                  >
+                    Apply
                   </button>
                 </div>
               </div>
             )}
+            {couponFeedback && (
+              <p className={`text-xs mt-2 font-medium ${couponFeedback.type === 'success' ? 'text-emerald-600' : 'text-red-600'}`}>
+                {couponFeedback.text}
+              </p>
+            )}
           </div>
 
           {/* ============================================================== */}
-          {/* 4. PRICE DETAILS */}
+          {/* 4. PRICE DETAILS (PAGE 6) */}
           {/* ============================================================== */}
-          <div className="form-card-section checkout-step-card" id="step-price">
-            <div className="step-header-row flex items-center justify-between pb-3 mb-4 border-b border-neutral-100">
-              <div className="flex items-center gap-2.5">
-                <span className="step-badge-number">4</span>
-                <h2 className="step-title font-bold text-lg text-neutral-900 uppercase tracking-wide">
-                  Price Details
-                </h2>
+          <div className="checkout-card bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
+            <h3 className="font-extrabold text-sm text-neutral-900 uppercase tracking-wide mb-3">
+              Price Details
+            </h3>
+
+            <div className="space-y-2 text-xs md:text-sm text-neutral-600">
+              <div className="flex justify-between">
+                <span>Total MRP</span>
+                <span className="text-neutral-900 font-bold">{formatPrice(calculatedMRP)}</span>
               </div>
-            </div>
-
-            <div className="price-details-table flex flex-col gap-2.5 text-sm">
-              <div className="flex justify-between text-neutral-600">
-                <span>Subtotal ({totals.totalItemCount} items)</span>
-                <strong className="text-neutral-900">{formatPrice(totals.subtotal)}</strong>
+              <div className="flex justify-between text-emerald-600 font-bold">
+                <span>Discount on MRP</span>
+                <span>−{formatPrice(calculatedSavings)}</span>
               </div>
-
-              {totals.discount > 0 && (
-                <div className="flex justify-between text-emerald-600">
-                  <span>Discount ({coupon})</span>
-                  <strong>-{formatPrice(totals.discount)}</strong>
-                </div>
-              )}
-
-              <div className="flex justify-between text-neutral-600">
+              <div className="flex justify-between">
+                <span>Platform Fee</span>
+                <span className="text-emerald-600 font-bold">FREE</span>
+              </div>
+              <div className="flex justify-between">
                 <span>Delivery / Shipping Charges</span>
-                <strong className={totals.shipping === 0 ? 'text-emerald-600' : 'text-neutral-900'}>
-                  {totals.shipping === 0 ? 'FREE' : formatPrice(totals.shipping)}
-                </strong>
+                <span className="text-emerald-600 font-bold">FREE</span>
               </div>
 
-              <div className="flex justify-between text-neutral-400 text-xs">
-                <span>Estimated Taxes (GST)</span>
-                <span>Included in all prices</span>
+              <div className="flex justify-between items-baseline pt-3 border-t border-neutral-200 font-extrabold text-base text-neutral-900">
+                <span>Total Amount</span>
+                <span className="text-lg md:text-xl font-black">{formatPrice(totals.total)}</span>
               </div>
+            </div>
 
-              <div className="flex justify-between items-center pt-3 border-t border-neutral-200 text-base font-extrabold text-neutral-900">
-                <span>Final Payable Amount</span>
-                <span className="text-xl font-black text-neutral-950">{formatPrice(totals.total)}</span>
-              </div>
+            <div className="mt-3 p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
+              <span>🎉</span>
+              <span>You&apos;re saving {formatPrice(calculatedSavings)} on this order</span>
             </div>
           </div>
 
           {/* ============================================================== */}
-          {/* 5. PLACE ORDER */}
+          {/* 5. PLACE ORDER BUTTON (STICKY BOTTOM BAR - PAGE 6) */}
           {/* ============================================================== */}
-          <div className="form-card-section checkout-step-card" id="step-place-order">
-            <div className="step-header-row flex items-center justify-between pb-3 mb-4 border-b border-neutral-100">
-              <div className="flex items-center gap-2.5">
-                <span className="step-badge-number">5</span>
-                <h2 className="step-title font-bold text-lg text-neutral-900 uppercase tracking-wide">
-                  Payment &amp; Confirmation
-                </h2>
-              </div>
-            </div>
-
+          <div className="checkout-card bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
             <PaymentTrustBadges />
 
-            <div className="mt-4">
-              <button
-                type="submit"
-                disabled={isProcessing || cart.length === 0}
-                className="w-full py-4 px-6 rounded-xl bg-neutral-950 hover:bg-neutral-800 text-white font-extrabold text-base tracking-wider uppercase transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-              >
-                <Lock size={18} />
-                <span>
-                  {isProcessing
-                    ? 'CONNECTING TO SECURE PAYMENT...'
-                    : `PLACE ORDER • ${formatPrice(totals.total)}`}
-                </span>
-              </button>
-            </div>
-
-            <p className="text-xs text-neutral-400 text-center mt-3">
-              🔒 256-Bit SSL Secured Payment via Official Razorpay Gateway. No payment data is stored on our servers.
+            <button
+              type="submit"
+              disabled={isProcessing || cart.length === 0}
+              className="w-full mt-3 py-3.5 px-6 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm tracking-wider uppercase transition-all shadow-md flex items-center justify-center gap-2"
+            >
+              <Lock size={16} />
+              <span>
+                {isProcessing
+                  ? 'CONNECTING TO SECURE PAYMENT...'
+                  : `PLACE ORDER • ${formatPrice(totals.total)}`}
+              </span>
+            </button>
+            <p className="text-[11px] text-neutral-400 text-center mt-2">
+              🔒 100% Safe &amp; Secure Payments via Razorpay.
             </p>
           </div>
         </form>
@@ -3083,30 +3171,59 @@ export function SearchPage() {
         <h1 className="collection-main-title">SEARCH POSTERS</h1>
       </div>
 
-      <div className="search-page-box">
-        <form onSubmit={submit} className="postgenz-search-form">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search anime, spiderman, football, ronaldo..."
-          />
-          <button type="submit" className="button postgenz-btn">
-            Search
-          </button>
-        </form>
+      <div className="search-page-box max-w-4xl mx-auto px-4 py-6">
+        {initial && results.length === 0 ? (
+          <div className="search-empty-state-card text-center py-12 px-4 max-w-md mx-auto">
+            {/* SVG Document with Sad Face (Page 9 Reference) */}
+            <div className="empty-search-icon-wrapper mb-5 flex justify-center">
+              <svg width="84" height="100" viewBox="0 0 84 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 10C6 5.58172 9.58172 2 14 2H54L78 26V90C78 94.4183 74.4183 98 70 98H14C9.58172 98 6 94.4183 6 90V10Z" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="2.5" />
+                <path d="M54 2V26H78" fill="#F1F5F9" stroke="#CBD5E1" strokeWidth="2.5" />
+                <line x1="18" y1="20" x2="44" y2="20" stroke="#E2E8F0" strokeWidth="2" strokeLinecap="round" />
+                <line x1="18" y1="32" x2="40" y2="32" stroke="#E2E8F0" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="42" cy="58" r="18" stroke="#94A3B8" strokeWidth="2.2" fill="#FFFFFF" />
+                <circle cx="35" cy="54" r="2.2" fill="#64748B" />
+                <circle cx="49" cy="54" r="2.2" fill="#64748B" />
+                <path d="M35 66C37 63 47 63 49 66" stroke="#64748B" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </div>
 
-        <div className="search-page-results">
-          {initial && (
-            <p className="search-count-text">
-              Found {results.length} poster{results.length === 1 ? '' : 's'} for “{initial}”
+            <h2 className="text-2xl font-bold text-neutral-800 mb-2">No Results Found</h2>
+            <p className="text-sm text-neutral-500 mb-6 leading-relaxed">
+              We couldn&apos;t find any posters matching &ldquo;{initial}&rdquo;. Please check the spelling or try searching for another keyword.
             </p>
-          )}
-          <div className="collection-grid-container two-column-grid">
-            {results.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+
+            <Link href="/collections/posters" className="btn-explore-more inline-block">
+              EXPLORE ALL POSTERS →
+            </Link>
           </div>
-        </div>
+        ) : (
+          <>
+            <form onSubmit={submit} className="postgenz-search-form mb-6">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search anime, spiderman, football, ronaldo..."
+              />
+              <button type="submit" className="button postgenz-btn">
+                Search
+              </button>
+            </form>
+
+            <div className="search-page-results">
+              {initial && results.length > 0 && (
+                <p className="search-count-text mb-4 text-sm text-neutral-600 font-semibold">
+                  Found {results.length} poster{results.length === 1 ? '' : 's'} for &ldquo;{initial}&rdquo;
+                </p>
+              )}
+              <div className="collection-grid-container two-column-grid">
+                {results.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </main>
   );

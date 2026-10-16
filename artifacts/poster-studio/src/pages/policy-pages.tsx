@@ -184,56 +184,11 @@ const FAQS_DATA: FaqItem[] = [
   },
 ];
 
-function PolicyHeader({
-  title,
-  subtitle,
-  activeTab,
-}: {
-  title: string;
-  subtitle: string;
-  activeTab: 'faqs' | 'terms' | 'returns';
-}) {
-  return (
-    <div className="policy-hero-banner">
-      <div className="policy-hero-badge">DUNGEONS LEGAL & HELP</div>
-      <h1 className="policy-hero-title">{title}</h1>
-      <p className="policy-hero-subtitle">{subtitle}</p>
-
-      {/* Tabs */}
-      <div className="policy-tabs-nav">
-        <Link
-          href="/faqs"
-          className={`policy-tab-btn ${activeTab === 'faqs' ? 'active' : ''}`}
-        >
-          <HelpCircle size={16} />
-          <span>Customer FAQs</span>
-        </Link>
-        <Link
-          href="/terms"
-          className={`policy-tab-btn ${activeTab === 'terms' ? 'active' : ''}`}
-        >
-          <FileText size={16} />
-          <span>Terms & Conditions</span>
-        </Link>
-        <Link
-          href="/returns"
-          className={`policy-tab-btn ${activeTab === 'returns' ? 'active' : ''}`}
-        >
-          <RotateCcw size={16} />
-          <span>Return & Refund Policy</span>
-        </Link>
-      </div>
-    </div>
-  );
-}
-
 // -------------------------------------------------------------
-// 1. FAQS PAGE
+// 1. FAQS PAGE (CLEAN POINT 1 FORMAT - PAGE 7)
 // -------------------------------------------------------------
 export function FaqPage() {
-  const [openIds, setOpenIds] = useState<number[]>([1, 2, 4, 6]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCat, setSelectedCat] = useState<'all' | 'returns' | 'shipping' | 'payment' | 'products' | 'custom'>('all');
+  const [openIds, setOpenIds] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
 
   const toggle = (id: number) => {
     setOpenIds((prev) =>
@@ -241,112 +196,39 @@ export function FaqPage() {
     );
   };
 
-  const filteredFaqs = FAQS_DATA.filter((faq) => {
-    const matchesCat = selectedCat === 'all' || faq.category === selectedCat;
-    const matchesSearch =
-      faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (typeof faq.answer === 'string' &&
-        faq.answer.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesCat && matchesSearch;
-  });
-
   return (
-    <div className="policy-page-container">
-      <PolicyHeader
-        title="DUNGEONS | CUSTOMER FAQs"
-        subtitle="Find answers to all frequently asked questions regarding your orders, shipping, materials, and policies."
-        activeTab="faqs"
-      />
+    <div className="simple-policy-container max-w-3xl mx-auto px-4 py-8">
+      <h1 className="simple-policy-title text-2xl md:text-3xl font-extrabold text-neutral-900 mb-6 tracking-tight uppercase border-b border-neutral-200 pb-3">
+        FAQs
+      </h1>
 
-      <div className="policy-content-wrapper">
-        {/* Search & Filter Bar */}
-        <div className="faq-controls-bar">
-          <div className="faq-search-box">
-            <Search size={18} className="text-neutral-400" />
-            <input
-              type="text"
-              placeholder="Search questions (e.g. shipping, returns, GSM, cancel)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="faq-search-input"
-            />
-          </div>
-
-          <div className="faq-category-pills">
-            {(
-              [
-                { id: 'all', label: 'All FAQs' },
-                { id: 'returns', label: 'Returns & Cancellation' },
-                { id: 'shipping', label: 'Shipping & Delivery' },
-                { id: 'payment', label: 'Payment & Offers' },
-                { id: 'products', label: 'Quality & Paper' },
-                { id: 'custom', label: 'Custom Orders' },
-              ] as const
-            ).map((cat) => (
+      <div className="faq-simple-list space-y-3">
+        {FAQS_DATA.map((faq) => {
+          const isOpen = openIds.includes(faq.id);
+          return (
+            <div
+              key={faq.id}
+              className="border border-neutral-200 rounded-xl overflow-hidden bg-white shadow-sm"
+            >
               <button
-                key={cat.id}
                 type="button"
-                onClick={() => setSelectedCat(cat.id)}
-                className={`faq-pill-btn ${selectedCat === cat.id ? 'active' : ''}`}
+                onClick={() => toggle(faq.id)}
+                className="w-full text-left p-4 flex items-center justify-between font-bold text-neutral-900 hover:bg-neutral-50 transition-colors"
+                aria-expanded={isOpen}
               >
-                {cat.label}
+                <span className="text-sm md:text-base pr-3">{faq.question}</span>
+                <span className="text-neutral-400 shrink-0">
+                  {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </span>
               </button>
-            ))}
-          </div>
-        </div>
-
-        {/* FAQ Accordion List */}
-        <div className="faq-accordion-list">
-          {filteredFaqs.length === 0 ? (
-            <div className="text-center py-12 text-neutral-500">
-              No matching questions found. Try searching for another keyword.
-            </div>
-          ) : (
-            filteredFaqs.map((faq) => {
-              const isOpen = openIds.includes(faq.id);
-              return (
-                <div
-                  key={faq.id}
-                  className={`faq-card-item ${isOpen ? 'is-open' : ''}`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggle(faq.id)}
-                    className="faq-question-btn"
-                    aria-expanded={isOpen}
-                  >
-                    <span className="faq-question-text">{faq.question}</span>
-                    <span className="faq-toggle-icon">
-                      {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                    </span>
-                  </button>
-                  {isOpen && <div className="faq-answer-pane">{faq.answer}</div>}
+              {isOpen && (
+                <div className="px-4 pb-4 pt-1 text-sm text-neutral-600 border-t border-neutral-100 bg-neutral-50/40">
+                  {faq.answer}
                 </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Need Help Box */}
-        <div className="policy-support-callout">
-          <div className="flex items-start gap-4">
-            <div className="support-callout-icon">
-              <Mail size={24} />
+              )}
             </div>
-            <div>
-              <h3 className="font-bold text-lg text-neutral-900 mb-1">Still have questions?</h3>
-              <p className="text-sm text-neutral-600 mb-3">
-                Our support team is happy to help with custom requests, orders, or tracking.
-              </p>
-              <a
-                href="mailto:dungeons.support@gmail.com"
-                className="inline-flex items-center gap-2 bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-full hover:bg-neutral-800 transition-colors"
-              >
-                Email Support: dungeons.support@gmail.com
-              </a>
-            </div>
-          </div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -357,29 +239,13 @@ export function FaqPage() {
 // -------------------------------------------------------------
 export function TermsPage() {
   return (
-    <div className="policy-page-container">
-      <PolicyHeader
-        title="DUNGEONS | WEBSITE TERMS"
-        subtitle="Terms and Conditions governing access to and purchases on Dungeons.in."
-        activeTab="terms"
-      />
+    <div className="simple-policy-container max-w-3xl mx-auto px-4 py-8">
+      <h1 className="simple-policy-title text-2xl md:text-3xl font-extrabold text-neutral-900 mb-6 tracking-tight uppercase border-b border-neutral-200 pb-3">
+        TERMS &amp; CONDITIONS
+      </h1>
 
-      <div className="policy-content-wrapper">
-        <div className="terms-doc-container">
-          <div className="terms-intro-box">
-            <p>
-              Welcome to <strong>Dungeons</strong>. These Terms & Conditions (&quot;Terms&quot;)
-              govern your access to and use of <strong>Dungeons.in</strong> and the purchase of
-              products offered through our Website.
-            </p>
-            <p className="mt-2 text-sm text-neutral-600">
-              By browsing our Website, creating an account, or placing an order, you acknowledge that
-              you have read and understood these Terms and agree to be bound by them. If you do not
-              agree with these Terms, please do not use the Website or place an order.
-            </p>
-          </div>
-
-          <div className="terms-clauses-list">
+      <div className="terms-doc-container">
+        <div className="terms-clauses-list space-y-6">
             <section className="terms-clause">
               <h2 className="clause-title">1. About Our Store</h2>
               <p>
@@ -655,7 +521,6 @@ export function TermsPage() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
 
@@ -664,33 +529,13 @@ export function TermsPage() {
 // -------------------------------------------------------------
 export function ReturnPolicyPage() {
   return (
-    <div className="policy-page-container">
-      <PolicyHeader
-        title="DUNGEONS | CUSTOMER POLICY"
-        subtitle="Return, Replacement & Refund Policy for all custom and ready-to-ship poster orders."
-        activeTab="returns"
-      />
+    <div className="simple-policy-container max-w-3xl mx-auto px-4 py-8">
+      <h1 className="simple-policy-title text-2xl md:text-3xl font-extrabold text-neutral-900 mb-6 tracking-tight uppercase border-b border-neutral-200 pb-3">
+        CUSTOMER POLICY
+      </h1>
 
-      <div className="policy-content-wrapper">
-        <div className="terms-doc-container">
-          {/* Important Alert Notice */}
-          <div className="policy-alert-box">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="text-amber-600 shrink-0 mt-0.5" size={22} />
-              <div>
-                <h4 className="font-bold text-amber-950 text-base">
-                  48-Hour Unboxing Video Requirement
-                </h4>
-                <p className="text-sm text-amber-900 mt-1">
-                  All replacement claims require a clear and unedited unboxing video starting with the
-                  sealed package. Claims without an unboxing video or submitted after 48 hours from
-                  delivery cannot be accepted.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="terms-clauses-list">
+      <div className="terms-doc-container">
+        <div className="terms-clauses-list space-y-6">
             <section className="terms-clause">
               <div className="flex items-center gap-2 mb-2">
                 <span className="policy-badge-num">1</span>
@@ -804,6 +649,5 @@ export function ReturnPolicyPage() {
           </div>
         </div>
       </div>
-    </div>
   );
 }

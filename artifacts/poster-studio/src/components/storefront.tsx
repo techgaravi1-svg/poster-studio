@@ -277,10 +277,6 @@ function MenuDrawer({
                 </button>
                 {postersOpen && (
                   <div className="categories-sublist">
-                    <Link href="/collections/posters" onClick={onClose} className="sublist-cat-item available">
-                      <span>All Posters</span>
-                      <span className="sublist-status-badge">Available</span>
-                    </Link>
                     <Link href="/collections/devotional" onClick={onClose} className="sublist-cat-item">
                       <span>Devotional Posters</span>
                     </Link>
@@ -292,9 +288,6 @@ function MenuDrawer({
                     </Link>
                     <Link href="/collections/football" onClick={onClose} className="sublist-cat-item">
                       <span>Football Posters</span>
-                    </Link>
-                    <Link href="/collections/wall-packs" onClick={onClose} className="sublist-cat-item">
-                      <span>Wall Packs</span>
                     </Link>
                     <Link href="/collections/posters" onClick={onClose} className="sublist-all">View All Available Posters →</Link>
                   </div>
@@ -436,16 +429,11 @@ export function Header() {
               </button>
               <div className="desktop-dropdown-menu">
                 <div className="dropdown-section-title">POSTER COLLECTIONS</div>
-                <Link href="/collections/posters" className="dropdown-cat-row available">
-                  <strong>All Posters</strong>
-                  <span className="dropdown-status-badge">Available Now</span>
-                </Link>
                 <div className="dropdown-poster-sublinks">
                   <Link href="/collections/devotional">Devotional Posters</Link>
                   <Link href="/collections/marvel-dc">Marvel & DC Posters</Link>
                   <Link href="/collections/cricket">Cricket Posters</Link>
                   <Link href="/collections/football">Football Posters</Link>
-                  <Link href="/collections/wall-packs">Wall Packs</Link>
                 </div>
                 <Link href="/collections/posters" className="dropdown-view-all">All Available Posters →</Link>
               </div>
@@ -481,24 +469,22 @@ export function Header() {
             >
               <Search size={21} />
             </button>
-            <button
-              type="button"
+            <Link
+              href="/wishlist"
               className="header-icon-btn header-wishlist-btn"
               aria-label="Wishlist"
-              onClick={() => setWishlistOpen(true)}
             >
               <Heart size={21} />
               {wishlist.length > 0 && <span className="cart-badge-count">{wishlist.length}</span>}
-            </button>
-            <button
-              type="button"
+            </Link>
+            <Link
+              href="/bag"
               className="header-icon-btn cart-btn-wrap"
-              aria-label={`Cart with ${totalCartCount} items`}
-              onClick={() => setCartOpen(true)}
+              aria-label={`Bag with ${totalCartCount} items`}
             >
               <ShoppingBag size={21} />
               {totalCartCount > 0 && <span className="cart-badge-count">{totalCartCount}</span>}
-            </button>
+            </Link>
           </div>
         </div>
       </header>
@@ -664,7 +650,6 @@ export function Footer() {
             <h4 className="footer-title">Quick links</h4>
             <ul className="footer-links-list">
               <li><Link href="/account/orders">Track your order</Link></li>
-              <li><a href="mailto:dungeons.support@gmail.com">Contact Us</a></li>
               <li><Link href="/terms">Terms and Conditions</Link></li>
               <li><Link href="/returns">Return &amp; Refund Policy</Link></li>
               <li><Link href="/shipping-policy">Shipping Policy</Link></li>
