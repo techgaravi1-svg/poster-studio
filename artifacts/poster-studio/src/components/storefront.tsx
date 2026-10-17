@@ -73,8 +73,7 @@ export function ProductCard({
   const toggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const added = store.toggleWishlist(product.slug);
-    onAdded?.(added ? `${product.title} saved to Wishlist!` : `${product.title} removed from Wishlist`);
+    store.toggleWishlist(product.slug);
   };
 
   const imageSrc = product.images?.[0];
@@ -231,15 +230,6 @@ function MenuDrawer({
         aria-modal="true"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="menu-drawer-top">
-          <Link href="/" onClick={onClose} className="drawer-logo-wrap">
-            <img src="/assets/postgenz-logo-trans.png" alt="POSTGENZ" className="menu-logo-img" />
-          </Link>
-          <button type="button" className="menu-close-btn" aria-label="Close menu" onClick={onClose}>
-            <X size={24} />
-          </button>
-        </div>
-
         <div className="menu-drawer-content">
           <div className="menu-section">
             <div className="menu-section-heading">SHOP</div>
@@ -277,17 +267,23 @@ function MenuDrawer({
                 </button>
                 {postersOpen && (
                   <div className="categories-sublist">
-                    <Link href="/collections/devotional" onClick={onClose} className="sublist-cat-item">
-                      <span>Devotional Posters</span>
+                    <Link href="/collections/anime" onClick={onClose} className="sublist-cat-item">
+                      <span>Anime & Manga Posters</span>
                     </Link>
                     <Link href="/collections/marvel-dc" onClick={onClose} className="sublist-cat-item">
                       <span>Marvel & DC Posters</span>
                     </Link>
-                    <Link href="/collections/cricket" onClick={onClose} className="sublist-cat-item">
-                      <span>Cricket Posters</span>
-                    </Link>
                     <Link href="/collections/football" onClick={onClose} className="sublist-cat-item">
                       <span>Football Posters</span>
+                    </Link>
+                    <Link href="/collections/aesthetic" onClick={onClose} className="sublist-cat-item">
+                      <span>Aesthetic & Cinema</span>
+                    </Link>
+                    <Link href="/collections/cricket" onClick={onClose} className="sublist-cat-item">
+                      <span>Sports & UFC Posters</span>
+                    </Link>
+                    <Link href="/collections/devotional" onClick={onClose} className="sublist-cat-item">
+                      <span>Motivational Posters</span>
                     </Link>
                     <Link href="/collections/posters" onClick={onClose} className="sublist-all">View All Available Posters →</Link>
                   </div>
@@ -389,116 +385,129 @@ export function Header() {
 
   return (
     <>
-      <header className="postgenz-header">
+      <header className={`postgenz-header ${menuOpen ? 'header-menu-active' : ''}`}>
         <div className="header-inner">
           <div className="header-left-group">
             <button
               type="button"
               className="header-icon-btn menu-toggle"
-              aria-label="Toggle navigation menu"
-              onClick={() => setMenuOpen(true)}
+              aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+              onClick={() => {
+                setMenuOpen((prev) => !prev);
+                setSearchOpen(false);
+              }}
             >
-              <Menu size={24} />
+              {menuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
 
-            <Link href="/" className="header-brand-logo" aria-label="POSTGENZ Home">
-              <img
-                src="/assets/postgenz-logo-trans.png"
-                alt="POSTGENZ"
-                className="postgenz-logo-img"
-              />
-            </Link>
+            {!menuOpen && (
+              <Link href="/" className="header-brand-logo" aria-label="POSTGENZ Home">
+                <img
+                  src="/assets/postgenz-logo-trans.png"
+                  alt="POSTGENZ"
+                  className="postgenz-logo-img"
+                />
+              </Link>
+            )}
           </div>
 
-          <nav className="desktop-nav-links" aria-label="Desktop navigation">
-            <Link href="/" className="desktop-nav-item">
-              Home
-            </Link>
-            <Link href="/custom" className="desktop-nav-item">
-              <span>Custom Orders</span>
-              <span className="badge-new-pill">NEW</span>
-            </Link>
-            <Link href="/collections/wall-packs" className="desktop-nav-item">
-              Wall Packs
-            </Link>
-            {/* 4. Posters Dropdown */}
-            <div className="desktop-categories-dropdown">
-              <button type="button" className="desktop-nav-item categories-dropdown-trigger">
-                <span>Posters</span>
-                <ChevronDown size={14} />
-              </button>
-              <div className="desktop-dropdown-menu">
-                <div className="dropdown-section-title">POSTER COLLECTIONS</div>
-                <div className="dropdown-poster-sublinks">
-                  <Link href="/collections/devotional">Devotional Posters</Link>
-                  <Link href="/collections/marvel-dc">Marvel & DC Posters</Link>
-                  <Link href="/collections/cricket">Cricket Posters</Link>
-                  <Link href="/collections/football">Football Posters</Link>
+          {!menuOpen && (
+            <nav className="desktop-nav-links" aria-label="Desktop navigation">
+              <Link href="/" className="desktop-nav-item">
+                Home
+              </Link>
+              <Link href="/custom" className="desktop-nav-item">
+                <span>Custom Orders</span>
+                <span className="badge-new-pill">NEW</span>
+              </Link>
+              <Link href="/collections/wall-packs" className="desktop-nav-item">
+                Wall Packs
+              </Link>
+              {/* 4. Posters Dropdown */}
+              <div className="desktop-categories-dropdown">
+                <button type="button" className="desktop-nav-item categories-dropdown-trigger">
+                  <span>Posters</span>
+                  <ChevronDown size={14} />
+                </button>
+                <div className="desktop-dropdown-menu">
+                  <div className="dropdown-section-title">POSTER COLLECTIONS</div>
+                  <div className="dropdown-poster-sublinks">
+                    <Link href="/collections/anime">Anime & Manga Posters</Link>
+                    <Link href="/collections/marvel-dc">Marvel & DC Posters</Link>
+                    <Link href="/collections/football">Football Posters</Link>
+                    <Link href="/collections/aesthetic">Aesthetic & Cinema</Link>
+                    <Link href="/collections/cricket">Sports & UFC Posters</Link>
+                    <Link href="/collections/devotional">Motivational Posters</Link>
+                  </div>
+                  <Link href="/collections/posters" className="dropdown-view-all">All Available Posters →</Link>
                 </div>
-                <Link href="/collections/posters" className="dropdown-view-all">All Available Posters →</Link>
               </div>
-            </div>
 
-            {/* 5. Coming Soon Dropdown */}
-            <div className="desktop-categories-dropdown">
-              <button type="button" className="desktop-nav-item categories-dropdown-trigger">
-                <span>Coming Soon</span>
-                <ChevronDown size={14} />
-              </button>
-              <div className="desktop-dropdown-menu">
-                <div className="dropdown-section-title">UPCOMING LUXURY COLLECTIONS</div>
-                <div className="dropdown-soon-grid">
-                  {storeCategories.filter((c) => !c.available).map((cat) => (
-                    <div key={cat.id} className="dropdown-soon-chip disabled" aria-disabled="true" title={`${cat.name} (Coming Soon)`}>
-                      <span>{cat.name}</span>
-                      <span className="chip-soon-badge">Coming Soon</span>
-                    </div>
-                  ))}
+              {/* 5. Coming Soon Dropdown */}
+              <div className="desktop-categories-dropdown">
+                <button type="button" className="desktop-nav-item categories-dropdown-trigger">
+                  <span>Coming Soon</span>
+                  <ChevronDown size={14} />
+                </button>
+                <div className="desktop-dropdown-menu">
+                  <div className="dropdown-section-title">UPCOMING LUXURY COLLECTIONS</div>
+                  <div className="dropdown-soon-grid">
+                    {storeCategories.filter((c) => !c.available).map((cat) => (
+                      <div key={cat.id} className="dropdown-soon-chip disabled" aria-disabled="true" title={`${cat.name} (Coming Soon)`}>
+                        <span>{cat.name}</span>
+                        <span className="chip-soon-badge">Coming Soon</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="dropdown-view-all text-neutral-400 font-normal">Launching soon • Pre-order notification available</div>
                 </div>
-                <div className="dropdown-view-all text-neutral-400 font-normal">Launching soon • Pre-order notification available</div>
               </div>
-            </div>
-          </nav>
+            </nav>
+          )}
 
           {/* Transparent inline search on desktop */}
-          <div className="header-inline-search-wrap">
-            <form onSubmit={submitSearch} className="header-trans-search-form">
-              <Search size={16} className="text-neutral-500 shrink-0" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search posters, football, anime..."
-                aria-label="Search posters"
-              />
-            </form>
-          </div>
+          {!menuOpen && (
+            <div className="header-inline-search-wrap">
+              <form onSubmit={submitSearch} className="header-trans-search-form">
+                <Search size={16} className="text-neutral-500 shrink-0" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search posters, football, anime..."
+                  aria-label="Search posters"
+                />
+              </form>
+            </div>
+          )}
 
-          <div className="header-actions-right">
-            <button
-              type="button"
-              className="header-icon-btn"
-              aria-label="Search"
-              onClick={() => setSearchOpen((prev) => !prev)}
-            >
-              <Search size={21} />
-            </button>
-            <Link
-              href="/wishlist"
-              className="header-icon-btn header-wishlist-btn"
-              aria-label="Wishlist"
-            >
-              <Heart size={21} />
-              {wishlist.length > 0 && <span className="cart-badge-count">{wishlist.length}</span>}
-            </Link>
-            <Link
-              href="/bag"
-              className="header-icon-btn cart-btn-wrap"
-              aria-label={`Bag with ${totalCartCount} items`}
-            >
-              <ShoppingBag size={21} />
-              {totalCartCount > 0 && <span className="cart-badge-count">{totalCartCount}</span>}
-            </Link>
-          </div>
+          {!menuOpen && (
+            <div className="header-actions-right">
+              <button
+                type="button"
+                className="header-icon-btn"
+                aria-label="Search"
+                onClick={() => setSearchOpen((prev) => !prev)}
+              >
+                <Search size={21} />
+              </button>
+              <Link
+                href="/wishlist"
+                className="header-icon-btn header-wishlist-btn"
+                aria-label="Wishlist"
+              >
+                <Heart size={21} />
+                {wishlist.length > 0 && <span className="cart-badge-count">{wishlist.length}</span>}
+              </Link>
+              <Link
+                href="/bag"
+                className="header-icon-btn cart-btn-wrap"
+                aria-label={`Bag with ${totalCartCount} items`}
+              >
+                <ShoppingBag size={21} />
+                {totalCartCount > 0 && <span className="cart-badge-count">{totalCartCount}</span>}
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Transparent search bar dropdown under header */}
@@ -670,6 +679,7 @@ export function Footer() {
               <li><Link href="/terms">Terms and Conditions</Link></li>
               <li><Link href="/returns">Return &amp; Refund Policy</Link></li>
               <li><Link href="/shipping-policy">Shipping Policy</Link></li>
+              <li><Link href="/privacy-policy">Privacy Policy</Link></li>
               <li><Link href="/faqs">FAQs</Link></li>
             </ul>
           </div>
@@ -721,6 +731,68 @@ export function Footer() {
   );
 }
 
+export function WishlistSnackbar() {
+  const { wishlistNotice } = useStore();
+  const [visible, setVisible] = useState(false);
+  const [currentNotice, setCurrentNotice] = useState<{ type: 'added' | 'removed' } | null>(null);
+  const timerRef = useRef<any>(null);
+
+  useEffect(() => {
+    const handleWishlistChange = (e: any) => {
+      if (e.detail?.type) {
+        setCurrentNotice({ type: e.detail.type });
+        setVisible(true);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => {
+          setVisible(false);
+        }, 2800);
+      }
+    };
+
+    window.addEventListener('wishlist-change', handleWishlistChange);
+    return () => {
+      window.removeEventListener('wishlist-change', handleWishlistChange);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (wishlistNotice?.timestamp) {
+      setCurrentNotice({ type: wishlistNotice.type });
+      setVisible(true);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        setVisible(false);
+      }, 2800);
+    }
+  }, [wishlistNotice?.timestamp]);
+
+  if (!visible || !currentNotice) return null;
+
+  const isAdded = currentNotice.type === 'added';
+
+  return (
+    <div className="flipkart-wishlist-snackbar" role="status" aria-live="polite">
+      <div className="snackbar-left">
+        <Heart
+          size={18}
+          strokeWidth={2.4}
+          fill={isAdded ? '#ef4444' : 'none'}
+          color={isAdded ? '#ef4444' : '#9ca3af'}
+        />
+        <span className="snackbar-text">
+          {isAdded ? 'Added to Wishlist' : 'Removed from Wishlist'}
+        </span>
+      </div>
+      {isAdded && (
+        <Link href="/wishlist" className="snackbar-link">
+          VIEW WISHLIST
+        </Link>
+      )}
+    </div>
+  );
+}
+
 export function SiteShell({ children }: { children: ReactNode }) {
   return (
     <div className="app-container">
@@ -730,6 +802,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
           {children}
         </div>
         <Footer />
+        <WishlistSnackbar />
       </div>
     </div>
   );

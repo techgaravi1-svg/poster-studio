@@ -43,10 +43,11 @@ type StoreState = {
   orders: DemoOrder[];
   coupon: string;
   demoUser: { name: string; email: string } | null;
+  wishlistNotice?: { type: 'added' | 'removed'; id: string; timestamp: number } | null;
 };
 
 const STORAGE_KEY = 'poster-studio-store-v2';
-const emptyState: StoreState = { cart: [], wishlist: [], recentlyViewed: [], orders: [], coupon: '', demoUser: null };
+const emptyState: StoreState = { cart: [], wishlist: [], recentlyViewed: [], orders: [], coupon: '', demoUser: null, wishlistNotice: null };
 let state: StoreState = load();
 const listeners = new Set<() => void>();
 
@@ -93,8 +94,20 @@ export const store = {
     const wishlist = exists
       ? state.wishlist.filter((id) => id !== productIdOrSlug)
       : [...(state.wishlist || []), productIdOrSlug];
-    commit({ ...state, wishlist });
+    const type = exists ? ('removed' as const) : ('added' as const);
+    const wishlistNotice = {
+      type,
+      id: productIdOrSlug,
+      timestamp: Date.now(),
+    };
+    commit({ ...state, wishlist, wishlistNotice });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('wishlist-change', { detail: { type, id: productIdOrSlug } }));
+    }
     return !exists;
+  },
+  clearWishlistNotice() {
+    commit({ ...state, wishlistNotice: null });
   },
   setCoupon(coupon: string) { commit({ ...state, coupon }); },
   addRecentlyViewed(productId: string) { commit({ ...state, recentlyViewed: [productId, ...state.recentlyViewed.filter((id) => id !== productId)].slice(0, 8) }); },

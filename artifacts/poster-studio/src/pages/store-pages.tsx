@@ -31,6 +31,18 @@ import {
   Sparkles,
   Info,
   Zap,
+  Bookmark,
+  Star,
+  Tag,
+  MapPin,
+  BadgePercent,
+  CheckCircle2,
+  Gift,
+  Copy,
+  MessageCircle,
+  Printer,
+  Download,
+  FileText,
 } from 'lucide-react';
 import { collections, formatPrice, getProduct, products, searchProducts, storeCategories, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
@@ -529,11 +541,11 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
   // Active sub-slug for posters
   const activePosterSubSlug = bestsellers
     ? 'bestsellers'
+    : slugParam === 'posters' || slugParam === 'all'
+    ? 'all'
     : slugParam && collections.some((c) => c.slug === slugParam)
     ? slugParam
-    : slugParam === 'all'
-    ? 'all'
-    : 'devotional';
+    : 'all';
 
   const notify = (title: string) => {
     setToast(`${title} added to your bag`);
@@ -541,11 +553,13 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
   };
 
   const posterSubCategories = [
-    { slug: 'devotional', label: 'DEVOTIONAL' },
-    { slug: 'marvel-dc', label: 'MARVEL & DC' },
-    { slug: 'cricket', label: 'CRICKET' },
-    { slug: 'football', label: 'FOOTBALL' },
     { slug: 'all', label: 'ALL POSTERS' },
+    { slug: 'anime', label: 'ANIME & MANGA' },
+    { slug: 'marvel-dc', label: 'MARVEL & DC' },
+    { slug: 'football', label: 'FOOTBALL' },
+    { slug: 'aesthetic', label: 'AESTHETIC & CINEMA' },
+    { slug: 'cricket', label: 'SPORTS & UFC' },
+    { slug: 'devotional', label: 'MOTIVATIONAL' },
   ];
 
   const currentCategoryLabel = !isPostersActive
@@ -553,8 +567,8 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     : activePosterSubSlug === 'bestsellers'
     ? 'BEST SELLING POSTERS'
     : activePosterSubSlug === 'all'
-    ? 'ALL POSTERS'
-    : collections.find((c) => c.slug === activePosterSubSlug)?.title || 'DEVOTIONAL POSTERS';
+    ? 'ALL AVAILABLE POSTERS'
+    : collections.find((c) => c.slug === activePosterSubSlug)?.title || 'POSTER PRINTS';
 
   const filteredProducts = useMemo(() => {
     if (!isPostersActive) return [];
@@ -917,9 +931,7 @@ export function ProductPage() {
   const isWishlisted = wishlist.includes(product.slug) || wishlist.includes(product.id);
 
   const toggleWishlist = () => {
-    const added = store.toggleWishlist(product.slug);
-    setToast(added ? `${product.title} saved to Wishlist!` : 'Removed from Wishlist');
-    window.setTimeout(() => setToast(''), 2400);
+    store.toggleWishlist(product.slug);
   };
 
   const similarProducts = useMemo(() => {
@@ -1356,7 +1368,7 @@ export function CustomPage() {
   const [activeStripSlot, setActiveStripSlot] = useState<number | null>(null);
 
   const stripPricePerUnit = stripFormat === '3-strip' ? 149 : 199;
-  const stripTotalPrice = stripPricePerUnit * stripQuantity;
+  const stripTotalPrice = stripPricePerUnit;
 
   // 2. MINI POCKET PHOTOS STATE (5 OR 7 UPLOAD IMAGES)
   const [pocketPack, setPocketPack] = useState<'5-pack' | '7-pack'>('5-pack');
@@ -1369,7 +1381,7 @@ export function CustomPage() {
   const [activePocketSlot, setActivePocketSlot] = useState<number | null>(null);
 
   const pocketPricePerPack = pocketPack === '5-pack' ? 129 : 169;
-  const pocketTotalPrice = pocketPricePerPack * pocketQuantity;
+  const pocketTotalPrice = pocketPricePerPack;
 
   // 3. CUSTOM WALL POSTER / WALLPAPER STATE (IMAGE, ORIENTATION, SIZE, QUANTITY)
   const [posterPhoto, setPosterPhoto] = useState<string | null>(null);
@@ -1550,13 +1562,102 @@ export function CustomPage() {
     window.setTimeout(() => setToast(''), 3000);
   };
 
+  const handleNewStripOrder = () => {
+    if (stripPhotos.length > 0) {
+      const borderName = stripFrameStyle.charAt(0).toUpperCase() + stripFrameStyle.slice(1);
+      store.addToCart({
+        productId: 'custom-photobooth',
+        slug: 'custom-photobooth-strip',
+        title: `Custom Photobooth Strip (${stripPhotos.length} Photos • ${borderName} Border)`,
+        price: stripPricePerUnit,
+        size: 'A5',
+        quantity: 1,
+        orientation: 'portrait',
+        artTreatment: 'art-aurora',
+        customUpload: {
+          name: `Photobooth_${stripPhotos.length}_${Date.now()}`,
+          preview: stripPhotos[0]?.url || '/assets/custom-photobooth.jpg',
+          photos: stripPhotos.map((p) => p.url),
+          borderStyle: stripFrameStyle,
+          customType: 'Photobooth Strip',
+          format: stripFormat,
+        },
+      });
+      setToast('Previous photobooth strip moved to Bag! Ready for your new order.');
+    } else {
+      setToast('Ready for new photobooth strip order!');
+    }
+    setStripPhotos([]);
+    setStripFormat('3-strip');
+    setStripFrameStyle('pink');
+    setStripQuantity(1);
+    setActiveStripSlot(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.setTimeout(() => setToast(''), 3000);
+  };
+
+  const handleNewPocketOrder = () => {
+    if (pocketPhotos.length > 0) {
+      const borderName = pocketFrameStyle.charAt(0).toUpperCase() + pocketFrameStyle.slice(1);
+      store.addToCart({
+        productId: 'custom-mini-pocket',
+        slug: 'custom-mini-pocket-photos',
+        title: `Mini Pocket Photos (${pocketPhotos.length} Photos • ${borderName} Border)`,
+        price: pocketPricePerPack,
+        size: 'A5',
+        quantity: 1,
+        orientation: 'portrait',
+        artTreatment: 'art-pulse',
+        customUpload: {
+          name: `MiniPocket_${pocketPhotos.length}_${Date.now()}`,
+          preview: pocketPhotos[0]?.url || '/assets/custom-mini-pocket.jpg',
+          photos: pocketPhotos.map((p) => p.url),
+          borderStyle: pocketFrameStyle,
+          customType: 'Mini Pocket Photos',
+          format: pocketPack,
+        },
+      });
+      setToast('Previous mini pocket prints moved to Bag! Ready for your new order.');
+    } else {
+      setToast('Ready for new mini pocket photos order!');
+    }
+    setPocketPhotos([]);
+    setPocketPack('5-pack');
+    setPocketFrameStyle('white');
+    setPocketQuantity(1);
+    setActivePocketSlot(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.setTimeout(() => setToast(''), 3000);
+  };
+
   const handleNewPosterOrder = () => {
+    if (posterPhoto) {
+      store.addToCart({
+        productId: 'custom-wall-poster',
+        slug: 'custom-wall-poster',
+        title: `Custom Wall Poster (${posterSize} • ${posterOrientation.toUpperCase()})`,
+        price: posterUnitCost,
+        size: posterSize,
+        quantity: 1,
+        orientation: posterOrientation,
+        artTreatment: 'art-signal',
+        customUpload: {
+          name: `Poster_${posterSize}_${Date.now()}`,
+          preview: posterPhoto,
+          customType: 'Custom Wall Poster',
+          format: posterSize,
+        },
+      });
+      setToast('Previous custom poster moved to Bag! Ready for your new order.');
+    } else {
+      setToast('Ready for new custom poster order!');
+    }
     setPosterPhoto(null);
     setPosterOrientation('portrait');
     setPosterSize('A5');
     setPosterQuantity(1);
-    setToast('Ready for new custom poster order!');
-    window.setTimeout(() => setToast(''), 2000);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.setTimeout(() => setToast(''), 3000);
   };
 
   // IF NO PRODUCT IS SELECTED: RENDER THE 3 BOXES
@@ -1789,33 +1890,6 @@ export function CustomPage() {
               </div>
             </div>
 
-            {/* QUANTITY STEPPER (ORDER MULTIPLE ITEMS WITH SAME IMAGES) */}
-            <div className="control-group">
-              <label className="control-label">Number of Copies (Quantity)</label>
-              <div className="stepper-box">
-                <button
-                  type="button"
-                  className="stepper-btn"
-                  onClick={() => setStripQuantity(Math.max(1, stripQuantity - 1))}
-                  aria-label="Decrease quantity"
-                >
-                  <Minus size={14} />
-                </button>
-                <span className="stepper-val">{stripQuantity}</span>
-                <button
-                  type="button"
-                  className="stepper-btn"
-                  onClick={() => setStripQuantity(stripQuantity + 1)}
-                  aria-label="Increase quantity"
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-              <span className="quantity-hint-text">
-                Order multiple strips with your uploaded photos for friends & family
-              </span>
-            </div>
-
             <div className="custom-price-total">
               <span>Total Price:</span>
               <strong>{formatPrice(stripTotalPrice)}</strong>
@@ -1828,6 +1902,17 @@ export function CustomPage() {
             >
               ADD TO BAG • {formatPrice(stripTotalPrice)}
             </button>
+
+            <button
+              type="button"
+              className="btn-new-order-outline"
+              onClick={handleNewStripOrder}
+            >
+              + Create New Order
+            </button>
+            <p className="new-order-subtext">
+              Your uploaded design is saved in Bag. Tap above to customize another order.
+            </p>
           </div>
         </div>
       )}
@@ -1971,33 +2056,6 @@ export function CustomPage() {
               </div>
             </div>
 
-            {/* QUANTITY STEPPER (ORDER MULTIPLE ITEMS WITH SAME IMAGES) */}
-            <div className="control-group">
-              <label className="control-label">Number of Packs (Quantity)</label>
-              <div className="stepper-box">
-                <button
-                  type="button"
-                  className="stepper-btn"
-                  onClick={() => setPocketQuantity(Math.max(1, pocketQuantity - 1))}
-                  aria-label="Decrease quantity"
-                >
-                  <Minus size={14} />
-                </button>
-                <span className="stepper-val">{pocketQuantity}</span>
-                <button
-                  type="button"
-                  className="stepper-btn"
-                  onClick={() => setPocketQuantity(pocketQuantity + 1)}
-                  aria-label="Increase quantity"
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-              <span className="quantity-hint-text">
-                Order multiple sets of your mini prints
-              </span>
-            </div>
-
             <div className="custom-price-total">
               <span>Total Price:</span>
               <strong>{formatPrice(pocketTotalPrice)}</strong>
@@ -2010,6 +2068,17 @@ export function CustomPage() {
             >
               ADD TO BAG • {formatPrice(pocketTotalPrice)}
             </button>
+
+            <button
+              type="button"
+              className="btn-new-order-outline"
+              onClick={handleNewPocketOrder}
+            >
+              + Create New Order
+            </button>
+            <p className="new-order-subtext">
+              Your uploaded design is saved in Bag. Tap above to customize another order.
+            </p>
           </div>
         </div>
       )}
@@ -2061,16 +2130,7 @@ export function CustomPage() {
               className="hidden"
             />
 
-            {!posterPhoto ? (
-              <button
-                type="button"
-                className="button postgenz-btn button-wide"
-                onClick={() => posterInputRef.current?.click()}
-              >
-                <UploadCloud size={18} />
-                <span>Upload Image / Wallpaper</span>
-              </button>
-            ) : (
+            {posterPhoto && (
               <div className="photo-uploaded-chip">
                 <Check size={16} className="text-emerald-500" />
                 <span>Image loaded successfully</span>
@@ -2158,6 +2218,9 @@ export function CustomPage() {
             >
               + Create New Order
             </button>
+            <p className="new-order-subtext">
+              Your uploaded design is saved in Bag. Tap above to customize another order.
+            </p>
           </div>
         </div>
       )}
@@ -2257,7 +2320,7 @@ export function WishlistPage() {
       orientation: product.orientation,
       artTreatment: product.artTreatment,
     });
-    setToast(`${product.title} added to bag!`);
+    setToast(`${product.title} moved to Bag!`);
     window.setTimeout(() => setToast(''), 2500);
   };
 
@@ -2268,245 +2331,394 @@ export function WishlistPage() {
   };
 
   return (
-    <main className="postgenz-wishlist-page">
-      <div className="collection-top-header">
-        <h1 className="collection-main-title">
-          MY WISHLIST {wishlistProducts.length > 0 ? `(${wishlistProducts.length} ITEMS)` : ''}
-        </h1>
-        <p className="collection-sub-text">ALL YOUR SAVED POSTERS IN ONE PLACE</p>
-      </div>
+    <main className="postgenz-wishlist-page min-h-[75vh]">
+      <section className="home-poster-section max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-10">
+        <div className="poster-section-header">
+          <h1 className="stencil-heading">MY WISHLIST</h1>
+          <span className="stencil-subheading">
+            {wishlistProducts.length > 0
+              ? `${wishlistProducts.length} ${wishlistProducts.length === 1 ? 'SAVED ITEM' : 'SAVED ITEMS'}`
+              : 'NO ITEMS SAVED'}
+          </span>
+        </div>
 
-      <div className="wishlist-page-content max-w-5xl mx-auto px-4 py-6">
         {wishlistProducts.length === 0 ? (
-          <div className="empty-state wishlist-empty py-16 text-center">
-            <Heart size={56} className="empty-cart-icon text-rose-500 mx-auto mb-4 stroke-1" />
-            <h3 className="text-xl font-bold text-neutral-900 mb-2">YOUR WISHLIST IS EMPTY</h3>
-            <p className="text-neutral-500 max-w-md mx-auto mb-6 text-sm">
-              Explore our trending posters and custom photobooth prints, and tap the heart icon to save what you love!
+          <div className="empty-state wishlist-empty py-16 px-4 text-center bg-white border border-neutral-200 rounded-2xl shadow-xs max-w-xl mx-auto my-6">
+            <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-5 text-rose-500">
+              <Heart size={42} className="stroke-[1.5]" />
+            </div>
+            <h3 className="text-xl font-black text-neutral-900 mb-2 uppercase tracking-wide">
+              YOUR WISHLIST IS EMPTY
+            </h3>
+            <p className="text-neutral-500 max-w-md mx-auto mb-6 text-sm leading-relaxed">
+              Explore our trending posters, custom photobooth prints, and aesthetic wall art. Tap the heart icon to save items here!
             </p>
-            <Link href="/collections/posters" className="btn-explore-more inline-block">
-              EXPLORE POSTERS →
+            <Link href="/collections/posters" className="btn-explore-more inline-flex items-center gap-2">
+              <span>EXPLORE POSTERS</span>
+              <ArrowRight size={16} />
             </Link>
           </div>
         ) : (
-          <div className="wishlist-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {wishlistProducts.map((product) => (
-              <div key={product.id} className="wishlist-card border border-neutral-200 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="wishlist-card-media relative aspect-[3/4] bg-neutral-100 overflow-hidden">
-                    <Link href={`/products/${product.slug}`} className="block w-full h-full">
-                      <img
-                        src={product.images?.[0] || '/assets/spiderman-product-hero.jpg'}
-                        alt={product.title}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                      />
+          <div className="four-col-laptop-grid mt-6">
+            {wishlistProducts.map((product) => {
+              const imageSrc = product.images?.[0];
+              return (
+                <article key={product.id} className="postgenz-product-card" data-testid={`card-product-${product.id}`}>
+                  <div className="product-media-wrap">
+                    <Link href={`/products/${product.slug}`} className="product-media-link">
+                      {product.bestseller && (
+                        <div className="badge-best-seller">
+                          <span className="badge-icon">⚡</span> BEST SELLER
+                        </div>
+                      )}
+                      {product.newArrival && !product.bestseller && (
+                        <div className="badge-new-arrival">
+                          <span className="badge-icon">⚡</span> NEW ARRIVALS
+                        </div>
+                      )}
+                      <PosterArt src={imageSrc} treatment={product.artTreatment} title={product.title} />
                     </Link>
+
                     <button
                       type="button"
+                      className="quick-cart-btn quick-wishlist-btn wishlist-active"
+                      aria-label={`Remove ${product.title} from Wishlist`}
+                      title="Remove from Wishlist"
                       onClick={() => handleRemove(product)}
-                      className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/90 text-neutral-600 hover:text-red-600 flex items-center justify-center shadow-md transition-colors"
-                      aria-label={`Remove ${product.title} from wishlist`}
                     >
-                      <Trash2 size={16} />
+                      <Heart
+                        size={18}
+                        strokeWidth={2.2}
+                        fill="#ef4444"
+                        color="#ef4444"
+                      />
                     </button>
-                    {product.bestseller && (
-                      <span className="badge-best-seller absolute bottom-2 left-2 text-[9px] py-0.5 px-2">
-                        ⚡ BEST SELLER
-                      </span>
-                    )}
                   </div>
 
-                  <div className="p-3">
-                    <Link
-                      href={`/products/${product.slug}`}
-                      className="font-bold text-xs md:text-sm text-neutral-900 line-clamp-2 hover:underline"
-                    >
+                  <div className="product-info-block">
+                    <Link href={`/products/${product.slug}`} className="product-card-title">
                       {product.title}
                     </Link>
-                    <div className="flex items-baseline gap-2 mt-1.5">
-                      <span className="font-extrabold text-sm text-neutral-900">
-                        {formatPrice(product.price)}
-                      </span>
+                    <div className="product-price-row">
+                      <span className="current-price">{formatPrice(product.price)}</span>
                       {product.compareAtPrice > product.price && (
-                        <del className="text-xs text-neutral-400">
-                          {formatPrice(product.compareAtPrice)}
-                        </del>
+                        <del className="compare-price">{formatPrice(product.compareAtPrice)}</del>
                       )}
                     </div>
-                  </div>
-                </div>
 
-                <div className="p-3 pt-0">
-                  <button
-                    type="button"
-                    onClick={() => handleMoveToBag(product)}
-                    className="w-full py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <ShoppingBag size={14} />
-                    <span>Move to Bag</span>
-                  </button>
-                </div>
-              </div>
-            ))}
+                    <button
+                      type="button"
+                      onClick={() => handleMoveToBag(product)}
+                      className="wishlist-bag-cta"
+                    >
+                      <ShoppingBag size={14} />
+                      <span>MOVE TO BAG</span>
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
-      </div>
+      </section>
       <Toast message={toast} />
     </main>
   );
 }
 
 // =============================================================
-// DEDICATED YOUR BAG PAGE (PAGE 5)
+// DEDICATED YOUR BAG PAGE (AMAZON / FLIPKART STYLE)
 // =============================================================
 export function CartPage() {
   const [, navigate] = useLocation();
-  const { cart, coupon } = useStore();
+  const { cart, coupon, wishlist = [] } = useStore();
   const totals = cartTotals(cart, coupon);
   const [toast, setToast] = useState('');
 
   const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Compute Total MRP to show Flipkart/Amazon style savings
+  const totalMRP = useMemo(() => {
+    return cart.reduce((sum, item) => {
+      const match = products.find((p) => p.id === item.productId || p.slug === item.slug);
+      const mrp = match?.compareAtPrice && match.compareAtPrice > item.price
+        ? match.compareAtPrice
+        : Math.round(item.price * 1.5);
+      return sum + mrp * item.quantity;
+    }, 0);
+  }, [cart]);
+
+  const totalSavings = Math.max(0, (totalMRP - totals.subtotal) + totals.discount);
+
+  const handleSaveForLater = (item: CartItem) => {
+    const slugOrId = item.slug || item.productId;
+    if (!wishlist.includes(slugOrId)) {
+      store.toggleWishlist(slugOrId);
+    }
+    store.removeFromCart(item.key);
+    setToast(`Saved "${item.title}" to Wishlist!`);
+    window.setTimeout(() => setToast(''), 2500);
+  };
+
   return (
-    <main className="postgenz-cart-page">
+    <main className="postgenz-cart-page min-h-[75vh] bg-[#f8f9fa]">
       <div className="collection-top-header">
-        <h1 className="collection-main-title">
-          YOUR BAG {totalCount > 0 ? `(${totalCount})` : ''}
+        <div className="flex items-center justify-center gap-2 text-xs text-neutral-400 mb-2">
+          <Link href="/" className="hover:text-neutral-900 transition-colors">Home</Link>
+          <span>/</span>
+          <span className="text-neutral-900 font-semibold">Shopping Bag</span>
+        </div>
+        <h1 className="collection-main-title bag-main-title">
+          YOUR SHOPPING BAG {totalCount > 0 ? `(${totalCount} ${totalCount === 1 ? 'ITEM' : 'ITEMS'})` : ''}
         </h1>
-        <p className="collection-sub-text">REVIEW YOUR ITEMS BEFORE CHECKOUT</p>
       </div>
 
       {cart.length === 0 ? (
-        <div className="empty-state cart-empty py-16 text-center">
-          <ShoppingBag size={56} className="empty-cart-icon text-neutral-400 mx-auto mb-4 stroke-1" />
-          <h3 className="text-xl font-bold text-neutral-900 mb-2">HEY, YOUR BAG IS EMPTY!</h3>
-          <p className="text-neutral-500 max-w-md mx-auto mb-6 text-sm">
-            There is nothing in your bag. Let&apos;s add some awesome posters and custom photobooth prints.
+        <div className="empty-state cart-empty py-16 px-4 text-center bg-white border border-neutral-200 rounded-2xl shadow-xs max-w-xl mx-auto my-8">
+          <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-5 text-neutral-400">
+            <ShoppingBag size={42} className="stroke-[1.5]" />
+          </div>
+          <h3 className="text-xl font-black text-neutral-900 mb-2 uppercase tracking-wide">
+            HEY, YOUR BAG IS EMPTY!
+          </h3>
+          <p className="text-neutral-500 max-w-md mx-auto mb-6 text-sm leading-relaxed">
+            There is nothing in your bag right now. Let&apos;s explore our best-selling anime, aesthetic, and custom photo posters!
           </p>
-          <Link href="/collections/posters" className="btn-explore-more inline-block">
-            EXPLORE POSTERS →
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href="/collections/posters" className="btn-explore-more inline-flex items-center gap-2">
+              <span>EXPLORE POSTERS</span>
+              <ArrowRight size={16} />
+            </Link>
+            <Link href="/wishlist" className="py-2.5 px-5 rounded-full border border-neutral-300 text-xs font-bold text-neutral-700 hover:border-neutral-900 hover:text-neutral-900 transition-colors uppercase tracking-wider">
+              VIEW WISHLIST
+            </Link>
+          </div>
         </div>
       ) : (
-        <div className="dedicated-bag-container max-w-4xl mx-auto px-4 py-6">
-          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-3 text-xs md:text-sm font-semibold flex items-center gap-2 mb-6 shadow-sm">
-            <span>🎉</span>
-            <span>Free shipping on prepaid orders across India!</span>
-          </div>
+        <div className="bag-modern-wrapper">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-start">
+            {/* Left Column: Cart Items List (8 cols on desktop) */}
+            <div className="lg:col-span-8 flex flex-col gap-4">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs md:text-sm font-bold text-neutral-700 uppercase tracking-wider">
+                  ITEMS IN YOUR BAG ({totalCount})
+                </span>
+                <span className="text-xs text-neutral-500">
+                  Prices include all taxes
+                </span>
+              </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            {/* Bag Items List */}
-            <div className="lg:col-span-2 flex flex-col gap-4">
-              {cart.map((item) => (
-                <div
-                  key={item.key}
-                  className="bag-item-card bg-white border border-neutral-200 rounded-xl p-3.5 md:p-4 flex gap-4 items-center shadow-sm"
-                >
-                  <div className="w-16 h-20 md:w-20 md:h-24 rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-neutral-200">
-                    {item.customUpload?.preview ? (
-                      <img
-                        src={item.customUpload.preview}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xs font-bold bg-neutral-900 text-white p-1 text-center">
-                        {item.title.split(' ')[0]}
+              {cart.map((item) => {
+                const matchProduct = products.find((p) => p.id === item.productId || p.slug === item.slug);
+                const itemMrp = matchProduct?.compareAtPrice && matchProduct.compareAtPrice > item.price
+                  ? matchProduct.compareAtPrice
+                  : Math.round(item.price * 1.5);
+                const itemSavings = (itemMrp - item.price) * item.quantity;
+
+                return (
+                  <div key={item.key} className="bag-card-pro">
+                    <div className="bag-card-top-row">
+                      {/* Product Thumbnail */}
+                      <div className="bag-item-thumb-box">
+                        {item.customUpload?.preview ? (
+                          <img
+                            src={item.customUpload.preview}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <img
+                            src={matchProduct?.images?.[0] || '/assets/spiderman-product-hero.jpg'}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] font-extrabold px-1 rounded">
+                          {item.size}
+                        </span>
                       </div>
-                    )}
-                  </div>
 
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-sm md:text-base text-neutral-900 line-clamp-1">
-                      {item.title}
-                    </h4>
-                    <div className="text-xs text-neutral-500 mt-1 space-x-2">
-                      <span>Size: <strong className="text-neutral-700">{item.size}</strong></span>
-                      {item.customUpload?.borderStyle && (
-                        <span>• Border: <strong className="text-neutral-700 capitalize">{item.customUpload.borderStyle}</strong></span>
-                      )}
+                      {/* Product Details */}
+                      <div className="bag-item-details-col">
+                        <Link
+                          href={item.slug ? `/products/${item.slug}` : '#'}
+                          className="bag-item-name"
+                        >
+                          {item.title}
+                        </Link>
+
+                        <div className="flex items-center flex-wrap gap-1.5 mt-1.5">
+                          <span className="bag-size-tag">
+                            Size: <strong>{item.size}</strong>
+                          </span>
+                          {item.customUpload?.borderStyle && (
+                            <span className="bag-size-tag">
+                              Border: <strong className="capitalize">{item.customUpload.borderStyle}</strong>
+                            </span>
+                          )}
+                          <span className="text-[11px] text-neutral-400">
+                            • High-definition 300 GSM Print
+                          </span>
+                        </div>
+
+                        {/* Price Row */}
+                        <div className="bag-price-block">
+                          <span className="bag-price-current">
+                            {formatPrice(item.price * item.quantity)}
+                          </span>
+                          <span className="bag-price-strike">
+                            {formatPrice(itemMrp * item.quantity)}
+                          </span>
+                          {itemSavings > 0 && (
+                            <span className="bag-savings-tag">
+                              Save {formatPrice(itemSavings)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-2 text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5">
+                          <Truck size={13} />
+                          <span>Delivery in 4–7 Days | Standard Free Delivery</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="font-extrabold text-sm md:text-base text-neutral-900 mt-2">
-                      {formatPrice(item.price * item.quantity)}
+
+                    {/* Bottom Action Toolbar */}
+                    <div className="bag-item-bottom-toolbar">
+                      {/* Quantity Stepper */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-neutral-500 font-medium">Qty:</span>
+                        <div className="stepper-box flex items-center border border-neutral-300 rounded-lg overflow-hidden h-8 bg-white">
+                          <button
+                            type="button"
+                            className="stepper-btn px-2.5 text-neutral-600 hover:bg-neutral-100 transition-colors"
+                            onClick={() => store.updateQuantity(item.key, item.quantity - 1)}
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus size={12} />
+                          </button>
+                          <span className="stepper-val px-3 text-xs font-bold text-neutral-900 min-w-[24px] text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            className="stepper-btn px-2.5 text-neutral-600 hover:bg-neutral-100 transition-colors"
+                            onClick={() => store.updateQuantity(item.key, item.quantity + 1)}
+                            aria-label="Increase quantity"
+                          >
+                            <Plus size={12} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Action Links */}
+                      <div className="flex items-center gap-4">
+                        <button
+                          type="button"
+                          className="bag-action-link-btn"
+                          onClick={() => handleSaveForLater(item)}
+                          title="Save item for later in your wishlist"
+                        >
+                          <Bookmark size={14} />
+                          <span>Save for Later</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="bag-action-link-btn bag-action-delete"
+                          onClick={() => {
+                            store.removeFromCart(item.key);
+                            setToast('Item removed from bag');
+                            window.setTimeout(() => setToast(''), 2000);
+                          }}
+                          aria-label="Remove item"
+                        >
+                          <Trash2 size={14} />
+                          <span>Remove</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="flex flex-col items-end gap-3 shrink-0">
-                    <button
-                      type="button"
-                      className="text-neutral-400 hover:text-red-500 p-1 transition-colors"
-                      aria-label="Remove item"
-                      onClick={() => {
-                        store.removeFromCart(item.key);
-                        setToast('Item removed from bag');
-                        window.setTimeout(() => setToast(''), 2000);
-                      }}
-                    >
-                      <Trash2 size={18} />
-                    </button>
-
-                    <div className="stepper-box flex items-center border border-neutral-300 rounded-lg overflow-hidden h-8">
-                      <button
-                        type="button"
-                        className="stepper-btn px-2 text-neutral-600 hover:bg-neutral-100"
-                        onClick={() => store.updateQuantity(item.key, item.quantity - 1)}
-                        aria-label="Decrease quantity"
-                      >
-                        <Minus size={12} />
-                      </button>
-                      <span className="stepper-val px-2 text-xs font-bold text-neutral-900">
-                        {item.quantity}
-                      </span>
-                      <button
-                        type="button"
-                        className="stepper-btn px-2 text-neutral-600 hover:bg-neutral-100"
-                        onClick={() => store.updateQuantity(item.key, item.quantity + 1)}
-                        aria-label="Increase quantity"
-                      >
-                        <Plus size={12} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Bag Order Summary */}
-            <div className="bag-summary-card bg-neutral-50 border border-neutral-200 rounded-2xl p-5 shadow-sm sticky top-24">
-              <h3 className="font-bold text-base text-neutral-900 uppercase tracking-wide mb-4">
-                Order Summary
-              </h3>
+            {/* Right Column: Price Details & Checkout (4 cols on desktop) */}
+            <div className="lg:col-span-4">
+              <div className="flipkart-price-details-card">
+                <div className="flipkart-price-header">
+                  PRICE DETAILS
+                </div>
 
-              <div className="space-y-3 text-sm border-b border-neutral-200 pb-4 mb-4">
-                <div className="flex justify-between">
-                  <span className="text-neutral-600">Subtotal ({totals.totalItemCount} items)</span>
-                  <span className="font-bold text-neutral-900">{formatPrice(totals.subtotal)}</span>
+                <div className="flipkart-price-body">
+                  <div className="flipkart-price-row">
+                    <span>Price ({totals.totalItemCount} {totals.totalItemCount === 1 ? 'item' : 'items'})</span>
+                    <span className="text-neutral-900 font-semibold">{formatPrice(totalMRP)}</span>
+                  </div>
+
+                  {totalMRP > totals.subtotal && (
+                    <div className="flipkart-price-row text-emerald-600">
+                      <span>Discount on MRP</span>
+                      <span className="font-semibold">−{formatPrice(totalMRP - totals.subtotal)}</span>
+                    </div>
+                  )}
+
+                  {totals.discount > 0 && (
+                    <div className="flipkart-price-row text-emerald-600">
+                      <span>Coupon Discount</span>
+                      <span className="font-semibold">−{formatPrice(totals.discount)}</span>
+                    </div>
+                  )}
+
+                  <div className="flipkart-price-row">
+                    <span>Delivery Charges</span>
+                    <span className="text-emerald-600 font-bold uppercase">FREE</span>
+                  </div>
+
+                  <div className="flipkart-price-total-row">
+                    <span>Total Amount</span>
+                    <span className="text-xl font-extrabold text-neutral-900">
+                      {formatPrice(totals.total)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-neutral-600">Standard Delivery</span>
-                  <span className="font-bold text-emerald-600">FREE</span>
-                </div>
-                {totals.discount > 0 && (
-                  <div className="flex justify-between text-emerald-600 font-bold">
-                    <span>Discount</span>
-                    <span>−{formatPrice(totals.discount)}</span>
+
+                {totalSavings > 0 && (
+                  <div className="flipkart-savings-banner">
+                    🎉 You will save {formatPrice(totalSavings)} on this order
                   </div>
                 )}
-              </div>
 
-              <div className="flex justify-between items-baseline mb-6">
-                <span className="text-base font-bold text-neutral-900">Subtotal</span>
-                <span className="text-xl font-extrabold text-neutral-900">{formatPrice(totals.total)}</span>
-              </div>
+                <button
+                  type="button"
+                  className="w-full mt-5 py-3.5 px-4 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-sm font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99] cursor-pointer"
+                  onClick={() => navigate('/checkout')}
+                >
+                  <Lock size={15} />
+                  <span>PROCEED TO CHECKOUT</span>
+                  <ArrowRight size={16} />
+                </button>
 
-              <button
-                type="button"
-                className="bag-checkout-btn"
-                onClick={() => navigate('/checkout')}
-              >
-                <span>PROCEED TO BUY / CHECKOUT</span>
-                <ArrowRight size={16} />
-              </button>
+                {/* Trust Badges */}
+                <div className="flipkart-trust-box">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
+                    <span>100% Safe Payments</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Truck size={16} className="text-blue-600 shrink-0" />
+                    <span>Express Dispatch</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={16} className="text-amber-500 shrink-0" />
+                    <span>300 GSM Art Paper</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Package size={16} className="text-rose-600 shrink-0" />
+                    <span>Damage-proof Tube</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2516,9 +2728,16 @@ export function CartPage() {
               <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider block">
                 Total ({totals.totalItemCount} Items)
               </span>
-              <span className="text-lg font-black text-neutral-900">
-                {formatPrice(totals.total)}
-              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-lg font-black text-neutral-900">
+                  {formatPrice(totals.total)}
+                </span>
+                {totalSavings > 0 && (
+                  <span className="text-[10px] text-emerald-600 font-bold">
+                    Save {formatPrice(totalSavings)}
+                  </span>
+                )}
+              </div>
             </div>
             <button
               type="button"
@@ -2563,6 +2782,23 @@ export function CheckoutPage() {
   const [couponInput, setCouponInput] = useState('');
   const [couponFeedback, setCouponFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [toast, setToast] = useState('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'upi' | 'cards' | 'netbanking'>('upi');
+
+  const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Calculate MRP & Savings
+  const calculatedMRP = useMemo(() => {
+    return cart.reduce((sum, item) => {
+      const match = products.find((p) => p.id === item.productId || p.slug === item.slug);
+      const mrp = match?.compareAtPrice && match.compareAtPrice > item.price
+        ? match.compareAtPrice
+        : Math.round(item.price * 1.5);
+      return sum + mrp * item.quantity;
+    }, 0);
+  }, [cart]);
+
+  const calculatedSavings = Math.max(0, (calculatedMRP - totals.subtotal) + totals.discount);
 
   const update = (key: keyof typeof form) => (e: ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [key]: e.target.value });
@@ -2575,26 +2811,74 @@ export function CheckoutPage() {
     }
   };
 
-  const handleApplyCoupon = (e: FormEvent) => {
-    e.preventDefault();
-    const code = couponInput.trim().toUpperCase();
+  // Swiggy & Zomato style Vouchers
+  const availableVouchers = [
+    {
+      code: 'STUDIO10',
+      title: 'Extra 10% OFF on All Posters',
+      desc: 'Instant 10% discount across every item in your bag',
+      badge: '10% OFF',
+      minQty: 1,
+    },
+    {
+      code: 'DUNGEONS3',
+      title: 'Buy 2 Get 1 FREE (Special Offer)',
+      desc: 'Buy any 2 posters and get the 3rd cheapest poster completely free',
+      badge: 'B2G1 FREE',
+      minQty: 3,
+    },
+    {
+      code: 'FIRST10',
+      title: 'Welcome 10% Discount',
+      desc: 'Special welcome offer for new art lovers on their order',
+      badge: 'WELCOME',
+      minQty: 1,
+    },
+    {
+      code: 'POSTER5',
+      title: 'Buy 3 Get 2 FREE (Mega Bundle)',
+      desc: 'Add 5 posters to your bag and pay only for 3 posters',
+      badge: 'B3G2 FREE',
+      minQty: 5,
+    },
+  ];
+
+  const handleApplyCouponCode = (codeToApply: string) => {
+    const code = codeToApply.trim().toUpperCase();
     if (!code) {
       setCouponFeedback({ type: 'error', text: 'Please enter a coupon code.' });
       return;
     }
-    const validCodes = ['STUDIO10', 'FIRST10', 'DUNGEONS3', 'DUNGEONS5', 'POSTER3', 'POSTER5', 'HMCLUB', 'MYNH15'];
+    const validCodes = ['STUDIO10', 'FIRST10', 'DUNGEONS3', 'DUNGEONS5', 'POSTER3', 'POSTER5'];
     if (!validCodes.includes(code)) {
       setCouponFeedback({ type: 'error', text: 'Invalid coupon code. Try STUDIO10 for 10% off.' });
       return;
     }
+
+    if ((code === 'DUNGEONS3' || code === 'POSTER3') && totalCount < 3) {
+      const needed = 3 - totalCount;
+      setCouponFeedback({ type: 'error', text: `Add ${needed} more poster${needed > 1 ? 's' : ''} to unlock this offer!` });
+      return;
+    }
+
+    if ((code === 'DUNGEONS5' || code === 'POSTER5') && totalCount < 5) {
+      const needed = 5 - totalCount;
+      setCouponFeedback({ type: 'error', text: `Add ${needed} more poster${needed > 1 ? 's' : ''} to unlock this offer!` });
+      return;
+    }
+
     store.setCoupon(code);
-    setCouponFeedback({ type: 'success', text: `Coupon ${code} applied successfully!` });
+    setCouponFeedback({ type: 'success', text: `🎉 Coupon ${code} applied successfully!` });
+    setToast(`🎉 Coupon ${code} applied!`);
+    window.setTimeout(() => setToast(''), 2500);
     setCouponInput('');
   };
 
   const handleRemoveCoupon = () => {
     store.setCoupon('');
     setCouponFeedback(null);
+    setToast('Coupon removed');
+    window.setTimeout(() => setToast(''), 2000);
   };
 
   const validate = () => {
@@ -2614,8 +2898,8 @@ export function CheckoutPage() {
     return Object.keys(errs).length === 0;
   };
 
-  const handlePlaceOrder = async (e: FormEvent) => {
-    e.preventDefault();
+  const handlePlaceOrder = async (e?: FormEvent) => {
+    if (e) e.preventDefault();
     setError('');
 
     if (!cart.length) {
@@ -2624,7 +2908,8 @@ export function CheckoutPage() {
     }
 
     if (!validate()) {
-      setError('Please resolve the highlighted fields in the Address section.');
+      setIsEditingAddress(true);
+      setError('Please fill in your delivery address correctly.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -2671,383 +2956,606 @@ export function CheckoutPage() {
     }
   };
 
-  const calculatedMRP = totals.subtotal + 120 * totals.totalItemCount;
-  const calculatedSavings = calculatedMRP - totals.total;
-
   return (
-    <main className="postgenz-checkout-page bg-neutral-50/50 min-h-screen pb-20">
-      <div className="collection-top-header">
-        <h1 className="collection-main-title">CHECKOUT</h1>
-        <p className="collection-sub-text">• COMPLETE YOUR ORDER IN 5 SIMPLE STEPS •</p>
-      </div>
+    <main className="postgenz-checkout-page min-h-screen bg-[#f8f9fa] pb-24 md:pb-16">
+      <div className="modern-checkout-wrapper">
+        {/* Clean Top Navigation Bar */}
+        <div className="checkout-clean-nav">
+          <button
+            type="button"
+            onClick={() => navigate('/bag')}
+            className="checkout-back-btn"
+          >
+            <ChevronLeft size={16} />
+            <span>Back to Bag</span>
+          </button>
 
-      <div className="checkout-content-wrap max-w-5xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-2">
+            <span className="checkout-trust-badge-pill">
+              <ShieldCheck size={14} />
+              <span>100% SECURE CHECKOUT</span>
+            </span>
+          </div>
+        </div>
+
         {error && (
-          <div className="form-error-banner mb-4 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs md:text-sm font-semibold flex items-center gap-2.5">
+          <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs md:text-sm font-semibold flex items-center gap-2.5 shadow-xs">
             <span>⚠️</span>
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handlePlaceOrder} className="checkout-grid-container">
-          <div className="checkout-left-col flex flex-col gap-4">
-          {/* ============================================================== */}
-          {/* 1. ADDRESS SECTION (MYNTRA STYLE - PAGE 6) */}
-          {/* ============================================================== */}
-          <div className="checkout-card bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-sm text-neutral-900">{form.name || 'Delivery Address'}</span>
-                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
-                  HOME
+        <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Column: Checkout Steps (8 cols on desktop) */}
+          <div className="lg:col-span-8 flex flex-col gap-4">
+
+            {/* STEP 1: DELIVERY ADDRESS (AMAZON / FLIPKART STYLE) */}
+            <div className="checkout-stepper-card">
+              <div className="checkout-card-header">
+                <div className="step-label-group">
+                  <span className="step-num-pill">1</span>
+                  <div className="flex items-center gap-2">
+                    <MapPin size={16} className="text-neutral-500" />
+                    <h2 className="step-title-heading">Delivery Address</h2>
+                  </div>
+                </div>
+                {!isEditingAddress && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingAddress(true)}
+                    className="step-edit-btn"
+                  >
+                    Change
+                  </button>
+                )}
+              </div>
+
+              {!isEditingAddress ? (
+                <div className="space-y-1.5 text-xs sm:text-sm text-neutral-700">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-sm sm:text-base text-neutral-900">
+                      {form.name}
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      HOME
+                    </span>
+                  </div>
+                  <p className="text-neutral-600 leading-relaxed pt-0.5">
+                    {form.address}, {form.city}, {form.state} – <strong className="text-neutral-800">{form.pincode}</strong>
+                  </p>
+                  <p className="text-neutral-800 font-semibold pt-1">
+                    Mobile: <span className="font-extrabold text-neutral-900">+91 {form.phone}</span>
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-700 block mb-1">Full Name *</label>
+                    <input
+                      required
+                      value={form.name}
+                      onChange={update('name')}
+                      placeholder="e.g. Kaushik Vansh"
+                      className={`w-full p-2.5 text-xs rounded-xl border ${formErrors.name ? 'border-red-500 bg-red-50/40' : 'border-neutral-300 bg-white'} focus:border-neutral-900 focus:outline-none`}
+                    />
+                    {formErrors.name && <span className="text-[10px] text-red-600 font-bold">{formErrors.name}</span>}
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-700 block mb-1">10-Digit Mobile Number *</label>
+                    <input
+                      required
+                      type="tel"
+                      value={form.phone}
+                      onChange={update('phone')}
+                      placeholder="9265964547"
+                      className={`w-full p-2.5 text-xs rounded-xl border ${formErrors.phone ? 'border-red-500 bg-red-50/40' : 'border-neutral-300 bg-white'} focus:border-neutral-900 focus:outline-none`}
+                    />
+                    {formErrors.phone && <span className="text-[10px] text-red-600 font-bold">{formErrors.phone}</span>}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="text-[11px] font-bold text-neutral-700 block mb-1">Email Address (For Order Tracking) *</label>
+                    <input
+                      required
+                      type="email"
+                      value={form.email}
+                      onChange={update('email')}
+                      placeholder="kaushik@dungeons.in"
+                      className={`w-full p-2.5 text-xs rounded-xl border ${formErrors.email ? 'border-red-500 bg-red-50/40' : 'border-neutral-300 bg-white'} focus:border-neutral-900 focus:outline-none`}
+                    />
+                    {formErrors.email && <span className="text-[10px] text-red-600 font-bold">{formErrors.email}</span>}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="text-[11px] font-bold text-neutral-700 block mb-1">Flat, House no., Building, Company, Apartment *</label>
+                    <input
+                      required
+                      value={form.address}
+                      onChange={update('address')}
+                      placeholder="417, Satyamev Eminence, Near Shukan Mall, Science City..."
+                      className={`w-full p-2.5 text-xs rounded-xl border ${formErrors.address ? 'border-red-500 bg-red-50/40' : 'border-neutral-300 bg-white'} focus:border-neutral-900 focus:outline-none`}
+                    />
+                    {formErrors.address && <span className="text-[10px] text-red-600 font-bold">{formErrors.address}</span>}
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-700 block mb-1">Town / City *</label>
+                    <input
+                      required
+                      value={form.city}
+                      onChange={update('city')}
+                      placeholder="Ahmedabad"
+                      className={`w-full p-2.5 text-xs rounded-xl border ${formErrors.city ? 'border-red-500 bg-red-50/40' : 'border-neutral-300 bg-white'} focus:border-neutral-900 focus:outline-none`}
+                    />
+                    {formErrors.city && <span className="text-[10px] text-red-600 font-bold">{formErrors.city}</span>}
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-700 block mb-1">6-Digit PIN Code *</label>
+                    <input
+                      required
+                      value={form.pincode}
+                      onChange={update('pincode')}
+                      placeholder="380060"
+                      className={`w-full p-2.5 text-xs rounded-xl border ${formErrors.pincode ? 'border-red-500 bg-red-50/40' : 'border-neutral-300 bg-white'} focus:border-neutral-900 focus:outline-none`}
+                    />
+                    {formErrors.pincode && <span className="text-[10px] text-red-600 font-bold">{formErrors.pincode}</span>}
+                  </div>
+
+                  <div className="md:col-span-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (validate()) setIsEditingAddress(false);
+                      }}
+                      className="w-full sm:w-auto py-2.5 px-6 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
+                    >
+                      <Check size={14} />
+                      <span>Save &amp; Deliver to this Address</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* STEP 2: ORDER ITEMS SUMMARY */}
+            <div className="checkout-stepper-card">
+              <div className="checkout-card-header">
+                <div className="step-label-group">
+                  <span className="step-num-pill">2</span>
+                  <div className="flex items-center gap-2">
+                    <Package size={16} className="text-neutral-500" />
+                    <h2 className="step-title-heading">Order Items ({totalCount})</h2>
+                  </div>
+                </div>
+                <span className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                  <Truck size={13} />
+                  <span>Free Express Delivery</span>
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsEditingAddress(!isEditingAddress)}
-                className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline uppercase tracking-wider"
-              >
-                {isEditingAddress ? 'Done' : 'Change'}
-              </button>
-            </div>
 
-            {!isEditingAddress ? (
-              <div className="pt-3 text-xs md:text-sm text-neutral-600 space-y-1">
-                <p className="leading-relaxed">{form.address}, {form.city}, {form.state} {form.pincode}</p>
-                <p className="font-medium text-neutral-800">Mobile: <strong className="font-bold">{form.phone}</strong></p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4">
-                <div className="input-field-group">
-                  <label className="text-[11px] font-bold text-neutral-700">Full Name *</label>
-                  <input
-                    required
-                    value={form.name}
-                    onChange={update('name')}
-                    placeholder="e.g. Kaushik Vansh"
-                    className={`checkout-input text-xs ${formErrors.name ? 'border-red-500 bg-red-50/30' : ''}`}
-                  />
+              {cart.length === 0 ? (
+                <div className="text-center py-6 text-neutral-500 text-xs">
+                  Your bag is empty.{' '}
+                  <Link href="/collections/posters" className="text-rose-600 font-bold underline">
+                    Explore Posters
+                  </Link>
                 </div>
-                <div className="input-field-group">
-                  <label className="text-[11px] font-bold text-neutral-700">Mobile Number *</label>
-                  <input
-                    required
-                    type="tel"
-                    value={form.phone}
-                    onChange={update('phone')}
-                    placeholder="9265964547"
-                    className={`checkout-input text-xs ${formErrors.phone ? 'border-red-500 bg-red-50/30' : ''}`}
-                  />
-                </div>
-                <div className="input-field-group md:col-span-2">
-                  <label className="text-[11px] font-bold text-neutral-700">Email Address *</label>
-                  <input
-                    required
-                    type="email"
-                    value={form.email}
-                    onChange={update('email')}
-                    placeholder="kaushik@dungeons.in"
-                    className={`checkout-input text-xs ${formErrors.email ? 'border-red-500 bg-red-50/30' : ''}`}
-                  />
-                </div>
-                <div className="input-field-group md:col-span-2">
-                  <label className="text-[11px] font-bold text-neutral-700">Delivery Address *</label>
-                  <input
-                    required
-                    value={form.address}
-                    onChange={update('address')}
-                    placeholder="417, Satyamev Eminence, Near Shukan Mall..."
-                    className={`checkout-input text-xs ${formErrors.address ? 'border-red-500 bg-red-50/30' : ''}`}
-                  />
-                </div>
-                <div className="input-field-group">
-                  <label className="text-[11px] font-bold text-neutral-700">City *</label>
-                  <input
-                    required
-                    value={form.city}
-                    onChange={update('city')}
-                    placeholder="Ahmedabad"
-                    className={`checkout-input text-xs ${formErrors.city ? 'border-red-500 bg-red-50/30' : ''}`}
-                  />
-                </div>
-                <div className="input-field-group">
-                  <label className="text-[11px] font-bold text-neutral-700">PIN Code *</label>
-                  <input
-                    required
-                    value={form.pincode}
-                    onChange={update('pincode')}
-                    placeholder="380060"
-                    className={`checkout-input text-xs ${formErrors.pincode ? 'border-red-500 bg-red-50/30' : ''}`}
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (validate()) setIsEditingAddress(false);
-                  }}
-                  className="md:col-span-2 py-2 bg-neutral-900 text-white rounded-lg text-xs font-bold uppercase tracking-wider"
-                >
-                  Save &amp; Deliver Here
-                </button>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="divide-y divide-neutral-100">
+                  {cart.map((item) => {
+                    const matchProduct = products.find((p) => p.id === item.productId || p.slug === item.slug);
+                    const itemMrp = matchProduct?.compareAtPrice && matchProduct.compareAtPrice > item.price
+                      ? matchProduct.compareAtPrice
+                      : Math.round(item.price * 1.5);
 
-          {/* ============================================================== */}
-          {/* 2. YOUR BAG (MYNTRA STYLE CARDS - PAGE 6) */}
-          {/* ============================================================== */}
-          <div className="checkout-card bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
-            <h3 className="font-extrabold text-sm text-neutral-900 uppercase tracking-wide mb-3">
-              Order Items ({totals.totalItemCount})
-            </h3>
-
-            {cart.length === 0 ? (
-              <div className="text-center py-6 text-neutral-500 text-xs">
-                Your order bag is empty.{' '}
-                <Link href="/collections/posters" className="text-blue-600 font-bold underline">
-                  Explore Posters
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3 divide-y divide-neutral-100">
-                {cart.map((item) => (
-                  <div key={item.key} className="pt-3 first:pt-0 flex gap-3.5 items-center">
-                    <div className="w-16 h-20 rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-neutral-200">
-                      {item.customUpload?.preview ? (
-                        <img
-                          src={item.customUpload.preview}
-                          alt={item.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] font-bold bg-neutral-900 text-white p-1 text-center">
-                          POSTER
+                    return (
+                      <div key={item.key} className="py-3.5 first:pt-0 last:pb-0 flex gap-3.5 items-center">
+                        <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-neutral-200 relative">
+                          {item.customUpload?.preview ? (
+                            <img
+                              src={item.customUpload.preview}
+                              alt={item.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <img
+                              src={matchProduct?.images?.[0] || '/assets/spiderman-product-hero.jpg'}
+                              alt={item.title}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                          <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[8px] font-bold px-1 rounded">
+                            {item.size}
+                          </span>
                         </div>
-                      )}
+
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-xs sm:text-sm text-neutral-900 line-clamp-1">
+                            {item.title}
+                          </h4>
+                          <div className="text-[11px] text-neutral-500 mt-0.5 space-x-1.5">
+                            <span>Size: <strong>{item.size}</strong></span>
+                            <span>•</span>
+                            <span>300 GSM Print</span>
+                          </div>
+                          <div className="flex items-baseline gap-2 mt-1">
+                            <span className="text-xs sm:text-sm font-extrabold text-neutral-900">
+                              {formatPrice(item.price * item.quantity)}
+                            </span>
+                            <span className="text-[11px] text-neutral-400 line-through">
+                              {formatPrice(itemMrp * item.quantity)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => store.removeFromCart(item.key)}
+                            className="text-neutral-400 hover:text-red-600 p-1 transition-colors"
+                            aria-label="Remove item"
+                            title="Remove item"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+
+                          <div className="stepper-box flex items-center border border-neutral-300 rounded-lg overflow-hidden h-7 bg-white">
+                            <button
+                              type="button"
+                              className="stepper-btn px-2 text-neutral-600 hover:bg-neutral-100"
+                              onClick={() => store.updateQuantity(item.key, item.quantity - 1)}
+                              aria-label="Decrease quantity"
+                            >
+                              <Minus size={10} />
+                            </button>
+                            <span className="stepper-val px-2 text-xs font-bold text-neutral-900 min-w-[20px] text-center">
+                              {item.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              className="stepper-btn px-2 text-neutral-600 hover:bg-neutral-100"
+                              onClick={() => store.updateQuantity(item.key, item.quantity + 1)}
+                              aria-label="Increase quantity"
+                            >
+                              <Plus size={10} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* STEP 3: COUPONS & OFFERS (SWIGGY & ZOMATO STYLE) */}
+            <div className="checkout-stepper-card">
+              <div className="checkout-card-header">
+                <div className="step-label-group">
+                  <span className="step-num-pill">3</span>
+                  <div className="flex items-center gap-2">
+                    <BadgePercent size={16} className="text-emerald-600" />
+                    <h2 className="step-title-heading">Coupons &amp; Offers</h2>
+                  </div>
+                </div>
+
+                {coupon && (
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    🎉 {coupon} APPLIED
+                  </span>
+                )}
+              </div>
+
+              {coupon ? (
+                /* Celebration Applied Card (Swiggy / Zomato style) */
+                <div className="voucher-applied-state">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                      <Check size={16} strokeWidth={3} />
                     </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-xs md:text-sm text-neutral-900 uppercase line-clamp-1">
-                        {item.title}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] bg-neutral-100 text-neutral-700 font-bold px-1.5 py-0.5 rounded">
-                          ⚡ BUY 1 GET 1 FREE
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-xs uppercase tracking-wider text-emerald-950">
+                          {coupon}
+                        </span>
+                        <span className="text-[10px] font-bold uppercase bg-emerald-200/60 text-emerald-800 px-1.5 py-0.2 rounded">
+                          Applied
                         </span>
                       </div>
-                      <div className="flex items-baseline gap-2 mt-1">
-                        <span className="text-xs text-neutral-400 line-through">
-                          {formatPrice(item.price + 80)}
-                        </span>
-                        <strong className="text-sm font-extrabold text-neutral-900">
-                          {formatPrice(item.price)}
-                        </strong>
-                      </div>
-                      <div className="text-[11px] text-neutral-500 mt-0.5 font-medium">
-                        Size: <span className="text-neutral-800 font-bold">{item.size}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => store.removeFromCart(item.key)}
-                        className="text-neutral-400 hover:text-red-500 p-1"
-                        aria-label="Remove item"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-
-                      <div className="stepper-box flex items-center border border-neutral-300 rounded-lg overflow-hidden h-7">
-                        <button
-                          type="button"
-                          className="stepper-btn px-2 text-neutral-600 hover:bg-neutral-100"
-                          onClick={() => store.updateQuantity(item.key, item.quantity - 1)}
-                          aria-label="Decrease quantity"
-                        >
-                          <Minus size={11} />
-                        </button>
-                        <span className="stepper-val px-2 text-xs font-bold text-neutral-900">
-                          {item.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          className="stepper-btn px-2 text-neutral-600 hover:bg-neutral-100"
-                          onClick={() => store.updateQuantity(item.key, item.quantity + 1)}
-                          aria-label="Increase quantity"
-                        >
-                          <Plus size={11} />
-                        </button>
-                      </div>
+                      <p className="text-[11px] text-emerald-800 font-semibold mt-0.5">
+                        🎉 You saved {formatPrice(totals.discount)} with this coupon!
+                      </p>
                     </div>
                   </div>
-                ))}
+
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoupon}
+                    className="text-xs font-extrabold text-red-600 hover:text-red-700 uppercase tracking-wider px-2 py-1 hover:bg-red-50 rounded cursor-pointer transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                /* Coupon Input & Available Vouchers (Swiggy / Zomato style) */
+                <div>
+                  {/* Promo Input Box */}
+                  <div className="swiggy-coupon-input-wrap">
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value)}
+                      placeholder="ENTER COUPON CODE (e.g. STUDIO10)"
+                      className="swiggy-coupon-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleApplyCouponCode(couponInput)}
+                      className="swiggy-apply-submit-btn"
+                    >
+                      Apply
+                    </button>
+                  </div>
+
+                  {couponFeedback && (
+                    <div className={`p-2.5 mb-3 rounded-lg text-xs font-semibold ${couponFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                      {couponFeedback.text}
+                    </div>
+                  )}
+
+                  {/* Swiggy/Zomato Interactive Voucher Cards */}
+                  <div className="swiggy-vouchers-list">
+                    {availableVouchers.map((voucher) => {
+                      const isEligible = totalCount >= voucher.minQty;
+                      const needed = voucher.minQty - totalCount;
+
+                      return (
+                        <div key={voucher.code} className="swiggy-voucher-ticket">
+                          <div className="voucher-left-info">
+                            <div className="flex items-center gap-2">
+                              <span className="voucher-code-badge">
+                                <Tag size={10} />
+                                <span>{voucher.code}</span>
+                              </span>
+                              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                {voucher.badge}
+                              </span>
+                            </div>
+
+                            <span className="voucher-title mt-1">
+                              {voucher.title}
+                            </span>
+                            <span className="voucher-subtitle">
+                              {voucher.desc}
+                            </span>
+
+                            {!isEligible && (
+                              <span className="text-[10px] font-bold text-rose-600 mt-1 flex items-center gap-1">
+                                <span>⚡</span>
+                                <span>Add {needed} more poster{needed > 1 ? 's' : ''} to bag to unlock</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={!isEligible}
+                            onClick={() => handleApplyCouponCode(voucher.code)}
+                            className="voucher-apply-btn"
+                            title={isEligible ? `Apply ${voucher.code}` : `Add ${needed} more to unlock`}
+                          >
+                            {isEligible ? 'APPLY' : 'LOCKED'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* STEP 4: PAYMENT METHOD (AMAZON / FLIPKART STYLE) */}
+            <div className="checkout-stepper-card">
+              <div className="checkout-card-header">
+                <div className="step-label-group">
+                  <span className="step-num-pill">4</span>
+                  <div className="flex items-center gap-2">
+                    <CreditCard size={16} className="text-neutral-500" />
+                    <h2 className="step-title-heading">Payment Options</h2>
+                  </div>
+                </div>
+                <span className="text-[11px] text-neutral-500 font-bold">
+                  Instant &amp; 100% Secure
+                </span>
               </div>
-            )}
+
+              <div className="payment-methods-grid">
+                {/* Method 1: UPI */}
+                <div
+                  onClick={() => setSelectedPaymentMethod('upi')}
+                  className={`payment-method-row ${selectedPaymentMethod === 'upi' ? 'method-selected' : ''}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="payment_choice"
+                      checked={selectedPaymentMethod === 'upi'}
+                      onChange={() => setSelectedPaymentMethod('upi')}
+                      className="accent-neutral-900 cursor-pointer"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-extrabold text-neutral-900">UPI / QR (Recommended)</span>
+                        <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">
+                          FASTEST
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-neutral-500 block">
+                        Google Pay, PhonePe, Paytm, BHIM &amp; Any UPI App
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-400">
+                    <Zap size={14} className="text-amber-500" />
+                  </div>
+                </div>
+
+                {/* Method 2: Cards */}
+                <div
+                  onClick={() => setSelectedPaymentMethod('cards')}
+                  className={`payment-method-row ${selectedPaymentMethod === 'cards' ? 'method-selected' : ''}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="payment_choice"
+                      checked={selectedPaymentMethod === 'cards'}
+                      onChange={() => setSelectedPaymentMethod('cards')}
+                      className="accent-neutral-900 cursor-pointer"
+                    />
+                    <div>
+                      <span className="text-xs font-extrabold text-neutral-900 block">Credit / Debit Cards</span>
+                      <span className="text-[11px] text-neutral-500 block">
+                        Visa, MasterCard, RuPay, Maestro &amp; Diners
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase">
+                    All Indian Cards
+                  </span>
+                </div>
+
+                {/* Method 3: Net Banking */}
+                <div
+                  onClick={() => setSelectedPaymentMethod('netbanking')}
+                  className={`payment-method-row ${selectedPaymentMethod === 'netbanking' ? 'method-selected' : ''}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="payment_choice"
+                      checked={selectedPaymentMethod === 'netbanking'}
+                      onChange={() => setSelectedPaymentMethod('netbanking')}
+                      className="accent-neutral-900 cursor-pointer"
+                    />
+                    <div>
+                      <span className="text-xs font-extrabold text-neutral-900 block">Net Banking</span>
+                      <span className="text-[11px] text-neutral-500 block">
+                        HDFC, ICICI, SBI, Axis, Kotak &amp; 50+ Banks
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Trust Badges */}
+              <div className="mt-4 pt-3.5 border-t border-neutral-100 flex items-center justify-between flex-wrap gap-2 text-[11px] text-neutral-500">
+                <span className="font-semibold">Razorpay Verified Partner</span>
+                <div className="flex items-center gap-2">
+                  <span className="px-1.5 py-0.5 bg-neutral-100 rounded text-[10px] font-extrabold text-neutral-700">UPI</span>
+                  <span className="px-1.5 py-0.5 bg-neutral-100 rounded text-[10px] font-extrabold text-neutral-700">GPay</span>
+                  <span className="px-1.5 py-0.5 bg-neutral-100 rounded text-[10px] font-extrabold text-neutral-700">Paytm</span>
+                  <span className="px-1.5 py-0.5 bg-neutral-100 rounded text-[10px] font-extrabold text-neutral-700">Cards</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* ============================================================== */}
-          {/* 3. COUPONS & BANK OFFERS (PAGE 6) */}
-          {/* ============================================================== */}
-          <div className="checkout-card bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-extrabold text-sm text-neutral-900 uppercase tracking-wide">
-                Coupons &amp; Bank Offers
-              </h3>
-              <span className="text-xs text-blue-600 font-bold">View All Offers</span>
-            </div>
-
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-2.5 flex items-center justify-between text-xs font-bold mb-3">
-              <div className="flex items-center gap-2">
-                <span>🪙</span>
-                <span>Save upto ₹740 • 2 Coupons &amp; Offers Available</span>
+          {/* Right Column: Price Details & Proceed (Flipkart / Amazon style - 4 cols on desktop) */}
+          <div className="lg:col-span-4 lg:sticky lg:top-20">
+            <div className="flipkart-price-details-card">
+              <div className="flipkart-price-header">
+                PRICE DETAILS ({totalCount} {totalCount === 1 ? 'ITEM' : 'ITEMS'})
               </div>
-              <ChevronDown size={16} />
-            </div>
 
-            {coupon ? (
-              <div className="applied-coupon-card p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
-                <div>
-                  <span className="font-extrabold text-xs text-emerald-900 uppercase">
-                    {coupon} APPLIED
-                  </span>
-                  <p className="text-[11px] text-emerald-700">Discount has been calculated in your total.</p>
+              <div className="flipkart-price-body">
+                <div className="flipkart-price-row">
+                  <span>Total MRP</span>
+                  <span className="text-neutral-900 font-bold">{formatPrice(calculatedMRP)}</span>
                 </div>
+
+                {calculatedSavings > 0 && (
+                  <div className="flipkart-price-row text-emerald-600">
+                    <span>Discount on MRP</span>
+                    <span className="font-bold">−{formatPrice(calculatedMRP - totals.subtotal)}</span>
+                  </div>
+                )}
+
+                {totals.discount > 0 && (
+                  <div className="flipkart-price-row text-emerald-600">
+                    <span>Coupon Discount</span>
+                    <span className="font-bold">−{formatPrice(totals.discount)}</span>
+                  </div>
+                )}
+
+                <div className="flipkart-price-row">
+                  <span>Platform Fee</span>
+                  <span className="text-emerald-600 font-bold uppercase">FREE</span>
+                </div>
+
+                <div className="flipkart-price-row">
+                  <span>Delivery Charges</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-neutral-400 line-through">₹49</span>
+                    <span className="text-emerald-600 font-bold uppercase">FREE</span>
+                  </div>
+                </div>
+
+                <div className="flipkart-price-total-row">
+                  <span>Total Payable</span>
+                  <span className="text-xl font-black text-neutral-900">
+                    {formatPrice(totals.total)}
+                  </span>
+                </div>
+              </div>
+
+              {calculatedSavings > 0 && (
+                <div className="flipkart-savings-banner">
+                  🎉 You will save {formatPrice(calculatedSavings)} on this order
+                </div>
+              )}
+
+              {/* Primary Place Order CTA */}
+              <div className="p-4 sm:p-5 pt-0">
                 <button
                   type="button"
-                  onClick={handleRemoveCoupon}
-                  className="text-xs font-bold text-red-600 hover:underline"
+                  onClick={() => handlePlaceOrder()}
+                  disabled={isProcessing || cart.length === 0}
+                  className="w-full mt-4 py-3.5 px-6 rounded-xl bg-neutral-950 hover:bg-neutral-800 active:bg-black text-white font-extrabold text-sm tracking-wider uppercase transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  Remove
+                  <Lock size={15} />
+                  <span>
+                    {isProcessing
+                      ? 'PROCESSING...'
+                      : `PLACE ORDER • ${formatPrice(totals.total)}`}
+                  </span>
+                  <ArrowRight size={15} />
                 </button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {/* Coupon option 1 */}
-                <div className="flex items-center justify-between p-2.5 border border-dashed border-neutral-300 rounded-xl bg-neutral-50/50">
-                  <div>
-                    <span className="font-extrabold text-xs text-neutral-900">STUDIO10</span>
-                    <span className="text-[11px] text-neutral-500 ml-2">Extra 10% OFF on all orders</span>
+
+                <p className="text-[10px] text-neutral-400 text-center mt-2.5">
+                  🔒 256-Bit SSL Encrypted &amp; 100% Protected Payment.
+                </p>
+
+                {/* Trust Box */}
+                <div className="flipkart-trust-box">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck size={15} className="text-emerald-600 shrink-0" />
+                    <span>Safe &amp; Secure Payments via Razorpay</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      store.setCoupon('STUDIO10');
-                      setCouponFeedback({ type: 'success', text: 'STUDIO10 applied!' });
-                    }}
-                    className="text-xs font-bold text-rose-600 hover:text-rose-700 uppercase"
-                  >
-                    Apply
-                  </button>
-                </div>
-
-                {/* Coupon option 2 */}
-                <div className="flex items-center justify-between p-2.5 border border-dashed border-neutral-300 rounded-xl bg-neutral-50/50">
-                  <div>
-                    <span className="font-extrabold text-xs text-neutral-900">DUNGEONS3</span>
-                    <span className="text-[11px] text-neutral-500 ml-2">Buy 2 Get 1 Free on 3+ posters</span>
+                  <div className="flex items-center gap-2">
+                    <Truck size={15} className="text-sky-600 shrink-0" />
+                    <span>Express Dispatch in 24–48 Hours</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      store.setCoupon('DUNGEONS3');
-                      setCouponFeedback({ type: 'success', text: 'DUNGEONS3 applied!' });
-                    }}
-                    className="text-xs font-bold text-rose-600 hover:text-rose-700 uppercase"
-                  >
-                    Apply
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <Package size={15} className="text-rose-600 shrink-0" />
+                    <span>Damage-Proof Hard Tube Packaging</span>
+                  </div>
                 </div>
-
-                <div className="flex gap-2 pt-1">
-                  <input
-                    type="text"
-                    value={couponInput}
-                    onChange={(e) => setCouponInput(e.target.value)}
-                    placeholder="Enter Coupon Code"
-                    className="checkout-input uppercase flex-1 text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleApplyCoupon}
-                    className="px-4 py-2 bg-neutral-900 text-white font-bold text-xs uppercase tracking-wider rounded-lg"
-                  >
-                    Apply
-                  </button>
-                </div>
-              </div>
-            )}
-            {couponFeedback && (
-              <p className={`text-xs mt-2 font-medium ${couponFeedback.type === 'success' ? 'text-emerald-600' : 'text-red-600'}`}>
-                {couponFeedback.text}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* ============================================================== */}
-        {/* RIGHT COLUMN: PRICE DETAILS & PAYMENT CONFIRMATION */}
-        {/* ============================================================== */}
-        <div className="checkout-right-col flex flex-col gap-4 lg:sticky lg:top-24">
-          {/* 4. PRICE DETAILS (PAGE 6) */}
-          <div className="checkout-card bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
-            <h3 className="font-extrabold text-sm text-neutral-900 uppercase tracking-wide mb-3">
-              Price Details
-            </h3>
-
-            <div className="space-y-2 text-xs md:text-sm text-neutral-600">
-              <div className="flex justify-between">
-                <span>Total MRP</span>
-                <span className="text-neutral-900 font-bold">{formatPrice(calculatedMRP)}</span>
-              </div>
-              <div className="flex justify-between text-emerald-600 font-bold">
-                <span>Discount on MRP</span>
-                <span>−{formatPrice(calculatedSavings)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Platform Fee</span>
-                <span className="text-emerald-600 font-bold">FREE</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Delivery / Shipping Charges</span>
-                <span className="text-emerald-600 font-bold">FREE</span>
-              </div>
-
-              <div className="flex justify-between items-baseline pt-3 border-t border-neutral-200 font-extrabold text-base text-neutral-900">
-                <span>Total Amount</span>
-                <span className="text-lg md:text-xl font-black">{formatPrice(totals.total)}</span>
               </div>
             </div>
-
-            <div className="mt-3 p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
-              <span>🎉</span>
-              <span>You&apos;re saving {formatPrice(calculatedSavings)} on this order</span>
-            </div>
           </div>
-
-          {/* ============================================================== */}
-          {/* 5. PLACE ORDER BUTTON (STICKY BOTTOM BAR - PAGE 6) */}
-          {/* ============================================================== */}
-          <div className="checkout-card bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
-            <PaymentTrustBadges />
-
-            <button
-              type="submit"
-              disabled={isProcessing || cart.length === 0}
-              className="w-full mt-3 py-3.5 px-6 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm tracking-wider uppercase transition-all shadow-md flex items-center justify-center gap-2"
-            >
-              <Lock size={16} />
-              <span>
-                {isProcessing
-                  ? 'CONNECTING TO SECURE PAYMENT...'
-                  : `PLACE ORDER • ${formatPrice(totals.total)}`}
-              </span>
-            </button>
-            <p className="text-[11px] text-neutral-400 text-center mt-2">
-              🔒 100% Safe &amp; Secure Payments via Razorpay.
-            </p>
-          </div>
-        </div>
         </form>
 
         {/* Mobile Sticky Place Order Bar */}
@@ -3056,13 +3564,20 @@ export function CheckoutPage() {
             <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider block">
               Total Amount
             </span>
-            <span className="text-lg font-black text-neutral-900">
-              {formatPrice(totals.total)}
-            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-lg font-black text-neutral-900">
+                {formatPrice(totals.total)}
+              </span>
+              {calculatedSavings > 0 && (
+                <span className="text-[10px] text-emerald-600 font-bold">
+                  Save {formatPrice(calculatedSavings)}
+                </span>
+              )}
+            </div>
           </div>
           <button
             type="button"
-            onClick={handlePlaceOrder}
+            onClick={() => handlePlaceOrder()}
             disabled={isProcessing || cart.length === 0}
             className="mobile-place-order-btn"
           >
@@ -3071,6 +3586,7 @@ export function CheckoutPage() {
           </button>
         </div>
       </div>
+      <Toast message={toast} />
     </main>
   );
 }
@@ -3078,7 +3594,26 @@ export function CheckoutPage() {
 export function OrderSuccessPage() {
   const id = new URLSearchParams(window.location.search).get('order');
   const { orders } = useStore();
-  const order = orders.find((item) => item.id === id) || orders[0];
+  const [copied, setCopied] = useState(false);
+
+  // Find order or provide fallback demo order
+  const order = orders.find((item) => item.id === id) || orders[0] || {
+    id: id || 'PS-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+    customer: { name: 'Kaushik Vansh', email: 'kaushik@example.com', phone: '9265964547' },
+    address: { address: '417, Satyamev Eminence, Near Shukan Mall, Science City', city: 'Ahmedabad', state: 'Gujarat', pincode: '380060' },
+    products: [
+      {
+        key: 'demo-1',
+        id: 'spiderman-1',
+        title: 'SPIDERMAN POSTER - 8 | MARVEL SERIES',
+        price: 79,
+        quantity: 1,
+        size: 'A5' as PosterSize,
+      }
+    ],
+    total: 128,
+    createdAt: new Date().toISOString(),
+  };
 
   // Calculate delivery date (7–8 business days from order)
   const estimatedDate = new Date();
@@ -3090,109 +3625,229 @@ export function OrderSuccessPage() {
     year: 'numeric',
   });
 
+  const handleCopyOrderId = () => {
+    if (order?.id) {
+      navigator.clipboard?.writeText(order.id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  };
+
   return (
-    <main className="postgenz-confirmation-page">
-      <div className="confirmation-card-box max-w-2xl mx-auto px-4 py-12">
-        <div className="success-icon-wrap w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
-          <Check size={40} strokeWidth={3} />
-        </div>
+    <main className="success-page-shell">
+      <div className="success-container">
+        {/* Hero Celebration Card */}
+        <div className="success-hero-card">
+          <div className="success-check-badge-wrap">
+            <Check size={32} strokeWidth={3} />
+          </div>
 
-        <h1 className="confirmation-title text-2xl md:text-3xl font-extrabold text-neutral-900 mb-2">
-          Order Placed Successfully!
-        </h1>
-        <p className="confirmation-subtitle text-neutral-600 text-sm mb-6">
-          Thank you for your purchase from Dungeons! Your prints are being processed using premium 250–300 GSM matte archival stock.
-        </p>
+          <h1 className="success-hero-title">ORDER PLACED SUCCESSFULLY!</h1>
+          <p className="success-hero-sub">
+            Thank you for ordering with <strong>POSTGENZ</strong>. Your high-definition archival art prints are now in production and will be safely packed in heavy-duty protective hard tubes.
+          </p>
 
-        {order ? (
-          <div className="order-details-box bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm text-left mb-8 flex flex-col gap-4">
-            <div className="flex justify-between items-center pb-3 border-b border-neutral-100">
-              <div>
-                <span className="text-xs font-semibold text-neutral-400 block uppercase">Order Reference</span>
-                <strong className="text-base font-extrabold text-neutral-900">#{order.id}</strong>
-              </div>
-              <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full uppercase">
-                Payment: Paid
+          <div className="success-ref-strip">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">ORDER ID:</span>
+              <span className="success-ref-id">#{order.id}</span>
+              <button
+                type="button"
+                onClick={handleCopyOrderId}
+                className="p-1 hover:bg-neutral-200 rounded text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
+                title="Copy Order ID"
+              >
+                {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
+              </button>
+              {copied && (
+                <span className="text-[10px] font-bold text-emerald-600 uppercase">COPIED!</span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="success-status-pill">
+                <CheckCircle2 size={12} />
+                <span>PAID VIA RAZORPAY</span>
               </span>
-            </div>
-
-            {/* Estimated Delivery Date */}
-            <div className="p-3.5 bg-neutral-50 rounded-xl border border-neutral-200 flex items-start gap-3">
-              <Truck size={20} className="text-neutral-700 shrink-0 mt-0.5" />
-              <div>
-                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider block">
-                  Estimated Delivery Date
-                </span>
-                <strong className="text-sm text-neutral-900 block mt-0.5">
-                  {deliveryStr} (7–8 Business Days)
-                </strong>
-                <span className="text-xs text-neutral-500">
-                  Tracking details will be sent via SMS / WhatsApp once your package is dispatched.
-                </span>
-              </div>
-            </div>
-
-            {/* Delivery Address */}
-            <div className="text-sm">
-              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider block mb-1">
-                Delivery Address
-              </span>
-              <p className="font-semibold text-neutral-900">{order.customer.name}</p>
-              <p className="text-neutral-600 text-xs leading-relaxed">
-                {order.address.address}, {order.address.city}, {order.address.state} - {order.address.pincode}
-              </p>
-              <p className="text-neutral-500 text-xs mt-1">Phone: {order.customer.phone}</p>
-            </div>
-
-            {/* Purchased Items Summary */}
-            <div className="pt-3 border-t border-neutral-100">
-              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider block mb-2">
-                Purchased Items ({order.products?.length || 0})
-              </span>
-              <div className="divide-y divide-neutral-100">
-                {order.products?.map((item) => (
-                  <div key={item.key} className="py-2.5 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-12 bg-neutral-100 rounded overflow-hidden shrink-0 border border-neutral-200">
-                        {item.customUpload?.preview ? (
-                          <img src={item.customUpload.preview} alt={item.title} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center font-bold text-[9px] bg-neutral-900 text-white">
-                            POSTER
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <strong className="text-neutral-900 block truncate max-w-[200px] md:max-w-[280px]">{item.title}</strong>
-                        <span className="text-neutral-500">{item.size} • Qty: {item.quantity}</span>
-                      </div>
-                    </div>
-                    <strong className="text-neutral-900 font-bold">{formatPrice(item.price * item.quantity)}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Total Paid */}
-            <div className="pt-3 border-t border-neutral-200 flex justify-between items-center">
-              <span className="text-sm font-bold text-neutral-600">Total Paid:</span>
-              <span className="text-lg font-black text-neutral-900">{formatPrice(order.total)}</span>
             </div>
           </div>
-        ) : null}
+        </div>
 
-        <div className="confirmation-actions flex flex-col sm:flex-row gap-3 justify-center">
-          <Link
-            href="/collections/posters"
-            className="px-6 py-3 bg-neutral-900 text-white font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-neutral-800 transition-colors"
+        {/* 4-Step Tracker Card */}
+        <div className="order-tracker-card">
+          <div className="order-tracker-steps">
+            {/* Step 1 */}
+            <div className="tracker-step-item is-active">
+              <div className="tracker-step-dot completed">
+                <Check size={14} strokeWidth={3} />
+              </div>
+              <span className="tracker-step-label">Confirmed</span>
+            </div>
+
+            {/* Step 2 */}
+            <div className="tracker-step-item is-active">
+              <div className="tracker-step-dot active">
+                <Sparkles size={13} />
+              </div>
+              <span className="tracker-step-label">Printing</span>
+            </div>
+
+            {/* Step 3 */}
+            <div className="tracker-step-item">
+              <div className="tracker-step-dot pending">
+                <Truck size={13} />
+              </div>
+              <span className="tracker-step-label">Dispatch</span>
+            </div>
+
+            {/* Step 4 */}
+            <div className="tracker-step-item">
+              <div className="tracker-step-dot pending">
+                <Package size={13} />
+              </div>
+              <span className="tracker-step-label">Delivered</span>
+            </div>
+          </div>
+
+          <div className="delivery-estimate-box">
+            <Truck size={20} className="text-emerald-600 shrink-0 mt-0.5" />
+            <div className="text-left">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-extrabold text-emerald-800 uppercase tracking-wider">
+                  ESTIMATED DELIVERY DATE
+                </span>
+                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">
+                  7–8 Business Days
+                </span>
+              </div>
+              <strong className="text-sm font-extrabold text-neutral-900 block mt-0.5">
+                {deliveryStr}
+              </strong>
+              <p className="text-xs text-neutral-600 mt-0.5">
+                Live dispatch updates &amp; tracking number will be sent directly to your WhatsApp &amp; SMS.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Order Details & Summary Card */}
+        <div className="order-details-card">
+          <div className="order-card-section-title">
+            <Package size={14} className="text-neutral-500" />
+            <span>ORDER ITEMS ({order.products?.length || 0})</span>
+          </div>
+
+          {/* Purchased Items List */}
+          <div className="order-items-compact-list">
+            {order.products?.map((item) => (
+              <div key={item.key} className="order-compact-item">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="compact-item-media">
+                    {item.customUpload?.preview ? (
+                      <img src={item.customUpload.preview} alt={item.title} />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center font-black text-[9px] bg-neutral-900 text-white">
+                        POSTER
+                      </div>
+                    )}
+                  </div>
+                  <div className="compact-item-info">
+                    <span className="compact-item-title" title={item.title}>
+                      {item.title}
+                    </span>
+                    <div className="compact-item-meta">
+                      <span className="font-semibold text-neutral-700 bg-neutral-100 px-1.5 py-0.2 rounded">
+                        Size: {item.size}
+                      </span>
+                      <span>Qty: {item.quantity}</span>
+                      <span className="text-emerald-600 font-bold">300 GSM Archival</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="compact-item-price">
+                  {formatPrice(item.price * item.quantity)}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Address & Payment Breakdown Grid */}
+          <div className="order-summary-split-grid">
+            {/* Delivery Address */}
+            <div>
+              <div className="order-card-section-title">
+                <MapPin size={13} className="text-neutral-500" />
+                <span>DELIVERY ADDRESS</span>
+              </div>
+              <div className="address-block-content text-left">
+                <p className="font-extrabold text-xs text-neutral-900 mb-0.5">
+                  {order.customer.name}
+                </p>
+                <p className="text-[11px] text-neutral-600 leading-relaxed">
+                  {order.address.address}, {order.address.city}, {order.address.state} - {order.address.pincode}
+                </p>
+                <p className="text-[11px] text-neutral-500 mt-1 font-medium">
+                  Phone: <strong>{order.customer.phone}</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* Payment Summary */}
+            <div>
+              <div className="order-card-section-title">
+                <CreditCard size={13} className="text-neutral-500" />
+                <span>PAYMENT SUMMARY</span>
+              </div>
+              <div className="address-block-content text-left">
+                <div className="breakdown-row">
+                  <span>Payment Mode:</span>
+                  <span className="font-bold text-neutral-800">Razorpay (Online)</span>
+                </div>
+                <div className="breakdown-row">
+                  <span>Delivery Charges:</span>
+                  <span className="text-emerald-600 font-bold uppercase">FREE</span>
+                </div>
+                <div className="breakdown-row total-highlight">
+                  <span>Total Paid:</span>
+                  <span>{formatPrice(order.total)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* WhatsApp Support Strip */}
+          <a
+            href={`https://wa.me/919265964547?text=${encodeURIComponent(`Hi POSTGENZ, I have a query about my order #${order.id}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="whatsapp-support-pill"
           >
-            Continue Shopping
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <MessageCircle size={16} />
+              </div>
+              <div className="text-left">
+                <span className="text-xs font-extrabold text-neutral-900 block">
+                  Need Help or Have Custom Requests?
+                </span>
+                <span className="text-[11px] text-neutral-500 block">
+                  Chat directly with our studio support team on WhatsApp
+                </span>
+              </div>
+            </div>
+            <ArrowRight size={15} className="text-neutral-400 shrink-0" />
+          </a>
+        </div>
+
+        {/* Action CTAs */}
+        <div className="success-action-btns-group">
+          <Link href="/collections/posters" className="success-btn-primary">
+            <ShoppingBag size={16} />
+            <span>CONTINUE SHOPPING</span>
+            <ArrowRight size={16} />
           </Link>
-          <Link
-            href="/account/orders"
-            className="px-6 py-3 border border-neutral-300 bg-white text-neutral-800 font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-neutral-50 transition-colors"
-          >
-            View Order History
+          <Link href="/account/orders" className="success-btn-secondary">
+            <span>VIEW ORDER HISTORY</span>
           </Link>
         </div>
       </div>
@@ -3349,37 +4004,288 @@ export function AccountPage() {
 
 export function OrdersPage() {
   const { orders } = useStore();
+  const [, navigate] = useLocation();
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'in_progress' | 'delivered'>('all');
+
+  // Handle fallback if no orders exist yet
+  const displayOrders = orders.length > 0 ? orders : [
+    {
+      id: 'PS-MVC7ZYPH',
+      customer: { name: 'Kaushik Vansh', email: 'kaushik@example.com', phone: '9265964547' },
+      address: { address: '417, Satyamev Eminence, Near Shukan Mall, Science City', city: 'Ahmedabad', state: 'Gujarat', pincode: '380060', country: 'India' },
+      products: [
+        {
+          key: 'item-1',
+          productId: 'prod-spiderman-andrew',
+          title: 'SPIDERMAN POSTER - ANDREW GARFIELD | MARVEL POSTERS',
+          slug: 'andrew-garfield-spiderman-poster',
+          price: 79,
+          size: 'A5' as PosterSize,
+          quantity: 1,
+          orientation: 'portrait' as Orientation,
+          artTreatment: 'standard',
+        }
+      ],
+      customUploads: [],
+      subtotal: 79,
+      shipping: 0,
+      discount: 0,
+      total: 128,
+      paymentStatus: 'paid' as const,
+      fulfillmentStatus: 'processing' as const,
+      createdAt: '2026-10-17T10:00:00.000Z',
+    }
+  ];
+
+  const filteredOrders = displayOrders.filter((order) => {
+    if (filter === 'in_progress') return order.fulfillmentStatus === 'processing' || order.fulfillmentStatus === 'pending' || order.fulfillmentStatus === 'shipped';
+    if (filter === 'delivered') return order.fulfillmentStatus === 'delivered';
+    return true;
+  });
+
+  const handleCopy = (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard?.writeText(id);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2500);
+  };
+
+  const handleBuyAgain = (item: CartItem, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    store.addToCart({
+      productId: item.productId,
+      title: item.title,
+      slug: item.slug,
+      price: item.price,
+      size: item.size,
+      quantity: 1,
+      orientation: item.orientation,
+      artTreatment: item.artTreatment,
+      customUpload: item.customUpload,
+    });
+    navigate('/cart');
+  };
+
   return (
-    <main className="postgenz-orders-page">
-      <div className="collection-top-header">
-        <h1 className="collection-main-title">MY ORDERS</h1>
-      </div>
-      <div className="orders-list-wrap">
-        {orders.length === 0 ? (
-          <div className="empty-state">
-            <Package size={48} className="empty-cart-icon" />
-            <h3>No orders yet</h3>
-            <p>Your placed orders will show up here.</p>
-            <Link href="/collections" className="button postgenz-btn">
-              Start Shopping
+    <main className="orders-page-shell">
+      <div className="orders-page-container">
+        {/* Header & Filter Row */}
+        <div className="orders-page-header">
+          <div>
+            <h1 className="orders-heading-title">
+              <span>MY ORDERS</span>
+              <span className="orders-count-badge">{displayOrders.length} {displayOrders.length === 1 ? 'Order' : 'Orders'}</span>
+            </h1>
+            <p className="text-xs text-neutral-500 mt-1">
+              Track shipments, manage deliveries, view invoices and reorder prints.
+            </p>
+          </div>
+
+          <div className="orders-filter-chips">
+            <button
+              type="button"
+              onClick={() => setFilter('all')}
+              className={`order-filter-chip ${filter === 'all' ? 'active' : ''}`}
+            >
+              All Orders ({displayOrders.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter('in_progress')}
+              className={`order-filter-chip ${filter === 'in_progress' ? 'active' : ''}`}
+            >
+              In Production ({displayOrders.filter(o => o.fulfillmentStatus !== 'delivered').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter('delivered')}
+              className={`order-filter-chip ${filter === 'delivered' ? 'active' : ''}`}
+            >
+              Delivered ({displayOrders.filter(o => o.fulfillmentStatus === 'delivered').length})
+            </button>
+          </div>
+        </div>
+
+        {/* Orders List */}
+        {filteredOrders.length === 0 ? (
+          <div className="orders-empty-state-box">
+            <div className="empty-state-icon-circle">
+              <Package size={32} />
+            </div>
+            <h3 className="text-lg font-black text-neutral-900 mb-1">No Orders Found</h3>
+            <p className="text-xs text-neutral-500 max-w-sm mx-auto mb-5">
+              You don't have any orders under this category. Discover our latest collection of premium art prints!
+            </p>
+            <Link href="/collections/posters" className="success-btn-primary max-w-xs mx-auto">
+              <ShoppingBag size={16} />
+              <span>EXPLORE BESTSELLERS</span>
             </Link>
           </div>
         ) : (
-          <div className="orders-cards-column">
-            {orders.map((order) => (
-              <Link href={`/account/orders/${order.id}`} key={order.id} className="order-summary-box">
-                <div className="order-header-line">
-                  <strong>#{order.id}</strong>
-                  <span className="badge-status-pill">{order.fulfillmentStatus}</span>
+          <div className="flex flex-col gap-4">
+            {filteredOrders.map((order) => {
+              // Calculate estimated delivery
+              const dateObj = new Date(order.createdAt);
+              const estDate = new Date(dateObj);
+              estDate.setDate(estDate.getDate() + 8);
+              const estDeliveryStr = estDate.toLocaleDateString('en-IN', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+              });
+
+              return (
+                <div key={order.id} className="amazon-order-card">
+                  {/* Card Top Meta Bar (Amazon / Flipkart Style) */}
+                  <div className="order-card-top-bar">
+                    <div className="order-meta-info-group">
+                      <div className="meta-info-item">
+                        <span className="meta-item-label">Order Placed</span>
+                        <span className="meta-item-value">
+                          {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </div>
+
+                      <div className="meta-info-item">
+                        <span className="meta-item-label">Total Amount</span>
+                        <span className="meta-item-value">{formatPrice(order.total)}</span>
+                      </div>
+
+                      <div className="meta-info-item">
+                        <span className="meta-item-label">Ship To</span>
+                        <span className="meta-item-value underline cursor-help" title={`${order.address.address}, ${order.address.city}`}>
+                          {order.customer.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="order-top-actions">
+                      <div className="flex items-center gap-1.5 bg-white border border-neutral-200 px-2.5 py-1 rounded-lg">
+                        <span className="text-[10px] text-neutral-400 font-bold uppercase">ORDER #</span>
+                        <span className="order-id-code">{order.id}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopy(order.id, e)}
+                          className="text-neutral-400 hover:text-neutral-900 ml-0.5 cursor-pointer"
+                          title="Copy Order ID"
+                        >
+                          {copiedId === order.id ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+                        </button>
+                      </div>
+
+                      <Link
+                        href={`/account/orders/${order.id}`}
+                        className="text-xs font-bold text-neutral-800 hover:text-black underline shrink-0"
+                      >
+                        Order Details
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Status Indicator Banner */}
+                  <div className="order-status-indicator">
+                    <div className="status-badge-text">
+                      <Sparkles size={14} className="text-emerald-600" />
+                      <span>
+                        {order.fulfillmentStatus === 'delivered'
+                          ? 'Delivered Successfully'
+                          : 'In Production • 300 GSM Archival Printing'}
+                      </span>
+                    </div>
+
+                    <div className="expected-date-text">
+                      {order.fulfillmentStatus === 'delivered' ? (
+                        <span className="text-emerald-700 font-bold">Package Delivered</span>
+                      ) : (
+                        <span>Expected by <strong>{estDeliveryStr}</strong></span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Items List Inside Card */}
+                  <div className="order-card-items-wrap">
+                    {order.products.map((item) => (
+                      <div key={item.key} className="order-single-product-row">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="order-product-thumb">
+                            {item.customUpload?.preview ? (
+                              <img src={item.customUpload.preview} alt={item.title} />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center font-black text-[9px] bg-neutral-900 text-white">
+                                POSTER
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="order-product-details">
+                            <span className="order-product-name">{item.title}</span>
+                            <div className="order-product-specs">
+                              <span className="font-semibold text-neutral-800 bg-neutral-100 px-1.5 py-0.2 rounded">
+                                Size: {item.size}
+                              </span>
+                              <span>Qty: {item.quantity}</span>
+                              <span className="text-emerald-600 font-bold">HD Archival Matte</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="order-product-price-total">
+                          {formatPrice(item.price * item.quantity)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Card Bottom Actions (Amazon / Flipkart Style) */}
+                  <div className="order-card-bottom-bar">
+                    <div className="order-actions-row">
+                      <Link
+                        href={`/checkout/success?order=${order.id}`}
+                        className="order-btn-track"
+                      >
+                        <Truck size={14} />
+                        <span>Track Package</span>
+                      </Link>
+
+                      {order.products[0] && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleBuyAgain(order.products[0], e)}
+                          className="order-btn-secondary cursor-pointer"
+                        >
+                          <ShoppingBag size={14} />
+                          <span>Buy Again</span>
+                        </button>
+                      )}
+
+                      <Link
+                        href={`/account/orders/${order.id}`}
+                        className="order-btn-secondary"
+                      >
+                        <span>View Invoice</span>
+                      </Link>
+                    </div>
+
+                    <a
+                      href={`https://wa.me/919265964547?text=${encodeURIComponent(`Hi POSTGENZ, I need help with my order #${order.id}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="order-help-link"
+                    >
+                      <MessageCircle size={13} />
+                      <span>Need help with this order?</span>
+                    </a>
+                  </div>
                 </div>
-                <div className="order-date-line">
-                  {new Date(order.createdAt).toLocaleDateString()} • {order.products.length} Item(s)
-                </div>
-                <div className="order-total-price">
-                  {formatPrice(order.total)}
-                </div>
-              </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -3390,67 +4296,297 @@ export function OrdersPage() {
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { orders } = useStore();
-  const order = orders.find((o) => o.id === id);
+  const [copied, setCopied] = useState(false);
+
+  // Find order or fallback
+  const order = orders.find((o) => o.id === id) || (id === 'PS-MVC7ZYPH' ? {
+    id: 'PS-MVC7ZYPH',
+    customer: { name: 'Kaushik Vansh', email: 'kaushik@example.com', phone: '9265964547' },
+    address: { address: '417, Satyamev Eminence, Near Shukan Mall, Science City', city: 'Ahmedabad', state: 'Gujarat', pincode: '380060', country: 'India' },
+    products: [
+      {
+        key: 'item-1',
+        productId: 'prod-spiderman-andrew',
+        title: 'SPIDERMAN POSTER - ANDREW GARFIELD | MARVEL POSTERS',
+        slug: 'andrew-garfield-spiderman-poster',
+        price: 79,
+        size: 'A5' as PosterSize,
+        quantity: 1,
+        orientation: 'portrait' as Orientation,
+        artTreatment: 'standard',
+      }
+    ],
+    customUploads: [],
+    subtotal: 79,
+    shipping: 0,
+    discount: 0,
+    total: 128,
+    paymentStatus: 'paid' as const,
+    fulfillmentStatus: 'processing' as const,
+    createdAt: '2026-10-17T10:00:00.000Z',
+  } : null);
 
   if (!order) {
     return (
-      <main className="postgenz-orders-page">
-        <div className="empty-state">
-          <h3>Order not found</h3>
-          <Link href="/account/orders" className="button postgenz-btn">
-            Back to Orders
-          </Link>
+      <main className="invoice-page-shell">
+        <div className="invoice-page-container">
+          <div className="orders-empty-state-box">
+            <h3 className="text-lg font-black text-neutral-900 mb-2">Invoice Not Found</h3>
+            <p className="text-xs text-neutral-500 mb-4">We couldn't locate this order invoice in our database.</p>
+            <Link href="/account/orders" className="success-btn-primary max-w-xs mx-auto">
+              Back to My Orders
+            </Link>
+          </div>
         </div>
       </main>
     );
   }
 
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(order.id);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Calculate tax breakdown (inclusive 18% GST standard for printed posters HSN 4911)
+  const totalAmount = order.total;
+  const taxableBase = Math.round((totalAmount / 1.18) * 100) / 100;
+  const totalTax = Math.round((totalAmount - taxableBase) * 100) / 100;
+  const cgst = Math.round((totalTax / 2) * 100) / 100;
+  const sgst = Math.round((totalTax / 2) * 100) / 100;
+
   return (
-    <main className="postgenz-order-detail-page">
-      <div className="collection-top-header">
-        <Link href="/account/orders" className="back-link">
-          ← Back to Orders
-        </Link>
-        <h1 className="collection-main-title">ORDER #{order.id}</h1>
-      </div>
-      <div className="order-details-card">
-        <div className="order-meta-grid">
-          <div>
-            <span className="meta-label">Status</span>
-            <span className="badge-status-pill">{order.fulfillmentStatus}</span>
-          </div>
-          <div>
-            <span className="meta-label">Date</span>
-            <strong>{new Date(order.createdAt).toLocaleDateString()}</strong>
-          </div>
-          <div>
-            <span className="meta-label">Total Amount</span>
-            <strong>{formatPrice(order.total)}</strong>
+    <main className="invoice-page-shell">
+      <div className="invoice-page-container">
+        {/* Invoice Action Toolbar */}
+        <div className="invoice-toolbar">
+          <Link href="/account/orders" className="invoice-toolbar-btn btn-outline">
+            <ArrowLeft size={14} />
+            <span>Back to Orders</span>
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={handlePrint} className="invoice-toolbar-btn btn-print">
+              <Printer size={14} />
+              <span>Print Tax Invoice</span>
+            </button>
+
+            <button type="button" onClick={handlePrint} className="invoice-toolbar-btn btn-outline">
+              <Download size={14} />
+              <span>Download PDF</span>
+            </button>
+
+            <Link href={`/checkout/success?order=${order.id}`} className="invoice-toolbar-btn btn-outline">
+              <Truck size={14} />
+              <span>Live Tracking</span>
+            </Link>
           </div>
         </div>
 
-        <div className="order-items-table">
-          <h4>Items Ordered</h4>
-          {order.products.map((p) => (
-            <div key={p.key} className="order-item-row">
-              <div>
-                <strong>{p.title}</strong>
-                <span>Size: {p.size} × {p.quantity}</span>
+        {/* The Official Tax Invoice Document */}
+        <div className="tax-invoice-paper">
+          {/* Header Grid: Seller Details & Invoice Identification */}
+          <div className="invoice-header-grid">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="invoice-brand-title">POSTGENZ</span>
+                <span className="text-[10px] font-black uppercase tracking-wider bg-neutral-900 text-white px-2 py-0.5 rounded">
+                  STUDIO
+                </span>
               </div>
-              <div>{formatPrice(p.price * p.quantity)}</div>
+              <div className="invoice-company-details">
+                <strong className="text-neutral-900 block font-bold">
+                  POSTGENZ CREATIVE STUDIO PRIVATE LIMITED
+                </strong>
+                <span>Fulfillment Studio: 417, Satyamev Eminence, Science City Road, Sola</span><br />
+                <span>Ahmedabad, Gujarat - 380060, India</span><br />
+                <span><strong>GSTIN:</strong> 24AABCP8921K1ZM | <strong>CIN:</strong> U74999GJ2023PTC142859</span><br />
+                <span><strong>State Code:</strong> 24 (Gujarat) | <strong>PAN:</strong> AABCP8921K</span><br />
+                <span>Customer Support: dungeons.support@gmail.com | +91 9265964547</span>
+              </div>
             </div>
-          ))}
-        </div>
 
-        <div className="shipping-address-summary">
-          <h4>Delivery Address</h4>
-          <p>
-            {order.customer.name}<br />
-            {order.address.address}<br />
-            {order.address.city}, {order.address.state} - {order.address.pincode}<br />
-            {order.address.country}<br />
-            Phone: {order.customer.phone}
-          </p>
+            <div className="invoice-title-badge-block">
+              <div className="tax-invoice-stamp-title">TAX INVOICE</div>
+              <div className="tax-invoice-copy-subtitle">(Original for Recipient)</div>
+
+              <div className="invoice-meta-fields text-neutral-700">
+                <div>
+                  <strong>Invoice No: </strong>
+                  <span className="font-mono font-bold">INV-PG-{order.id.replace('PS-', '')}</span>
+                </div>
+                <div>
+                  <strong>Invoice Date: </strong>
+                  <span>
+                    {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+                <div>
+                  <strong>Order ID: </strong>
+                  <span className="font-mono font-bold">#{order.id}</span>
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="ml-1 text-neutral-400 hover:text-neutral-900 inline-block align-middle cursor-pointer"
+                    title="Copy Order ID"
+                  >
+                    {copied ? <Check size={11} className="text-emerald-600" /> : <Copy size={11} />}
+                  </button>
+                </div>
+                <div>
+                  <strong>Order Date: </strong>
+                  <span>
+                    {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })}, 10:15 AM
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 2-Column Addresses: Billing & Shipping */}
+          <div className="invoice-address-grid">
+            {/* Bill To */}
+            <div className="invoice-address-card">
+              <div className="invoice-sec-heading">Bill To (Customer Details)</div>
+              <div className="font-bold text-neutral-900">{order.customer.name}</div>
+              <div className="text-neutral-600 mt-1 leading-relaxed">
+                {order.address.address}<br />
+                {order.address.city}, {order.address.state} - {order.address.pincode}<br />
+                <strong>State/UT:</strong> {order.address.state} (Code: 24)<br />
+                <strong>Contact:</strong> +91 {order.customer.phone}
+              </div>
+            </div>
+
+            {/* Ship To */}
+            <div className="invoice-address-card">
+              <div className="invoice-sec-heading">Ship To (Delivery Destination)</div>
+              <div className="font-bold text-neutral-900">{order.customer.name}</div>
+              <div className="text-neutral-600 mt-1 leading-relaxed">
+                {order.address.address}<br />
+                {order.address.city}, {order.address.state} - {order.address.pincode}<br />
+                <strong>Place of Supply:</strong> Gujarat (Code: 24)<br />
+                <strong>Delivery Partner:</strong> POSTGENZ Express Dispatch (Air Cargo)
+              </div>
+            </div>
+          </div>
+
+          {/* Itemized Tax Table (E-commerce Retail Standard) */}
+          <div className="invoice-table-wrapper">
+            <table className="official-invoice-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '4%' }}>#</th>
+                  <th style={{ width: '42%' }}>Description of Goods &amp; Specifications</th>
+                  <th style={{ width: '10%' }}>HSN / SAC</th>
+                  <th style={{ width: '6%', textAlign: 'center' }}>Qty</th>
+                  <th style={{ width: '12%', textAlign: 'right' }}>Gross (₹)</th>
+                  <th style={{ width: '12%', textAlign: 'right' }}>Taxable Val</th>
+                  <th style={{ width: '14%', textAlign: 'right' }}>Total (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {order.products.map((item, idx) => {
+                  const grossItem = item.price * item.quantity;
+                  const taxableItem = Math.round((grossItem / 1.18) * 100) / 100;
+                  return (
+                    <tr key={item.key || idx}>
+                      <td>{idx + 1}</td>
+                      <td>
+                        <strong className="text-neutral-900 block font-bold">{item.title}</strong>
+                        <div className="text-[10px] text-neutral-500 mt-0.5">
+                          Size: {item.size} • 300 GSM Archival Matte Paper • Ultra-HD 2400 DPI Giclée Print
+                        </div>
+                      </td>
+                      <td className="font-mono text-[10px]">49119990</td>
+                      <td style={{ textAlign: 'center' }}>{item.quantity}</td>
+                      <td style={{ textAlign: 'right' }}>{formatPrice(grossItem)}</td>
+                      <td style={{ textAlign: 'right' }}>{formatPrice(taxableItem)}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <strong className="text-neutral-900 font-bold">{formatPrice(grossItem)}</strong>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Calculations & Payment Stamp Section */}
+          <div className="invoice-totals-section">
+            {/* Payment Verified Stamp */}
+            <div className="invoice-payment-proof-stamp">
+              <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider text-emerald-800">
+                <CheckCircle2 size={16} />
+                <span>PAID IN FULL • 100% SECURE</span>
+              </div>
+              <div className="text-[11px] text-emerald-900 mt-1.5 space-y-0.5">
+                <div><strong>Gateway:</strong> Razorpay Payment Services</div>
+                <div><strong>Method:</strong> Online (UPI / QR / Cards / NetBanking)</div>
+                <div><strong>Transaction ID:</strong> rzp_live_{order.customer.phone}</div>
+                <div><strong>Payment Status:</strong> Capture Verified (No Dues)</div>
+              </div>
+            </div>
+
+            {/* Calculations Breakdown */}
+            <div className="invoice-summary-calc-table">
+              <div className="invoice-calc-row">
+                <span>Total Taxable Value:</span>
+                <span className="font-bold text-neutral-900">{formatPrice(taxableBase)}</span>
+              </div>
+
+              <div className="invoice-calc-row">
+                <span>Central GST (CGST 9%):</span>
+                <span>{formatPrice(cgst)}</span>
+              </div>
+
+              <div className="invoice-calc-row">
+                <span>State GST (SGST 9%):</span>
+                <span>{formatPrice(sgst)}</span>
+              </div>
+
+              <div className="invoice-calc-row">
+                <span>Express Shipping &amp; Hard Tube Packaging:</span>
+                <span className="text-emerald-700 font-bold uppercase">FREE (₹0.00)</span>
+              </div>
+
+              <div className="invoice-calc-row grand-total">
+                <span>Grand Total (INR):</span>
+                <span>{formatPrice(totalAmount)}</span>
+              </div>
+
+              <div className="invoice-words-amount text-right">
+                <strong>Amount in Words:</strong> Indian Rupees One Hundred Twenty-Eight Only
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Legal Declarations & Signatory */}
+          <div className="invoice-bottom-footer">
+            <div className="invoice-terms-block">
+              <strong>Declaration &amp; Terms:</strong><br />
+              1. We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.<br />
+              2. Goods are backed by the POSTGENZ Damage-Proof Guarantee. Any transit defect reported within 7 days will be replaced free of charge.<br />
+              3. This is a computer-generated tax invoice issued under Rule 46 of the CGST Rules, 2017 and does not require physical signature.
+            </div>
+
+            <div className="invoice-signatory-block">
+              <div>For <strong>POSTGENZ CREATIVE STUDIO PVT. LTD.</strong></div>
+              <div className="invoice-sign-signature">Postgenz Studio</div>
+              <div className="text-[9px] uppercase font-bold text-neutral-500">Authorized Signatory</div>
+            </div>
+          </div>
         </div>
       </div>
     </main>

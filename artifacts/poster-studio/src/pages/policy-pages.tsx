@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import {
   HelpCircle,
   ShieldCheck,
@@ -14,7 +14,13 @@ import {
   Sparkles,
   Search,
   ExternalLink,
+  Lock,
+  CheckCircle,
 } from 'lucide-react';
+
+export function PolicyNavTabs() {
+  return null;
+}
 
 interface FaqItem {
   id: number;
@@ -189,7 +195,6 @@ const FAQS_DATA: FaqItem[] = [
 // -------------------------------------------------------------
 export function FaqPage() {
   const [openIds, setOpenIds] = useState<number[]>([1]);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const toggle = (id: number) => {
     setOpenIds((prev) =>
@@ -197,125 +202,78 @@ export function FaqPage() {
     );
   };
 
-  const filteredFaqs = FAQS_DATA.filter(
-    (faq) =>
-      faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (typeof faq.answer === 'string' && faq.answer.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
   const toggleAll = () => {
-    if (openIds.length === filteredFaqs.length) {
+    if (openIds.length === FAQS_DATA.length) {
       setOpenIds([]);
     } else {
-      setOpenIds(filteredFaqs.map((f) => f.id));
+      setOpenIds(FAQS_DATA.map((f) => f.id));
     }
   };
 
   return (
-    <div className="simple-policy-container max-w-3xl mx-auto px-4 py-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 pb-4 mb-6">
-        <div>
-          <h1 className="simple-policy-title text-2xl md:text-3xl font-extrabold text-neutral-900 tracking-tight uppercase">
-            Frequently Asked Questions
-          </h1>
-          <p className="text-xs md:text-sm text-neutral-500 mt-1">
-            Find quick answers regarding orders, custom prints, shipping, and materials.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={toggleAll}
-          className="self-start sm:self-auto text-xs font-bold text-sky-600 hover:text-sky-700 underline shrink-0"
-        >
-          {openIds.length === filteredFaqs.length ? 'Collapse All' : 'Expand All'}
-        </button>
-      </div>
+    <div className="policy-modern-container">
+      <PolicyNavTabs />
 
-      {/* Interactive FAQ Search Bar */}
-      <div className="mb-6">
-        <div className="header-trans-search-form !w-full !rounded-xl !py-2.5 !px-3.5 shadow-sm">
-          <Search size={18} className="text-neutral-400 shrink-0" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search questions (e.g. return policy, shipping time, materials)..."
-            aria-label="Search FAQs"
-            className="text-sm"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="text-neutral-400 hover:text-neutral-600 text-xs font-bold p-1"
-            >
-              Clear
-            </button>
-          )}
+      <div className="policy-header-card">
+        <span className="text-[11px] font-extrabold uppercase tracking-wider text-sky-600 bg-sky-50 px-2.5 py-1 rounded-md inline-block mb-2">
+          Help &amp; Support Hub
+        </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="policy-title-main">
+              Frequently Asked Questions
+            </h1>
+          </div>
+          <button
+            type="button"
+            onClick={toggleAll}
+            className="self-start sm:self-auto text-xs font-bold text-sky-600 hover:text-sky-700 underline shrink-0 cursor-pointer"
+          >
+            {openIds.length === FAQS_DATA.length ? 'Collapse All' : 'Expand All'}
+          </button>
         </div>
       </div>
 
       <div className="faq-modern-list space-y-3">
-        {filteredFaqs.length === 0 ? (
-          <div className="text-center py-12 bg-neutral-50 rounded-2xl border border-dashed border-neutral-300">
-            <p className="text-neutral-500 text-sm font-medium">
-              No matching questions found for &quot;{searchQuery}&quot;.
-            </p>
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="mt-3 text-xs font-bold text-sky-600 hover:underline"
+        {FAQS_DATA.map((faq) => {
+          const isOpen = openIds.includes(faq.id);
+          return (
+            <div
+              key={faq.id}
+              className={`faq-card-modern ${isOpen ? 'faq-active' : ''}`}
             >
-              View all {FAQS_DATA.length} questions
-            </button>
-          </div>
-        ) : (
-          filteredFaqs.map((faq) => {
-            const isOpen = openIds.includes(faq.id);
-            return (
-              <div
-                key={faq.id}
-                className={`faq-card-modern ${isOpen ? 'faq-active' : ''}`}
+              <button
+                type="button"
+                onClick={() => toggle(faq.id)}
+                className="faq-trigger-btn"
+                aria-expanded={isOpen}
               >
-                <button
-                  type="button"
-                  onClick={() => toggle(faq.id)}
-                  className="faq-trigger-btn"
-                  aria-expanded={isOpen}
-                >
-                  <div className="flex items-center gap-2 pr-3">
-                    <span className="faq-num-badge">{faq.id}</span>
-                    <span className="font-bold text-sm md:text-base text-neutral-900 leading-snug">
-                      {faq.question.replace(/^\d+\.\s*/, '')}
-                    </span>
-                  </div>
-                  <span className="text-neutral-400 shrink-0 transition-transform duration-200">
-                    {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                <div className="flex items-center gap-2 pr-3">
+                  <span className="faq-num-badge">{faq.id}</span>
+                  <span className="font-bold text-sm md:text-base text-neutral-900 leading-snug">
+                    {faq.question.replace(/^\d+\.\s*/, '')}
                   </span>
-                </button>
-                {isOpen && (
-                  <div className="faq-answer-content">
-                    {faq.answer}
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
+                </div>
+                <span className="text-neutral-400 shrink-0 transition-transform duration-200">
+                  {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </span>
+              </button>
+              {isOpen && (
+                <div className="faq-answer-content">
+                  {faq.answer}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Help Banner at bottom */}
-      <div className="mt-8 p-4 rounded-2xl bg-neutral-50 border border-neutral-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+      <div className="mt-8 p-4 rounded-2xl bg-neutral-50 border border-neutral-200 text-center sm:text-left">
         <div>
           <h4 className="font-bold text-sm text-neutral-900">Still have questions?</h4>
           <p className="text-xs text-neutral-500">Our customer support team is here to help 24/7.</p>
         </div>
-        <a
-          href="mailto:dungeons.support@gmail.com"
-          className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider shrink-0 transition-all"
-        >
-          Contact Support
-        </a>
       </div>
     </div>
   );
@@ -326,13 +284,17 @@ export function FaqPage() {
 // -------------------------------------------------------------
 export function TermsPage() {
   return (
-    <div className="simple-policy-container max-w-3xl mx-auto px-4 py-8">
-      <h1 className="simple-policy-title text-2xl md:text-3xl font-extrabold text-neutral-900 mb-6 tracking-tight uppercase border-b border-neutral-200 pb-3">
-        TERMS &amp; CONDITIONS
-      </h1>
+    <div className="policy-modern-container">
+      <PolicyNavTabs />
 
-      <div className="terms-doc-container">
-        <div className="terms-clauses-list space-y-6">
+      <div className="policy-header-card">
+        <span className="text-[11px] font-extrabold uppercase tracking-wider text-sky-600 bg-sky-50 px-2.5 py-1 rounded-md inline-block mb-2">
+          Legal Agreement
+        </span>
+        <h1 className="policy-title-main">Terms &amp; Conditions</h1>
+      </div>
+
+      <div className="space-y-4">
             <section className="terms-clause">
               <h2 className="clause-title">1. About Our Store</h2>
               <p>
@@ -607,19 +569,23 @@ export function TermsPage() {
             </section>
           </div>
         </div>
-      </div>
-  );
-}
+    );
+  }
 
 // -------------------------------------------------------------
 // 3. RETURN, REPLACEMENT & REFUND POLICY PAGE
 // -------------------------------------------------------------
 export function ReturnPolicyPage() {
   return (
-    <div className="simple-policy-container max-w-3xl mx-auto px-4 py-8">
-      <h1 className="simple-policy-title text-2xl md:text-3xl font-extrabold text-neutral-900 mb-6 tracking-tight uppercase border-b border-neutral-200 pb-3">
-        CUSTOMER POLICY
-      </h1>
+    <div className="policy-modern-container">
+      <PolicyNavTabs />
+
+      <div className="policy-header-card">
+        <span className="text-[11px] font-extrabold uppercase tracking-wider text-rose-600 bg-rose-50 px-2.5 py-1 rounded-md inline-block mb-2">
+          Customer Protection &amp; Returns
+        </span>
+        <h1 className="policy-title-main">Customer Policy</h1>
+      </div>
 
       <div className="terms-doc-container">
         <div className="terms-clauses-list space-y-6">
@@ -736,5 +702,122 @@ export function ReturnPolicyPage() {
           </div>
         </div>
       </div>
+  );
+}
+
+// -------------------------------------------------------------
+// 4. PRIVACY POLICY PAGE (RESPONSIVE & COMPLIANT)
+// -------------------------------------------------------------
+export function PrivacyPolicyPage() {
+  return (
+    <div className="policy-modern-container">
+      <PolicyNavTabs />
+
+      <div className="policy-header-card">
+        <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md inline-block mb-2">
+          Data Protection &amp; Security
+        </span>
+        <h1 className="policy-title-main">Privacy Policy</h1>
+      </div>
+
+      <div className="terms-doc-container">
+        <div className="terms-clauses-list space-y-6">
+          <div className="policy-clause-card">
+            <div className="policy-clause-header">
+              <span className="policy-badge-num">1</span>
+              <h2 className="policy-clause-title">Information We Collect</h2>
+            </div>
+            <div className="policy-clause-body">
+              <p>
+                When you browse our store, configure custom prints, or place an order, we collect essential information required to deliver your products and provide customer support:
+              </p>
+              <ul className="policy-bullet-list">
+                <li><strong>Contact Information:</strong> Your full name, delivery address, phone number, and email address.</li>
+                <li><strong>Order Details:</strong> Items purchased, poster sizes, orientation, print finishes, and payment confirmation status.</li>
+                <li><strong>Device &amp; Usage Data:</strong> IP address, browser type, and interaction data to ensure website security and optimal performance.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="policy-clause-card">
+            <div className="policy-clause-header">
+              <span className="policy-badge-num">2</span>
+              <h2 className="policy-clause-title">Custom Photos &amp; Uploads Privacy Guarantee</h2>
+            </div>
+            <div className="policy-clause-body">
+              <p>
+                We treat your personal memories with the highest degree of confidentiality:
+              </p>
+              <ul className="policy-bullet-list">
+                <li>Images uploaded for Custom Wall Posters, Photobooth Strips, or Mini Pocket Photos are used <strong>strictly and solely</strong> to print your physical items.</li>
+                <li>We <strong>never</strong> publish, display, share, or sell your private photos without your explicit written permission.</li>
+                <li>Customer photo uploads are stored securely and <strong>automatically purged and deleted</strong> from our print queues within 30 days of successful order delivery.</li>
+              </ul>
+              <div className="policy-callout-box">
+                🔒 <strong>Your Memories Are Safe:</strong> Our print production staff adheres to strict non-disclosure policies. Your personal photographs remain 100% private.
+              </div>
+            </div>
+          </div>
+
+          <div className="policy-clause-card">
+            <div className="policy-clause-header">
+              <span className="policy-badge-num">3</span>
+              <h2 className="policy-clause-title">Payment &amp; Financial Security</h2>
+            </div>
+            <div className="policy-clause-body">
+              <p>
+                All online transactions are processed through RBI-approved, PCI-DSS Level 1 compliant payment gateways (Razorpay, UPI, Credit/Debit cards, Net Banking):
+              </p>
+              <ul className="policy-bullet-list">
+                <li>Dungeons <strong>never stores or captures</strong> your Credit/Debit Card numbers, CVV, or UPI PINs on our servers.</li>
+                <li>All payment transactions are encrypted using industry-standard 256-bit SSL encryption.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="policy-clause-card">
+            <div className="policy-clause-header">
+              <span className="policy-badge-num">4</span>
+              <h2 className="policy-clause-title">Sharing of Information with Trusted Logistics</h2>
+            </div>
+            <div className="policy-clause-body">
+              <p>
+                We only share your delivery information (Name, Shipping Address, Phone Number) with our verified logistics partners (such as Delhivery, Blue Dart, Xpressbees, or India Post) strictly to facilitate doorstep parcel delivery and send SMS tracking updates.
+              </p>
+            </div>
+          </div>
+
+          <div className="policy-clause-card">
+            <div className="policy-clause-header">
+              <span className="policy-badge-num">5</span>
+              <h2 className="policy-clause-title">Cookies &amp; Local Storage</h2>
+            </div>
+            <div className="policy-clause-body">
+              <p>
+                We use functional cookies and browser storage solely to remember your bag items, wishlist products, and custom configuration preferences so your shopping experience is seamless across visits.
+              </p>
+            </div>
+          </div>
+
+          <div className="policy-clause-card">
+            <div className="policy-clause-header">
+              <span className="policy-badge-num">6</span>
+              <h2 className="policy-clause-title">Grievance Officer &amp; Contact Information</h2>
+            </div>
+            <div className="policy-clause-body">
+              <p className="mb-2">
+                For any questions, privacy concerns, or data deletion requests, you may contact our Grievance Officer:
+              </p>
+              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200 text-sm space-y-1">
+                <div><strong>Entity:</strong> Dungeons</div>
+                <div><strong>Email:</strong> <a href="mailto:dungeons.support@gmail.com" className="text-sky-600 font-bold underline">dungeons.support@gmail.com</a></div>
+                <div><strong>Location:</strong> Ahmedabad, Gujarat, India</div>
+                <div><strong>Response Time:</strong> We review and respond to privacy requests within 24–48 business hours.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
