@@ -47,6 +47,8 @@ import {
 import { collections, formatPrice, getProduct, products, searchProducts, storeCategories, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, Toast } from '@/components/storefront';
+import { SavedAddressesView } from './addresses-page';
+import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
 import { authService } from '@/services/auth';
 import { paymentService } from '@/services/payment';
 
@@ -960,7 +962,7 @@ export function ProductPage() {
       navigate('/checkout');
     } else {
       setToast(`${product.title} added to bag!`);
-      window.setTimeout(() => setToast(''), 2400);
+      window.setTimeout(() => setToast(''), 3800);
     }
   };
 
@@ -1243,7 +1245,7 @@ export function ProductPage() {
                 product={p}
                 onAdded={(title) => {
                   setToast(`${title} added to your bag`);
-                  window.setTimeout(() => setToast(''), 2400);
+                  window.setTimeout(() => setToast(''), 3800);
                 }}
               />
             ))}
@@ -2508,217 +2510,40 @@ export function CartPage() {
                 </span>
               </div>
 
-              {cart.map((item) => {
-                const matchProduct = products.find((p) => p.id === item.productId || p.slug === item.slug);
-                const itemMrp = matchProduct?.compareAtPrice && matchProduct.compareAtPrice > item.price
-                  ? matchProduct.compareAtPrice
-                  : Math.round(item.price * 1.5);
-                const itemSavings = (itemMrp - item.price) * item.quantity;
-
-                return (
-                  <div key={item.key} className="bag-card-pro">
-                    <div className="bag-card-top-row">
-                      {/* Product Thumbnail */}
-                      <div className="bag-item-thumb-box">
-                        {item.customUpload?.preview ? (
-                          <img
-                            src={item.customUpload.preview}
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <img
-                            src={matchProduct?.images?.[0] || '/assets/spiderman-product-hero.jpg'}
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                        <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] font-extrabold px-1 rounded">
-                          {item.size}
-                        </span>
-                      </div>
-
-                      {/* Product Details */}
-                      <div className="bag-item-details-col">
-                        <Link
-                          href={item.slug ? `/products/${item.slug}` : '#'}
-                          className="bag-item-name"
-                        >
-                          {item.title}
-                        </Link>
-
-                        <div className="flex items-center flex-wrap gap-1.5 mt-1.5">
-                          <span className="bag-size-tag">
-                            Size: <strong>{item.size}</strong>
-                          </span>
-                          {item.customUpload?.borderStyle && (
-                            <span className="bag-size-tag">
-                              Border: <strong className="capitalize">{item.customUpload.borderStyle}</strong>
-                            </span>
-                          )}
-                          <span className="text-[11px] text-neutral-400">
-                            • High-definition 300 GSM Print
-                          </span>
-                        </div>
-
-                        {/* Price Row */}
-                        <div className="bag-price-block">
-                          <span className="bag-price-current">
-                            {formatPrice(item.price * item.quantity)}
-                          </span>
-                          <span className="bag-price-strike">
-                            {formatPrice(itemMrp * item.quantity)}
-                          </span>
-                          {itemSavings > 0 && (
-                            <span className="bag-savings-tag">
-                              Save {formatPrice(itemSavings)}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="mt-2 text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5">
-                          <Truck size={13} />
-                          <span>Delivery in 4–7 Days | Standard Free Delivery</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bottom Action Toolbar */}
-                    <div className="bag-item-bottom-toolbar">
-                      {/* Quantity Stepper */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-neutral-500 font-medium">Qty:</span>
-                        <div className="stepper-box flex items-center border border-neutral-300 rounded-lg overflow-hidden h-8 bg-white">
-                          <button
-                            type="button"
-                            className="stepper-btn px-2.5 text-neutral-600 hover:bg-neutral-100 transition-colors"
-                            onClick={() => store.updateQuantity(item.key, item.quantity - 1)}
-                            aria-label="Decrease quantity"
-                          >
-                            <Minus size={12} />
-                          </button>
-                          <span className="stepper-val px-3 text-xs font-bold text-neutral-900 min-w-[24px] text-center">
-                            {item.quantity}
-                          </span>
-                          <button
-                            type="button"
-                            className="stepper-btn px-2.5 text-neutral-600 hover:bg-neutral-100 transition-colors"
-                            onClick={() => store.updateQuantity(item.key, item.quantity + 1)}
-                            aria-label="Increase quantity"
-                          >
-                            <Plus size={12} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Action Links */}
-                      <div className="flex items-center gap-4">
-                        <button
-                          type="button"
-                          className="bag-action-link-btn"
-                          onClick={() => handleSaveForLater(item)}
-                          title="Save item for later in your wishlist"
-                        >
-                          <Bookmark size={14} />
-                          <span>Save for Later</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          className="bag-action-link-btn bag-action-delete"
-                          onClick={() => {
-                            store.removeFromCart(item.key);
-                            setToast('Item removed from bag');
-                            window.setTimeout(() => setToast(''), 2000);
-                          }}
-                          aria-label="Remove item"
-                        >
-                          <Trash2 size={14} />
-                          <span>Remove</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {cart.map((item) => (
+                <MyntraItemCard
+                  key={item.key}
+                  item={item}
+                  onRemove={() => {
+                    store.removeFromCart(item.key);
+                    setToast('Item removed from bag');
+                    window.setTimeout(() => setToast(''), 2000);
+                  }}
+                  onSaveForLater={() => handleSaveForLater(item)}
+                />
+              ))}
             </div>
 
-            {/* Right Column: Price Details & Checkout (4 cols on desktop) */}
-            <div className="lg:col-span-4">
-              <div className="flipkart-price-details-card">
-                <div className="flipkart-price-header">
-                  PRICE DETAILS
-                </div>
+            {/* Right Column: Swiggy Coupon Drawer & Myntra Price Details (4 cols on desktop) */}
+            <div className="lg:col-span-4 flex flex-col gap-4">
+              <SwiggyCouponBox
+                subtotal={totals.subtotal}
+                totalCount={totalCount}
+                onAppliedToast={(msg) => {
+                  setToast(msg);
+                  window.setTimeout(() => setToast(''), 2500);
+                }}
+              />
 
-                <div className="flipkart-price-body">
-                  <div className="flipkart-price-row">
-                    <span>Price ({totals.totalItemCount} {totals.totalItemCount === 1 ? 'item' : 'items'})</span>
-                    <span className="text-neutral-900 font-semibold">{formatPrice(totalMRP)}</span>
-                  </div>
-
-                  {totalMRP > totals.subtotal && (
-                    <div className="flipkart-price-row text-emerald-600">
-                      <span>Discount on MRP</span>
-                      <span className="font-semibold">−{formatPrice(totalMRP - totals.subtotal)}</span>
-                    </div>
-                  )}
-
-                  {totals.discount > 0 && (
-                    <div className="flipkart-price-row text-emerald-600">
-                      <span>Coupon Discount</span>
-                      <span className="font-semibold">−{formatPrice(totals.discount)}</span>
-                    </div>
-                  )}
-
-                  <div className="flipkart-price-row">
-                    <span>Delivery Charges</span>
-                    <span className="text-emerald-600 font-bold uppercase">FREE</span>
-                  </div>
-
-                  <div className="flipkart-price-total-row">
-                    <span>Total Amount</span>
-                    <span className="text-xl font-extrabold text-neutral-900">
-                      {formatPrice(totals.total)}
-                    </span>
-                  </div>
-                </div>
-
-                {totalSavings > 0 && (
-                  <div className="flipkart-savings-banner">
-                    🎉 You will save {formatPrice(totalSavings)} on this order
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  className="w-full mt-5 py-3.5 px-4 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-sm font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99] cursor-pointer"
-                  onClick={() => navigate('/checkout')}
-                >
-                  <Lock size={15} />
-                  <span>PROCEED TO CHECKOUT</span>
-                  <ArrowRight size={16} />
-                </button>
-
-                {/* Trust Badges */}
-                <div className="flipkart-trust-box">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
-                    <span>100% Safe Payments</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Truck size={16} className="text-blue-600 shrink-0" />
-                    <span>Express Dispatch</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={16} className="text-amber-500 shrink-0" />
-                    <span>300 GSM Art Paper</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Package size={16} className="text-rose-600 shrink-0" />
-                    <span>Damage-proof Tube</span>
-                  </div>
-                </div>
-              </div>
+              <MyntraPriceDetails
+                totalMRP={totalMRP}
+                subtotal={totals.subtotal}
+                discount={totals.discount}
+                total={totals.total}
+                totalItemCount={totals.totalItemCount}
+                totalSavings={totalSavings}
+                onProceed={() => navigate('/checkout')}
+              />
             </div>
           </div>
 
@@ -2762,23 +2587,38 @@ export const BagPage = CartPage;
 // =============================================================
 export function CheckoutPage() {
   const [, navigate] = useLocation();
-  const { cart, coupon } = useStore();
+  const { cart, coupon, savedAddresses = [], selectedAddressId } = useStore();
   const totals = cartTotals(cart, coupon);
+  const activeAddress = savedAddresses.find((a) => a.id === selectedAddressId) || savedAddresses[0] || null;
 
   const [form, setForm] = useState({
-    name: 'Kaushik Vansh',
+    name: activeAddress?.name || 'Kaushik Vansh',
     email: 'kaushik@dungeons.in',
-    phone: '9265964547',
-    address: '417, Satyamev Eminence, Near Shukan Mall, Science City, Sola',
-    city: 'Ahmedabad',
-    state: 'Gujarat',
-    pincode: '380060',
+    phone: activeAddress?.phone || '9265964547',
+    address: activeAddress ? [activeAddress.flat, activeAddress.locality, activeAddress.landmark].filter(Boolean).join(', ') : '417, Satyamev Eminence, Near Shukan Mall, Science City, Sola',
+    city: activeAddress?.city || 'Ahmedabad',
+    state: activeAddress?.state || 'Gujarat',
+    pincode: activeAddress?.pincode || '380060',
     country: 'India',
   });
 
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (activeAddress) {
+      setForm((prev) => ({
+        ...prev,
+        name: activeAddress.name,
+        phone: activeAddress.phone,
+        address: [activeAddress.flat, activeAddress.locality, activeAddress.landmark].filter(Boolean).join(', '),
+        city: activeAddress.city,
+        state: activeAddress.state,
+        pincode: activeAddress.pincode,
+      }));
+    }
+  }, [activeAddress?.id]);
   const [couponInput, setCouponInput] = useState('');
   const [couponFeedback, setCouponFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -2999,122 +2839,52 @@ export function CheckoutPage() {
                     <h2 className="step-title-heading">Delivery Address</h2>
                   </div>
                 </div>
-                {!isEditingAddress && (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingAddress(true)}
-                    className="step-edit-btn"
-                  >
-                    Change
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setIsEditingAddress(!isEditingAddress)}
+                  className="step-edit-btn"
+                >
+                  {isEditingAddress ? 'Close' : 'Change'}
+                </button>
               </div>
 
               {!isEditingAddress ? (
                 <div className="space-y-1.5 text-xs sm:text-sm text-neutral-700">
                   <div className="flex items-center gap-2">
                     <span className="font-extrabold text-sm sm:text-base text-neutral-900">
-                      {form.name}
+                      {activeAddress ? activeAddress.name : form.name}
                     </span>
                     <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      HOME
+                      {activeAddress ? activeAddress.type.toUpperCase() : 'HOME'}
                     </span>
                   </div>
                   <p className="text-neutral-600 leading-relaxed pt-0.5">
-                    {form.address}, {form.city}, {form.state} – <strong className="text-neutral-800">{form.pincode}</strong>
+                    {activeAddress
+                      ? `${[activeAddress.flat, activeAddress.locality, activeAddress.landmark, activeAddress.city, activeAddress.state].filter(Boolean).join(', ')} – ${activeAddress.pincode}`
+                      : `${form.address}, ${form.city}, ${form.state} – ${form.pincode}`}
                   </p>
                   <p className="text-neutral-800 font-semibold pt-1">
-                    Mobile: <span className="font-extrabold text-neutral-900">+91 {form.phone}</span>
+                    Mobile: <span className="font-extrabold text-neutral-900">+91 {activeAddress ? activeAddress.phone : form.phone}</span>
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
-                  <div>
-                    <label className="text-[11px] font-bold text-neutral-700 block mb-1">Full Name *</label>
-                    <input
-                      required
-                      value={form.name}
-                      onChange={update('name')}
-                      placeholder="e.g. Kaushik Vansh"
-                      className={`w-full p-2.5 text-xs rounded-xl border ${formErrors.name ? 'border-red-500 bg-red-50/40' : 'border-neutral-300 bg-white'} focus:border-neutral-900 focus:outline-none`}
-                    />
-                    {formErrors.name && <span className="text-[10px] text-red-600 font-bold">{formErrors.name}</span>}
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-neutral-700 block mb-1">10-Digit Mobile Number *</label>
-                    <input
-                      required
-                      type="tel"
-                      value={form.phone}
-                      onChange={update('phone')}
-                      placeholder="9265964547"
-                      className={`w-full p-2.5 text-xs rounded-xl border ${formErrors.phone ? 'border-red-500 bg-red-50/40' : 'border-neutral-300 bg-white'} focus:border-neutral-900 focus:outline-none`}
-                    />
-                    {formErrors.phone && <span className="text-[10px] text-red-600 font-bold">{formErrors.phone}</span>}
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="text-[11px] font-bold text-neutral-700 block mb-1">Email Address (For Order Tracking) *</label>
-                    <input
-                      required
-                      type="email"
-                      value={form.email}
-                      onChange={update('email')}
-                      placeholder="kaushik@dungeons.in"
-                      className={`w-full p-2.5 text-xs rounded-xl border ${formErrors.email ? 'border-red-500 bg-red-50/40' : 'border-neutral-300 bg-white'} focus:border-neutral-900 focus:outline-none`}
-                    />
-                    {formErrors.email && <span className="text-[10px] text-red-600 font-bold">{formErrors.email}</span>}
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="text-[11px] font-bold text-neutral-700 block mb-1">Flat, House no., Building, Company, Apartment *</label>
-                    <input
-                      required
-                      value={form.address}
-                      onChange={update('address')}
-                      placeholder="417, Satyamev Eminence, Near Shukan Mall, Science City..."
-                      className={`w-full p-2.5 text-xs rounded-xl border ${formErrors.address ? 'border-red-500 bg-red-50/40' : 'border-neutral-300 bg-white'} focus:border-neutral-900 focus:outline-none`}
-                    />
-                    {formErrors.address && <span className="text-[10px] text-red-600 font-bold">{formErrors.address}</span>}
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-neutral-700 block mb-1">Town / City *</label>
-                    <input
-                      required
-                      value={form.city}
-                      onChange={update('city')}
-                      placeholder="Ahmedabad"
-                      className={`w-full p-2.5 text-xs rounded-xl border ${formErrors.city ? 'border-red-500 bg-red-50/40' : 'border-neutral-300 bg-white'} focus:border-neutral-900 focus:outline-none`}
-                    />
-                    {formErrors.city && <span className="text-[10px] text-red-600 font-bold">{formErrors.city}</span>}
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-neutral-700 block mb-1">6-Digit PIN Code *</label>
-                    <input
-                      required
-                      value={form.pincode}
-                      onChange={update('pincode')}
-                      placeholder="380060"
-                      className={`w-full p-2.5 text-xs rounded-xl border ${formErrors.pincode ? 'border-red-500 bg-red-50/40' : 'border-neutral-300 bg-white'} focus:border-neutral-900 focus:outline-none`}
-                    />
-                    {formErrors.pincode && <span className="text-[10px] text-red-600 font-bold">{formErrors.pincode}</span>}
-                  </div>
-
-                  <div className="md:col-span-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (validate()) setIsEditingAddress(false);
-                      }}
-                      className="w-full sm:w-auto py-2.5 px-6 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-sm"
-                    >
-                      <Check size={14} />
-                      <span>Save &amp; Deliver to this Address</span>
-                    </button>
-                  </div>
+                <div className="pt-2">
+                  <SavedAddressesView
+                    selectedId={activeAddress?.id}
+                    isSelectionMode
+                    onSelectAddress={(addr) => {
+                      setForm({
+                        ...form,
+                        name: addr.name,
+                        phone: addr.phone,
+                        address: [addr.flat, addr.locality, addr.landmark].filter(Boolean).join(', '),
+                        city: addr.city,
+                        state: addr.state,
+                        pincode: addr.pincode,
+                      });
+                      setIsEditingAddress(false);
+                    }}
+                  />
                 </div>
               )}
             </div>
@@ -3143,217 +2913,32 @@ export function CheckoutPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="divide-y divide-neutral-100">
-                  {cart.map((item) => {
-                    const matchProduct = products.find((p) => p.id === item.productId || p.slug === item.slug);
-                    const itemMrp = matchProduct?.compareAtPrice && matchProduct.compareAtPrice > item.price
-                      ? matchProduct.compareAtPrice
-                      : Math.round(item.price * 1.5);
-
-                    return (
-                      <div key={item.key} className="py-3.5 first:pt-0 last:pb-0 flex gap-3.5 items-center">
-                        <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-lg overflow-hidden bg-neutral-100 shrink-0 border border-neutral-200 relative">
-                          {item.customUpload?.preview ? (
-                            <img
-                              src={item.customUpload.preview}
-                              alt={item.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <img
-                              src={matchProduct?.images?.[0] || '/assets/spiderman-product-hero.jpg'}
-                              alt={item.title}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                          <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[8px] font-bold px-1 rounded">
-                            {item.size}
-                          </span>
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-xs sm:text-sm text-neutral-900 line-clamp-1">
-                            {item.title}
-                          </h4>
-                          <div className="text-[11px] text-neutral-500 mt-0.5 space-x-1.5">
-                            <span>Size: <strong>{item.size}</strong></span>
-                            <span>•</span>
-                            <span>300 GSM Print</span>
-                          </div>
-                          <div className="flex items-baseline gap-2 mt-1">
-                            <span className="text-xs sm:text-sm font-extrabold text-neutral-900">
-                              {formatPrice(item.price * item.quantity)}
-                            </span>
-                            <span className="text-[11px] text-neutral-400 line-through">
-                              {formatPrice(itemMrp * item.quantity)}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col items-end gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => store.removeFromCart(item.key)}
-                            className="text-neutral-400 hover:text-red-600 p-1 transition-colors"
-                            aria-label="Remove item"
-                            title="Remove item"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-
-                          <div className="stepper-box flex items-center border border-neutral-300 rounded-lg overflow-hidden h-7 bg-white">
-                            <button
-                              type="button"
-                              className="stepper-btn px-2 text-neutral-600 hover:bg-neutral-100"
-                              onClick={() => store.updateQuantity(item.key, item.quantity - 1)}
-                              aria-label="Decrease quantity"
-                            >
-                              <Minus size={10} />
-                            </button>
-                            <span className="stepper-val px-2 text-xs font-bold text-neutral-900 min-w-[20px] text-center">
-                              {item.quantity}
-                            </span>
-                            <button
-                              type="button"
-                              className="stepper-btn px-2 text-neutral-600 hover:bg-neutral-100"
-                              onClick={() => store.updateQuantity(item.key, item.quantity + 1)}
-                              aria-label="Increase quantity"
-                            >
-                              <Plus size={10} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="flex flex-col gap-3">
+                  {cart.map((item) => (
+                    <MyntraItemCard
+                      key={item.key}
+                      item={item}
+                      onRemove={() => {
+                        store.removeFromCart(item.key);
+                        setToast('Item removed from bag');
+                        window.setTimeout(() => setToast(''), 2000);
+                      }}
+                    />
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* STEP 3: COUPONS & OFFERS (SWIGGY & ZOMATO STYLE) */}
-            <div className="checkout-stepper-card">
-              <div className="checkout-card-header">
-                <div className="step-label-group">
-                  <span className="step-num-pill">3</span>
-                  <div className="flex items-center gap-2">
-                    <BadgePercent size={16} className="text-emerald-600" />
-                    <h2 className="step-title-heading">Coupons &amp; Offers</h2>
-                  </div>
-                </div>
-
-                {coupon && (
-                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    🎉 {coupon} APPLIED
-                  </span>
-                )}
-              </div>
-
-              {coupon ? (
-                /* Celebration Applied Card (Swiggy / Zomato style) */
-                <div className="voucher-applied-state">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                      <Check size={16} strokeWidth={3} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-xs uppercase tracking-wider text-emerald-950">
-                          {coupon}
-                        </span>
-                        <span className="text-[10px] font-bold uppercase bg-emerald-200/60 text-emerald-800 px-1.5 py-0.2 rounded">
-                          Applied
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-emerald-800 font-semibold mt-0.5">
-                        🎉 You saved {formatPrice(totals.discount)} with this coupon!
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleRemoveCoupon}
-                    className="text-xs font-extrabold text-red-600 hover:text-red-700 uppercase tracking-wider px-2 py-1 hover:bg-red-50 rounded cursor-pointer transition-colors"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                /* Coupon Input & Available Vouchers (Swiggy / Zomato style) */
-                <div>
-                  {/* Promo Input Box */}
-                  <div className="swiggy-coupon-input-wrap">
-                    <input
-                      type="text"
-                      value={couponInput}
-                      onChange={(e) => setCouponInput(e.target.value)}
-                      placeholder="ENTER COUPON CODE (e.g. STUDIO10)"
-                      className="swiggy-coupon-input"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleApplyCouponCode(couponInput)}
-                      className="swiggy-apply-submit-btn"
-                    >
-                      Apply
-                    </button>
-                  </div>
-
-                  {couponFeedback && (
-                    <div className={`p-2.5 mb-3 rounded-lg text-xs font-semibold ${couponFeedback.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-                      {couponFeedback.text}
-                    </div>
-                  )}
-
-                  {/* Swiggy/Zomato Interactive Voucher Cards */}
-                  <div className="swiggy-vouchers-list">
-                    {availableVouchers.map((voucher) => {
-                      const isEligible = totalCount >= voucher.minQty;
-                      const needed = voucher.minQty - totalCount;
-
-                      return (
-                        <div key={voucher.code} className="swiggy-voucher-ticket">
-                          <div className="voucher-left-info">
-                            <div className="flex items-center gap-2">
-                              <span className="voucher-code-badge">
-                                <Tag size={10} />
-                                <span>{voucher.code}</span>
-                              </span>
-                              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                {voucher.badge}
-                              </span>
-                            </div>
-
-                            <span className="voucher-title mt-1">
-                              {voucher.title}
-                            </span>
-                            <span className="voucher-subtitle">
-                              {voucher.desc}
-                            </span>
-
-                            {!isEligible && (
-                              <span className="text-[10px] font-bold text-rose-600 mt-1 flex items-center gap-1">
-                                <span>⚡</span>
-                                <span>Add {needed} more poster{needed > 1 ? 's' : ''} to bag to unlock</span>
-                              </span>
-                            )}
-                          </div>
-
-                          <button
-                            type="button"
-                            disabled={!isEligible}
-                            onClick={() => handleApplyCouponCode(voucher.code)}
-                            className="voucher-apply-btn"
-                            title={isEligible ? `Apply ${voucher.code}` : `Add ${needed} more to unlock`}
-                          >
-                            {isEligible ? 'APPLY' : 'LOCKED'}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+            {/* STEP 3: COUPONS & OFFERS (SWIGGY ACCORDION STYLE) */}
+            <div className="checkout-stepper-card p-0 overflow-hidden border-0 shadow-none bg-transparent">
+              <SwiggyCouponBox
+                subtotal={totals.subtotal}
+                totalCount={totalCount}
+                onAppliedToast={(msg) => {
+                  setToast(msg);
+                  window.setTimeout(() => setToast(''), 2500);
+                }}
+              />
             </div>
 
             {/* STEP 4: PAYMENT METHOD (AMAZON / FLIPKART STYLE) */}
@@ -3463,96 +3048,32 @@ export function CheckoutPage() {
             </div>
           </div>
 
-          {/* Right Column: Price Details & Proceed (Flipkart / Amazon style - 4 cols on desktop) */}
-          <div className="lg:col-span-4 lg:sticky lg:top-20">
-            <div className="flipkart-price-details-card">
-              <div className="flipkart-price-header">
-                PRICE DETAILS ({totalCount} {totalCount === 1 ? 'ITEM' : 'ITEMS'})
+          {/* Right Column: Price Details & Proceed (Myntra Style - 4 cols on desktop) */}
+          <div className="lg:col-span-4 lg:sticky lg:top-20 flex flex-col gap-4">
+            <MyntraPriceDetails
+              totalMRP={calculatedMRP}
+              subtotal={totals.subtotal}
+              discount={totals.discount}
+              total={totals.total}
+              totalItemCount={totalCount}
+              totalSavings={calculatedSavings}
+              onProceed={() => handlePlaceOrder()}
+              proceedLabel={isProcessing ? 'PROCESSING...' : `PLACE ORDER • ${formatPrice(totals.total)}`}
+            />
+
+            {/* Trust Box */}
+            <div className="flipkart-trust-box bg-white border border-neutral-200 rounded-xl p-3.5 flex flex-col gap-2 text-xs text-neutral-600">
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={15} className="text-emerald-600 shrink-0" />
+                <span>Safe &amp; Secure Payments via Razorpay</span>
               </div>
-
-              <div className="flipkart-price-body">
-                <div className="flipkart-price-row">
-                  <span>Total MRP</span>
-                  <span className="text-neutral-900 font-bold">{formatPrice(calculatedMRP)}</span>
-                </div>
-
-                {calculatedSavings > 0 && (
-                  <div className="flipkart-price-row text-emerald-600">
-                    <span>Discount on MRP</span>
-                    <span className="font-bold">−{formatPrice(calculatedMRP - totals.subtotal)}</span>
-                  </div>
-                )}
-
-                {totals.discount > 0 && (
-                  <div className="flipkart-price-row text-emerald-600">
-                    <span>Coupon Discount</span>
-                    <span className="font-bold">−{formatPrice(totals.discount)}</span>
-                  </div>
-                )}
-
-                <div className="flipkart-price-row">
-                  <span>Platform Fee</span>
-                  <span className="text-emerald-600 font-bold uppercase">FREE</span>
-                </div>
-
-                <div className="flipkart-price-row">
-                  <span>Delivery Charges</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] text-neutral-400 line-through">₹49</span>
-                    <span className="text-emerald-600 font-bold uppercase">FREE</span>
-                  </div>
-                </div>
-
-                <div className="flipkart-price-total-row">
-                  <span>Total Payable</span>
-                  <span className="text-xl font-black text-neutral-900">
-                    {formatPrice(totals.total)}
-                  </span>
-                </div>
+              <div className="flex items-center gap-2">
+                <Truck size={15} className="text-sky-600 shrink-0" />
+                <span>Express Dispatch in 24–48 Hours</span>
               </div>
-
-              {calculatedSavings > 0 && (
-                <div className="flipkart-savings-banner">
-                  🎉 You will save {formatPrice(calculatedSavings)} on this order
-                </div>
-              )}
-
-              {/* Primary Place Order CTA */}
-              <div className="p-4 sm:p-5 pt-0">
-                <button
-                  type="button"
-                  onClick={() => handlePlaceOrder()}
-                  disabled={isProcessing || cart.length === 0}
-                  className="w-full mt-4 py-3.5 px-6 rounded-xl bg-neutral-950 hover:bg-neutral-800 active:bg-black text-white font-extrabold text-sm tracking-wider uppercase transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  <Lock size={15} />
-                  <span>
-                    {isProcessing
-                      ? 'PROCESSING...'
-                      : `PLACE ORDER • ${formatPrice(totals.total)}`}
-                  </span>
-                  <ArrowRight size={15} />
-                </button>
-
-                <p className="text-[10px] text-neutral-400 text-center mt-2.5">
-                  🔒 256-Bit SSL Encrypted &amp; 100% Protected Payment.
-                </p>
-
-                {/* Trust Box */}
-                <div className="flipkart-trust-box">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck size={15} className="text-emerald-600 shrink-0" />
-                    <span>Safe &amp; Secure Payments via Razorpay</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Truck size={15} className="text-sky-600 shrink-0" />
-                    <span>Express Dispatch in 24–48 Hours</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Package size={15} className="text-rose-600 shrink-0" />
-                    <span>Damage-Proof Hard Tube Packaging</span>
-                  </div>
-                </div>
+              <div className="flex items-center gap-2">
+                <Package size={15} className="text-rose-600 shrink-0" />
+                <span>Damage-Proof Hard Tube Packaging</span>
               </div>
             </div>
           </div>
@@ -3858,15 +3379,7 @@ export function OrderSuccessPage() {
 export function SearchPage() {
   const [, navigate] = useLocation();
   const initial = new URLSearchParams(window.location.search).get('q') || '';
-  const [query, setQuery] = useState(initial);
   const results = searchProducts(initial);
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-    }
-  };
 
   return (
     <main className="postgenz-search-page">
@@ -3901,31 +3414,18 @@ export function SearchPage() {
             </Link>
           </div>
         ) : (
-          <>
-            <form onSubmit={submit} className="postgenz-search-form mb-6">
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search anime, spiderman, football, ronaldo..."
-              />
-              <button type="submit" className="button postgenz-btn">
-                Search
-              </button>
-            </form>
-
-            <div className="search-page-results">
-              {initial && results.length > 0 && (
-                <p className="search-count-text mb-4 text-sm text-neutral-600 font-semibold">
-                  Found {results.length} poster{results.length === 1 ? '' : 's'} for &ldquo;{initial}&rdquo;
-                </p>
-              )}
-              <div className="collection-grid-container two-column-grid">
-                {results.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
+          <div className="search-page-results">
+            {initial && results.length > 0 && (
+              <p className="search-count-text mb-4 text-sm text-neutral-600 font-semibold">
+                Found {results.length} poster{results.length === 1 ? '' : 's'} for &ldquo;{initial}&rdquo;
+              </p>
+            )}
+            <div className="collection-grid-container two-column-grid">
+              {results.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
             </div>
-          </>
+          </div>
         )}
       </div>
     </main>
@@ -3961,6 +3461,10 @@ export function AccountPage() {
               <Link href="/account/orders" className="account-link-btn">
                 <Package size={18} />
                 <span>My Orders</span>
+              </Link>
+              <Link href="/account/addresses" className="account-link-btn">
+                <MapPin size={18} />
+                <span>Saved Addresses</span>
               </Link>
               <button
                 type="button"
@@ -4209,37 +3713,16 @@ export function OrdersPage() {
                     </div>
                   </div>
 
-                  {/* Items List Inside Card */}
-                  <div className="order-card-items-wrap">
+                  {/* Items List Inside Card (Same box & style as shopping bag) */}
+                  <div className="order-card-items-wrap p-4 flex flex-col gap-3">
                     {order.products.map((item) => (
-                      <div key={item.key} className="order-single-product-row">
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div className="order-product-thumb">
-                            {item.customUpload?.preview ? (
-                              <img src={item.customUpload.preview} alt={item.title} />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center font-black text-[9px] bg-neutral-900 text-white">
-                                POSTER
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="order-product-details">
-                            <span className="order-product-name">{item.title}</span>
-                            <div className="order-product-specs">
-                              <span className="font-semibold text-neutral-800 bg-neutral-100 px-1.5 py-0.2 rounded">
-                                Size: {item.size}
-                              </span>
-                              <span>Qty: {item.quantity}</span>
-                              <span className="text-emerald-600 font-bold">HD Archival Matte</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="order-product-price-total">
-                          {formatPrice(item.price * item.quantity)}
-                        </div>
-                      </div>
+                      <MyntraItemCard
+                        key={item.key}
+                        item={item}
+                        isOrderMode={true}
+                        orderStatus={order.fulfillmentStatus === 'delivered' ? 'Delivered' : 'In Production'}
+                        orderDate={estDeliveryStr}
+                      />
                     ))}
                   </div>
 

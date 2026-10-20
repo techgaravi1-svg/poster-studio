@@ -319,7 +319,7 @@ function MenuDrawer({
                 <ClipboardList size={20} className="menu-icon" />
                 <span>Orders</span>
               </Link>
-              <Link href="/account" className="menu-nav-item with-icon" onClick={onClose}>
+              <Link href="/account/addresses" className="menu-nav-item with-icon" onClick={onClose}>
                 <MapPin size={20} className="menu-icon" />
                 <span>Addresses</span>
               </Link>
@@ -465,28 +465,13 @@ export function Header() {
             </nav>
           )}
 
-          {/* Transparent inline search on desktop */}
-          {!menuOpen && (
-            <div className="header-inline-search-wrap">
-              <form onSubmit={submitSearch} className="header-trans-search-form">
-                <Search size={16} className="text-neutral-500 shrink-0" />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search posters, football, anime..."
-                  aria-label="Search posters"
-                />
-              </form>
-            </div>
-          )}
-
           {!menuOpen && (
             <div className="header-actions-right">
               <button
                 type="button"
                 className="header-icon-btn"
                 aria-label="Search"
-                onClick={() => setSearchOpen((prev) => !prev)}
+                onClick={() => setSearchOpen(true)}
               >
                 <Search size={21} />
               </button>
@@ -509,53 +494,51 @@ export function Header() {
             </div>
           )}
         </div>
-
-        {/* Transparent search bar dropdown under header */}
-        {searchOpen && (
-          <div className="header-search-bar-dropdown">
-            <div className="max-w-xl mx-auto flex flex-col gap-2">
-              <form onSubmit={submitSearch} className="header-trans-search-form">
-                <Search size={18} className="text-neutral-500 shrink-0" />
-                <input
-                  ref={inputRef}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search posters, anime, marvel, spiderman..."
-                  autoFocus
-                  aria-label="Search posters"
-                />
-                <button
-                  type="button"
-                  className="p-1 text-neutral-400 hover:text-neutral-700"
-                  onClick={() => setSearchOpen(false)}
-                  aria-label="Close search"
-                >
-                  <X size={18} />
-                </button>
-              </form>
-              <div className="flex items-center gap-1.5 flex-wrap pt-0.5 text-xs">
-                <span className="text-neutral-400 font-semibold text-[11px]">Popular:</span>
-                {['Spiderman', 'Ronaldo', 'Neymar', 'Girl Boss', 'Marvel'].map((tag) => (
-                  <button
-                    type="button"
-                    key={tag}
-                    className="px-2.5 py-0.5 rounded-full bg-neutral-100/90 hover:bg-neutral-200 text-neutral-700 text-[11px] font-medium"
-                    onClick={() => {
-                      setQuery(tag);
-                      navigate(`/search?q=${encodeURIComponent(tag)}`);
-                      setSearchOpen(false);
-                    }}
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
       </header>
 
       {menuOpen && <MenuDrawer isOpen={menuOpen} onClose={() => setMenuOpen(false)} />}
+
+      {searchOpen && (
+        <div className="search-overlay" onClick={() => setSearchOpen(false)}>
+          <div className="search-box" onClick={(e) => e.stopPropagation()}>
+            <form onSubmit={submitSearch} className="postgenz-search-form">
+              <Search size={20} className="search-icon-inside text-neutral-500" />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search posters, football, anime, spiderman..."
+                aria-label="Search posters"
+                autoFocus
+              />
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Close search"
+                onClick={() => setSearchOpen(false)}
+              >
+                <X size={20} />
+              </button>
+            </form>
+            <div className="search-suggestions">
+              <span>Trending Searches:</span>
+              {['Spiderman', 'Ronaldo', 'Neymar', 'Girl Boss', 'Marvel', 'Photobooth'].map((tag) => (
+                <button
+                  type="button"
+                  key={tag}
+                  onClick={() => {
+                    setQuery(tag);
+                    navigate(`/search?q=${encodeURIComponent(tag)}`);
+                    setSearchOpen(false);
+                  }}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {wishlistOpen && (
         <div className="drawer-backdrop" onClick={() => setWishlistOpen(false)}>
@@ -808,6 +791,70 @@ export function SiteShell({ children }: { children: ReactNode }) {
   );
 }
 
-export function Toast({ message }: { message: string }) {
-  return message ? <div className="postgenz-toast-notification" role="status">{message}</div> : null;
+export function Toast({ message, onClose }: { message: string; onClose?: () => void }) {
+  const [visible, setVisible] = useState(false);
+  const [currentMessage, setCurrentMessage] = useState('');
+  const timerRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (message) {
+      setCurrentMessage(message);
+      setVisible(true);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        setVisible(false);
+        if (onClose) onClose();
+      }, 3500);
+    }
+  }, [message, onClose]);
+
+  if (!visible || !currentMessage) return null;
+
+  const isBag =
+    currentMessage.toLowerCase().includes('bag') ||
+    currentMessage.toLowerCase().includes('cart') ||
+    currentMessage.toLowerCase().includes('order');
+
+  // Clean item title for display without repetitive boilerplate
+  const cleanedItemName = currentMessage
+    .replace(/\s*(added to (bag|your bag|cart)!?|moved to (bag|your bag|cart)!?|ready for (another|new) order\.?)/gi, '')
+    .trim();
+
+  return (
+    <div className="flipkart-cart-snackbar" role="status" aria-live="polite">
+      <div className="cart-snackbar-main">
+        <div className="cart-snackbar-icon-wrap" aria-hidden="true">
+          <Check size={16} strokeWidth={3} className="cart-snackbar-check-svg" />
+        </div>
+        <div className="cart-snackbar-text-col">
+          <span className="cart-snackbar-headline">
+            {isBag ? 'Added to Cart' : 'Notification'}
+          </span>
+          <span className="cart-snackbar-subtext" title={cleanedItemName}>
+            {cleanedItemName || currentMessage}
+          </span>
+        </div>
+      </div>
+
+      <div className="cart-snackbar-actions">
+        {isBag && (
+          <Link href="/bag" className="btn-cart-snackbar-view" onClick={() => setVisible(false)}>
+            GO TO BAG →
+          </Link>
+        )}
+        <button
+          type="button"
+          className="cart-snackbar-close"
+          aria-label="Dismiss notification"
+          onClick={() => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            setVisible(false);
+            if (onClose) onClose();
+          }}
+        >
+          <X size={15} />
+        </button>
+      </div>
+    </div>
+  );
 }

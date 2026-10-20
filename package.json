@@ -7,7 +7,8 @@
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
-    "dev": "pnpm -r --if-present run dev",
+    "dev": "pnpm --filter @workspace/poster-studio run dev",
+    "dev:all": "pnpm -r --if-present run dev",
     "dev:store": "pnpm --filter @workspace/poster-studio run dev",
     "dev:api": "pnpm --filter @workspace/api-server run dev",
     "dev:sandbox": "pnpm --filter @workspace/mockup-sandbox run dev"

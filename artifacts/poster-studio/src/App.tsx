@@ -20,6 +20,7 @@ import {
   WishlistPage,
 } from '@/pages/store-pages';
 import { FaqPage, TermsPage, ReturnPolicyPage, PrivacyPolicyPage } from '@/pages/policy-pages';
+import { AddressesPage } from '@/pages/addresses-page';
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -46,6 +47,8 @@ function Router() {
     <Route path="/checkout" component={CheckoutPage} />
     <Route path="/account/orders/:id" component={OrderDetailPage} />
     <Route path="/account/orders" component={OrdersPage} />
+    <Route path="/account/addresses" component={AddressesPage} />
+    <Route path="/addresses" component={AddressesPage} />
     <Route path="/account" component={AccountPage} />
     <Route path="/search" component={SearchPage} />
     <Route path="/admin" component={AdminPage} />
