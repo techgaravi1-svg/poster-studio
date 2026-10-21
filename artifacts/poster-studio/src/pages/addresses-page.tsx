@@ -359,6 +359,7 @@ export function SavedAddressesView({
     if (onSelectAddress) {
       onSelectAddress(addr);
     }
+    navigate('/checkout');
   };
 
   if (activeView === 'add' || activeView === 'edit') {
@@ -373,9 +374,11 @@ export function SavedAddressesView({
           setToast(activeView === 'edit' ? 'Address updated' : 'Address added');
           setActiveView('list');
           setEditingAddress(null);
+          store.selectAddress(savedAddr.id);
           if (onSelectAddress) {
             onSelectAddress(savedAddr);
           }
+          navigate('/checkout');
         }}
       />
     );
@@ -388,14 +391,10 @@ export function SavedAddressesView({
         <button
           type="button"
           onClick={() => {
-            if (window.history.length > 1) {
-              window.history.back();
-            } else {
-              navigate('/account');
-            }
+            navigate('/checkout');
           }}
           className="address-back-btn"
-          aria-label="Go back"
+          aria-label="Go back to checkout"
         >
           <ArrowLeft size={22} className="text-neutral-900" />
         </button>

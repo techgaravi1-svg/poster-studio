@@ -13,7 +13,7 @@ import {
   Bookmark,
   ShoppingBag,
 } from 'lucide-react';
-import { formatPrice, products } from '@/lib/catalog';
+import { formatPrice, products, type PosterSize } from '@/lib/catalog';
 import { store, useStore, type CartItem } from '@/lib/store';
 
 export const availableVouchers = [
@@ -97,6 +97,10 @@ export function MyntraItemCard({
     year: 'numeric',
   });
 
+  const availableSizes: PosterSize[] = matchProduct?.sizes && matchProduct.sizes.length > 0
+    ? matchProduct.sizes
+    : ['A5', 'A4', 'A3'];
+
   return (
     <div className="myntra-item-card" data-testid={`cart-item-${item.key}`}>
       {/* Left Column: Product Thumbnail with Pink Checkmark Badge */}
@@ -152,11 +156,31 @@ export function MyntraItemCard({
 
         {/* Selectors Row: Size & Qty Pills + Stock alert */}
         <div className="myntra-selectors-row">
-          {/* Size Pill */}
-          <div className="myntra-pill-btn">
-            <span>Size: <strong>{item.size}</strong></span>
-            <ChevronDown size={13} className="text-neutral-500" />
-          </div>
+          {/* Size Pill with Working Dropdown */}
+          {!isOrderMode ? (
+            <div className="myntra-pill-btn myntra-size-select-wrap" title="Change size">
+              <span>Size: <strong>{item.size}</strong></span>
+              <ChevronDown size={13} className="text-neutral-500 pointer-events-none" />
+              <select
+                value={item.size}
+                onChange={(e) => {
+                  store.updateItemSize(item.key, e.target.value as PosterSize);
+                }}
+                className="myntra-size-select-native"
+                aria-label={`Change size for ${item.title}`}
+              >
+                {availableSizes.map((sz) => (
+                  <option key={sz} value={sz}>
+                    Size: {sz}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="myntra-pill-btn">
+              <span>Size: <strong>{item.size}</strong></span>
+            </div>
+          )}
 
           {/* Qty Pill / Stepper */}
           {!isOrderMode ? (

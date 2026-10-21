@@ -191,6 +191,25 @@ export const store = {
   updateQuantity(key: string, quantity: number) {
     commit({ ...state, cart: quantity <= 0 ? state.cart.filter((item) => item.key !== key) : state.cart.map((item) => item.key === key ? { ...item, quantity } : item) });
   },
+  updateItemSize(key: string, newSize: PosterSize) {
+    const item = state.cart.find((i) => i.key === key);
+    if (!item || item.size === newSize) return;
+    const newKey = item.customUpload ? key : `${item.productId}-${newSize}`;
+    const existing = state.cart.find((i) => i.key === newKey && i.key !== key);
+    if (existing) {
+      commit({
+        ...state,
+        cart: state.cart
+          .filter((i) => i.key !== key)
+          .map((i) => (i.key === newKey ? { ...i, quantity: i.quantity + item.quantity } : i)),
+      });
+    } else {
+      commit({
+        ...state,
+        cart: state.cart.map((i) => (i.key === key ? { ...i, size: newSize, key: newKey } : i)),
+      });
+    }
+  },
   removeFromCart(key: string) { commit({ ...state, cart: state.cart.filter((item) => item.key !== key) }); },
   clearCart() { commit({ ...state, cart: [] }); },
   toggleWishlist(productIdOrSlug: string) {
