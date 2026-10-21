@@ -534,7 +534,7 @@ export function MyntraPriceDetails({
         <button
           type="button"
           onClick={onProceed}
-          className="btn-myntra-checkout-black"
+          className="btn-myntra-checkout-black hidden lg:flex"
         >
           {proceedLabel}
         </button>

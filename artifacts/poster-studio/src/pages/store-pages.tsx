@@ -47,7 +47,6 @@ import {
 import { collections, formatPrice, getProduct, products, searchProducts, storeCategories, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, Toast } from '@/components/storefront';
-import { SavedAddressesView } from './addresses-page';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
 import { authService } from '@/services/auth';
 import { paymentService } from '@/services/payment';
@@ -556,12 +555,17 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
 
   const posterSubCategories = [
     { slug: 'all', label: 'ALL POSTERS' },
-    { slug: 'anime', label: 'ANIME & MANGA' },
     { slug: 'marvel-dc', label: 'MARVEL & DC' },
-    { slug: 'football', label: 'FOOTBALL' },
-    { slug: 'aesthetic', label: 'AESTHETIC & CINEMA' },
-    { slug: 'cricket', label: 'SPORTS & UFC' },
-    { slug: 'devotional', label: 'MOTIVATIONAL' },
+    { slug: 'anime', label: 'ANIME' },
+    { slug: 'diva', label: 'DIVA' },
+    { slug: 'landscapes', label: 'LANDSCAPES' },
+    { slug: 'automative', label: 'AUTOMATIVE' },
+    { slug: 'movies-web-series', label: 'MOVIES & WEB SERIES' },
+    { slug: 'music-artists', label: 'MUSIC ARTISTS' },
+    { slug: 'video-games', label: 'VIDEO GAMES' },
+    { slug: 'sports', label: 'SPORTS' },
+    { slug: 'motivational', label: 'MOTIVATIONAL' },
+    { slug: 'devotional', label: 'DEVOTIONAL' },
   ];
 
   const currentCategoryLabel = !isPostersActive
@@ -578,7 +582,22 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     if (activePosterSubSlug === 'bestsellers') {
       list = products.filter((p) => p.bestseller);
     } else if (activePosterSubSlug !== 'all') {
-      list = products.filter((p) => p.collection === activePosterSubSlug);
+      const slug = activePosterSubSlug.toLowerCase();
+      list = products.filter((p) => {
+        if (p.collection === slug) return true;
+        if (slug === 'marvel-dc') return p.collection === 'marvel-dc' || p.tags.some((t) => t.includes('marvel') || t.includes('dc') || t.includes('spider'));
+        if (slug === 'anime') return p.collection === 'anime' || p.category.toLowerCase().includes('anime') || p.tags.some((t) => t.includes('anime') || t.includes('manga') || t.includes('clover'));
+        if (slug === 'diva') return p.category.toLowerCase().includes('diva') || p.tags.some((t) => t.includes('vogue') || t.includes('fashion') || t.includes('diva') || t.includes('chic') || t.includes('lips') || t.includes('supreme'));
+        if (slug === 'landscapes') return p.tags.some((t) => t.includes('landscape') || t.includes('nature') || t.includes('skyline') || t.includes('view') || t.includes('leap of faith'));
+        if (slug === 'automative') return p.tags.some((t) => t.includes('car') || t.includes('mustang') || t.includes('automotive') || t.includes('automative') || t.includes('speed'));
+        if (slug === 'movies-web-series') return p.collection === 'aesthetic' || p.category.toLowerCase().includes('cinema') || p.tags.some((t) => t.includes('cinema') || t.includes('movie') || t.includes('wick') || t.includes('bateman') || t.includes('bean'));
+        if (slug === 'music-artists') return p.tags.some((t) => t.includes('music') || t.includes('album') || t.includes('artist') || t.includes('pop art') || t.includes('lips') || t.includes('tiger'));
+        if (slug === 'video-games') return p.tags.some((t) => t.includes('game') || t.includes('gaming') || t.includes('pixel') || t.includes('spider-verse'));
+        if (slug === 'sports') return p.collection === 'football' || p.collection === 'cricket' || p.tags.some((t) => t.includes('sport') || t.includes('football') || t.includes('cricket') || t.includes('messi') || t.includes('ronaldo'));
+        if (slug === 'motivational') return p.tags.some((t) => t.includes('motivational') || t.includes('focus') || t.includes('inspire') || t.includes('mindset') || t.includes('psycho'));
+        if (slug === 'devotional') return p.collection === 'devotional' || p.tags.some((t) => t.includes('devotional') || t.includes('god') || t.includes('divine') || t.includes('works out'));
+        return p.tags.includes(slug) || p.category.toLowerCase().includes(slug);
+      });
     }
     list = list.filter((p) => p.price >= minPrice && p.price <= maxPrice);
 
@@ -2602,7 +2621,6 @@ export function CheckoutPage() {
     country: 'India',
   });
 
-  const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
 
@@ -2747,7 +2765,7 @@ export function CheckoutPage() {
     }
 
     if (!validate()) {
-      setIsEditingAddress(true);
+      navigate('/addresses');
       setError('Please fill in your delivery address correctly.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -2840,52 +2858,31 @@ export function CheckoutPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setIsEditingAddress(!isEditingAddress)}
+                  onClick={() => navigate('/addresses')}
                   className="step-edit-btn"
                 >
-                  {isEditingAddress ? 'Close' : 'Change'}
+                  Change
                 </button>
               </div>
 
-              {!isEditingAddress ? (
-                <div className="space-y-1.5 text-xs sm:text-sm text-neutral-700">
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-sm sm:text-base text-neutral-900">
-                      {activeAddress ? activeAddress.name : form.name}
-                    </span>
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      {activeAddress ? activeAddress.type.toUpperCase() : 'HOME'}
-                    </span>
-                  </div>
-                  <p className="text-neutral-600 leading-relaxed pt-0.5">
-                    {activeAddress
-                      ? `${[activeAddress.flat, activeAddress.locality, activeAddress.landmark, activeAddress.city, activeAddress.state].filter(Boolean).join(', ')} – ${activeAddress.pincode}`
-                      : `${form.address}, ${form.city}, ${form.state} – ${form.pincode}`}
-                  </p>
-                  <p className="text-neutral-800 font-semibold pt-1">
-                    Mobile: <span className="font-extrabold text-neutral-900">+91 {activeAddress ? activeAddress.phone : form.phone}</span>
-                  </p>
+              <div className="space-y-1.5 text-xs sm:text-sm text-neutral-700">
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-sm sm:text-base text-neutral-900">
+                    {activeAddress ? activeAddress.name : form.name}
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {activeAddress ? activeAddress.type.toUpperCase() : 'HOME'}
+                  </span>
                 </div>
-              ) : (
-                <div className="pt-2">
-                  <SavedAddressesView
-                    selectedId={activeAddress?.id}
-                    isSelectionMode
-                    onSelectAddress={(addr) => {
-                      setForm({
-                        ...form,
-                        name: addr.name,
-                        phone: addr.phone,
-                        address: [addr.flat, addr.locality, addr.landmark].filter(Boolean).join(', '),
-                        city: addr.city,
-                        state: addr.state,
-                        pincode: addr.pincode,
-                      });
-                      setIsEditingAddress(false);
-                    }}
-                  />
-                </div>
-              )}
+                <p className="text-neutral-600 leading-relaxed pt-0.5">
+                  {activeAddress
+                    ? `${[activeAddress.flat, activeAddress.locality, activeAddress.landmark, activeAddress.city, activeAddress.state].filter(Boolean).join(', ')} – ${activeAddress.pincode}`
+                    : `${form.address}, ${form.city}, ${form.state} – ${form.pincode}`}
+                </p>
+                <p className="text-neutral-800 font-semibold pt-1">
+                  Mobile: <span className="font-extrabold text-neutral-900">+91 {activeAddress ? activeAddress.phone : form.phone}</span>
+                </p>
+              </div>
             </div>
 
             {/* STEP 2: ORDER ITEMS SUMMARY */}
@@ -2969,22 +2966,6 @@ export function CheckoutPage() {
               onProceed={() => handlePlaceOrder()}
               proceedLabel={isProcessing ? 'PROCESSING...' : `PLACE ORDER • ${formatPrice(totals.total)}`}
             />
-
-            {/* Trust Box */}
-            <div className="flipkart-trust-box bg-white border border-neutral-200 rounded-xl p-3.5 flex flex-col gap-2 text-xs text-neutral-600">
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={15} className="text-emerald-600 shrink-0" />
-                <span>Safe &amp; Secure Payments via Razorpay</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Truck size={15} className="text-sky-600 shrink-0" />
-                <span>Express Dispatch in 24–48 Hours</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Package size={15} className="text-rose-600 shrink-0" />
-                <span>Damage-Proof Hard Tube Packaging</span>
-              </div>
-            </div>
           </div>
         </form>
 

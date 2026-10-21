@@ -267,23 +267,38 @@ function MenuDrawer({
                 </button>
                 {postersOpen && (
                   <div className="categories-sublist">
-                    <Link href="/collections/anime" onClick={onClose} className="sublist-cat-item">
-                      <span>Anime & Manga Posters</span>
-                    </Link>
                     <Link href="/collections/marvel-dc" onClick={onClose} className="sublist-cat-item">
-                      <span>Marvel & DC Posters</span>
+                      <span>Marvel &amp; DC</span>
                     </Link>
-                    <Link href="/collections/football" onClick={onClose} className="sublist-cat-item">
-                      <span>Football Posters</span>
+                    <Link href="/collections/anime" onClick={onClose} className="sublist-cat-item">
+                      <span>Anime</span>
                     </Link>
-                    <Link href="/collections/aesthetic" onClick={onClose} className="sublist-cat-item">
-                      <span>Aesthetic & Cinema</span>
+                    <Link href="/collections/diva" onClick={onClose} className="sublist-cat-item">
+                      <span>Diva</span>
                     </Link>
-                    <Link href="/collections/cricket" onClick={onClose} className="sublist-cat-item">
-                      <span>Sports & UFC Posters</span>
+                    <Link href="/collections/landscapes" onClick={onClose} className="sublist-cat-item">
+                      <span>Landscapes</span>
+                    </Link>
+                    <Link href="/collections/automative" onClick={onClose} className="sublist-cat-item">
+                      <span>Automative</span>
+                    </Link>
+                    <Link href="/collections/movies-web-series" onClick={onClose} className="sublist-cat-item">
+                      <span>Movies &amp; Web Series</span>
+                    </Link>
+                    <Link href="/collections/music-artists" onClick={onClose} className="sublist-cat-item">
+                      <span>Music Artists</span>
+                    </Link>
+                    <Link href="/collections/video-games" onClick={onClose} className="sublist-cat-item">
+                      <span>Video Games</span>
+                    </Link>
+                    <Link href="/collections/sports" onClick={onClose} className="sublist-cat-item">
+                      <span>Sports</span>
+                    </Link>
+                    <Link href="/collections/motivational" onClick={onClose} className="sublist-cat-item">
+                      <span>Motivational</span>
                     </Link>
                     <Link href="/collections/devotional" onClick={onClose} className="sublist-cat-item">
-                      <span>Motivational Posters</span>
+                      <span>Devotional</span>
                     </Link>
                     <Link href="/collections/posters" onClick={onClose} className="sublist-all">View All Available Posters →</Link>
                   </div>
@@ -430,14 +445,19 @@ export function Header() {
                   <ChevronDown size={14} />
                 </button>
                 <div className="desktop-dropdown-menu">
-                  <div className="dropdown-section-title">POSTER COLLECTIONS</div>
+                  <div className="dropdown-section-title">POSTER CATEGORIES</div>
                   <div className="dropdown-poster-sublinks">
-                    <Link href="/collections/anime">Anime & Manga Posters</Link>
-                    <Link href="/collections/marvel-dc">Marvel & DC Posters</Link>
-                    <Link href="/collections/football">Football Posters</Link>
-                    <Link href="/collections/aesthetic">Aesthetic & Cinema</Link>
-                    <Link href="/collections/cricket">Sports & UFC Posters</Link>
-                    <Link href="/collections/devotional">Motivational Posters</Link>
+                    <Link href="/collections/marvel-dc">Marvel &amp; DC</Link>
+                    <Link href="/collections/anime">Anime</Link>
+                    <Link href="/collections/diva">Diva</Link>
+                    <Link href="/collections/landscapes">Landscapes</Link>
+                    <Link href="/collections/automative">Automative</Link>
+                    <Link href="/collections/movies-web-series">Movies &amp; Web Series</Link>
+                    <Link href="/collections/music-artists">Music Artists</Link>
+                    <Link href="/collections/video-games">Video Games</Link>
+                    <Link href="/collections/sports">Sports</Link>
+                    <Link href="/collections/motivational">Motivational</Link>
+                    <Link href="/collections/devotional">Devotional</Link>
                   </div>
                   <Link href="/collections/posters" className="dropdown-view-all">All Available Posters →</Link>
                 </div>
@@ -644,14 +664,10 @@ export function Footer() {
         <div className="footer-grid-sections">
           <div className="footer-block">
             <h4 className="footer-title">Contact info</h4>
-            <div className="footer-subitem">Support</div>
             <div className="footer-subitem">
               <a href="mailto:dungeons.support@gmail.com" className="footer-link">
                 Mail: dungeons.support@gmail.com
               </a>
-            </div>
-            <div className="footer-subitem" style={{ fontSize: '13px', color: '#9ca3af' }}>
-              Ahmedabad, Gujarat, India
             </div>
           </div>
 

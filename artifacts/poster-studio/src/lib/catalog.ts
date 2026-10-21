@@ -777,27 +777,56 @@ export type StoreCategory = {
   description?: string;
 };
 
+// 8 Official Coming Soon Categories
+export const comingSoonCategories = [
+  { id: 'cat-flags', name: 'Flags', slug: 'flags', image: '/assets/cat-flags.jpg', description: 'Vintage pop-culture, motorsport, and aesthetic wall tapestry flags.' },
+  { id: 'cat-wallart', name: 'Wall Art', slug: 'wall-art', image: '/assets/cat-paintings.jpg', description: 'Handcrafted gallery canvas art and modern wall decor.' },
+  { id: 'cat-wallmounts', name: 'Wall Mounts', slug: 'wall-mounts', image: '/assets/cat-wallmounts.jpg', description: 'Floating oak shelves, display brackets, and gallery mounts.' },
+  { id: 'cat-beanbags', name: 'Bean Bags', slug: 'bean-bags', image: '/assets/cat-beanbags.jpg', description: 'Ultra-comfortable luxury corduroy and velvet lounger bean bags.' },
+  { id: 'cat-mirrors', name: 'Mirrors', slug: 'mirrors', image: '/assets/cat-mirror.jpg', description: 'Chic wavy and arched statement aesthetic vanity wall mirrors.' },
+  { id: 'cat-tables', name: 'Tables', slug: 'tables', image: '/assets/cat-tables.jpg', description: 'Minimalist designer side tables and accent coffee tables.' },
+  { id: 'cat-rugs', name: 'Rugs & Carpets', slug: 'rugs-carpets', image: '/assets/cat-rugs.jpg', description: 'Hand-tufted Berber wool area rugs and modern floor tapestries.' },
+  { id: 'cat-curtains', name: 'Curtains', slug: 'curtains', image: '/assets/cat-curtains.jpg', description: 'Sun-drenched natural linen and sheer drapery for modern rooms.' },
+];
+
 export const storeCategories: StoreCategory[] = [
   { id: 'cat-posters', name: 'Posters', slug: 'posters', available: true, image: '/assets/posters/poster-01.jpg', description: 'Museum-grade archival 350 GSM matte posters.' },
-  { id: 'cat-paintings', name: 'Paintings', slug: 'paintings', available: false, image: '/assets/cat-paintings.jpg', description: 'Original hand-textured oil and acrylic gallery canvas art.' },
-  { id: 'cat-flags', name: 'Flags', slug: 'flags', available: false, image: '/assets/cat-flags.jpg', description: 'Vintage pop-culture, motorsport, and aesthetic wall tapestry flags.' },
-  { id: 'cat-beanbags', name: 'Bean Bags', slug: 'bean-bags', available: false, image: '/assets/cat-beanbags.jpg', description: 'Ultra-comfortable luxury corduroy and velvet lounger bean bags.' },
-  { id: 'cat-curtains', name: 'Curtains', slug: 'curtains', available: false, image: '/assets/cat-curtains.jpg', description: 'Sun-drenched natural linen and sheer drapery for modern rooms.' },
-  { id: 'cat-mirrors', name: 'Mirrors', slug: 'mirrors', available: false, image: '/assets/cat-mirror.jpg', description: 'Chic wavy and arched statement aesthetic vanity wall mirrors.' },
-  { id: 'cat-tables', name: 'Tables', slug: 'tables', available: false, image: '/assets/cat-tables.jpg', description: 'Minimalist designer side tables and accent coffee tables.' },
-  { id: 'cat-wallmounts', name: 'Wall mounts', slug: 'wall-mounts', available: false, image: '/assets/cat-wallmounts.jpg', description: 'Floating oak shelves, display brackets, and gallery mounts.' },
-  { id: 'cat-rugs', name: 'Rugs / Carpets', slug: 'rugs-carpets', available: false, image: '/assets/cat-rugs.jpg', description: 'Hand-tufted Berber wool area rugs and modern floor tapestries.' },
+  ...comingSoonCategories.map((c) => ({ ...c, available: false })),
+];
+
+// 11 Official Poster Categories
+export const posterCategories = [
+  { id: 'cat-marvel-dc', slug: 'marvel-dc', title: 'Marvel & DC', name: 'Marvel & DC', description: 'Cinematic superheroes, comic art, and collector editions.' },
+  { id: 'cat-anime', slug: 'anime', title: 'Anime', name: 'Anime', description: 'Legendary anime heroes, wanted bounty posters, and epic fights.' },
+  { id: 'cat-diva', slug: 'diva', title: 'Diva', name: 'Diva', description: 'Aesthetic icons, pop idols, and trendsetting style portraits.' },
+  { id: 'cat-landscapes', slug: 'landscapes', title: 'Landscapes', name: 'Landscapes', description: 'Breathtaking scenic vistas, nature escapes, and wanderlust photography.' },
+  { id: 'cat-automative', slug: 'automative', title: 'Automative', name: 'Automative', description: 'Supercars, hypercars, drift icons, and motorsport speed art.' },
+  { id: 'cat-movies-web-series', slug: 'movies-web-series', title: 'Movies & Web Series', name: 'Movies & Web Series', description: 'Cult classics, blockbuster cinema, and binge-worthy drama posters.' },
+  { id: 'cat-music-artists', slug: 'music-artists', title: 'Music Artists', name: 'Music Artists', description: 'Rap titans, rock legends, pop sensation album covers and portraits.' },
+  { id: 'cat-video-games', slug: 'video-games', title: 'Video Games', name: 'Video Games', description: 'Gaming icons, retro arcade, esports glory, and pixel art.' },
+  { id: 'cat-sports', slug: 'sports', title: 'Sports', name: 'Sports', description: 'Pitch legends, football, basketball, cricket, and UFC championship glory.' },
+  { id: 'cat-motivational', slug: 'motivational', title: 'Motivational', name: 'Motivational', description: 'Hustle mindset, gym ambition, discipline, and daily inspiration.' },
+  { id: 'cat-devotional', slug: 'devotional', title: 'Devotional', name: 'Devotional', description: 'Serene spiritual deities, divine vibes, and eternal blessings.' },
 ];
 
 export const collections = [
   { slug: 'all', title: 'ALL POSTERS', description: 'Complete collection of 350 GSM premium archival matte posters.', treatment: 'art-aurora' },
-  { slug: 'devotional', title: 'DEVOTIONAL & MOTIVATIONAL', description: 'Serene spiritual, aesthetic, and motivational editions.', treatment: 'art-aurora' },
   { slug: 'marvel-dc', title: 'MARVEL & DC', description: 'Cinematic superheroes, comic art, and collector editions.', treatment: 'art-signal' },
-  { slug: 'anime', title: 'ANIME & MANGA', description: 'Legendary anime heroes, wanted bounty posters, and epic fights.', treatment: 'art-signal' },
-  { slug: 'football', title: 'FOOTBALL LEGENDS', description: 'Pitch gods, Ronaldo, Messi, and match-winning art.', treatment: 'art-night' },
-  { slug: 'cricket', title: 'SPORTS & UFC', description: 'Championship moments, combat sports, and pitch legends.', treatment: 'art-pulse' },
-  { slug: 'aesthetic', title: 'AESTHETIC & CINEMA', description: 'Editorial fashion, luxury supercars, mob classics, and pop culture.', treatment: 'art-dive' },
+  { slug: 'anime', title: 'ANIME', description: 'Legendary anime heroes, wanted bounty posters, and epic fights.', treatment: 'art-signal' },
+  { slug: 'diva', title: 'DIVA', description: 'Aesthetic icons, pop idols, and trendsetting style portraits.', treatment: 'art-aurora' },
+  { slug: 'landscapes', title: 'LANDSCAPES', description: 'Breathtaking scenic vistas, nature escapes, and wanderlust photography.', treatment: 'art-dive' },
+  { slug: 'automative', title: 'AUTOMATIVE', description: 'Supercars, hypercars, drift icons, and motorsport speed art.', treatment: 'art-night' },
+  { slug: 'movies-web-series', title: 'MOVIES & WEB SERIES', description: 'Cult classics, blockbuster cinema, and binge-worthy drama posters.', treatment: 'art-signal' },
+  { slug: 'music-artists', title: 'MUSIC ARTISTS', description: 'Rap titans, rock legends, pop sensation album covers and portraits.', treatment: 'art-pulse' },
+  { slug: 'video-games', title: 'VIDEO GAMES', description: 'Gaming icons, retro arcade, esports glory, and pixel art.', treatment: 'art-night' },
+  { slug: 'sports', title: 'SPORTS', description: 'Pitch legends, football, basketball, cricket, and UFC championship glory.', treatment: 'art-pulse' },
+  { slug: 'motivational', title: 'MOTIVATIONAL', description: 'Hustle mindset, gym ambition, discipline, and daily inspiration.', treatment: 'art-aurora' },
+  { slug: 'devotional', title: 'DEVOTIONAL', description: 'Serene spiritual deities, divine vibes, and eternal blessings.', treatment: 'art-aurora' },
   { slug: 'wall-packs', title: 'WALL PACKS', description: 'Curated multi-piece sets crafted to transform any wall.', treatment: 'art-dive' },
+  // Backward compatibility aliases
+  { slug: 'football', title: 'SPORTS', description: 'Football pitch legends and match-winning art.', treatment: 'art-night' },
+  { slug: 'cricket', title: 'SPORTS', description: 'Cricket legends and championship moments.', treatment: 'art-pulse' },
+  { slug: 'aesthetic', title: 'MOVIES & WEB SERIES', description: 'Editorial fashion and cinema classics.', treatment: 'art-dive' },
 ];
 
 export function getProduct(slug?: string) {
