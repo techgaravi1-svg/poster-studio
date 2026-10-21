@@ -6376,16 +6376,16 @@ button {
 .checkout-stepper-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: 14px;
+  padding: 14px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 @media (min-width: 640px) {
   .checkout-stepper-card {
-    padding: 20px;
-    border-radius: 18px;
+    padding: 18px 20px;
+    border-radius: 16px;
   }
 }
 
@@ -6393,9 +6393,43 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 12px;
-  margin-bottom: 14px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
   border-bottom: 1px solid #f1f5f9;
+}
+
+/* Seamless item card when inside checkout stepper */
+.checkout-stepper-card .myntra-item-card {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+}
+
+.checkout-stepper-card .myntra-item-card + .myntra-item-card {
+  border-top: 1px dashed #e2e8f0 !important;
+  padding-top: 12px !important;
+  margin-top: 12px !important;
+}
+
+.checkout-stepper-card .swiggy-coupon-wrapper {
+  margin-bottom: 0 !important;
+}
+
+.checkout-stepper-card .swiggy-coupon-card-box {
+  background-color: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.checkout-stepper-card .swiggy-coupon-drawer {
+  margin-top: 6px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  padding: 12px;
 }
 
 .step-label-group {

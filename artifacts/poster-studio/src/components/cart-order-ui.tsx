@@ -236,9 +236,15 @@ interface SwiggyCouponBoxProps {
   onAppliedToast?: (msg: string) => void;
   subtotal: number;
   totalCount: number;
+  showHeader?: boolean;
 }
 
-export function SwiggyCouponBox({ onAppliedToast, subtotal, totalCount }: SwiggyCouponBoxProps) {
+export function SwiggyCouponBox({
+  onAppliedToast,
+  subtotal,
+  totalCount,
+  showHeader = true,
+}: SwiggyCouponBoxProps) {
   const { coupon, cart } = useStore();
   const [isOpen, setIsOpen] = useState(false);
   const [couponInput, setCouponInput] = useState('');
@@ -282,17 +288,12 @@ export function SwiggyCouponBox({ onAppliedToast, subtotal, totalCount }: Swiggy
 
   return (
     <div className="swiggy-coupon-wrapper">
-      {/* Top Header Row with "View All Offers" */}
-      <div className="swiggy-coupon-header-row">
-        <h3 className="swiggy-coupon-header-title">Coupons &amp; Bank Offers</h3>
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="swiggy-view-all-link"
-        >
-          {isOpen ? 'Hide Offers' : 'View All Offers'}
-        </button>
-      </div>
+      {/* Top Header Row */}
+      {showHeader && (
+        <div className="swiggy-coupon-header-row">
+          <h3 className="swiggy-coupon-header-title">Coupons &amp; Bank Offers</h3>
+        </div>
+      )}
 
       {/* Main Expandable Accordion Box */}
       <div
@@ -310,7 +311,7 @@ export function SwiggyCouponBox({ onAppliedToast, subtotal, totalCount }: Swiggy
               {coupon ? (
                 <span className="text-emerald-700">🎉 {coupon} APPLIED</span>
               ) : (
-                <span>Save upto {formatPrice(maxSaving)}</span>
+                <span>Apply Coupon</span>
               )}
             </div>
             <div className="swiggy-coupon-subtext">

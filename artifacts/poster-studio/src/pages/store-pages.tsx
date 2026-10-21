@@ -2623,7 +2623,6 @@ export function CheckoutPage() {
   const [couponFeedback, setCouponFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [toast, setToast] = useState('');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'upi' | 'cards' | 'netbanking'>('upi');
 
   const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -2797,7 +2796,7 @@ export function CheckoutPage() {
   };
 
   return (
-    <main className="postgenz-checkout-page min-h-screen bg-[#f8f9fa] pb-24 md:pb-16">
+    <main className="postgenz-checkout-page min-h-screen bg-[#f8f9fa] pb-36 md:pb-20">
       <div className="modern-checkout-wrapper">
         {/* Clean Top Navigation Bar */}
         <div className="checkout-clean-nav">
@@ -2825,9 +2824,9 @@ export function CheckoutPage() {
           </div>
         )}
 
-        <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           {/* Left Column: Checkout Steps (8 cols on desktop) */}
-          <div className="lg:col-span-8 flex flex-col gap-4">
+          <div className="lg:col-span-8 flex flex-col gap-3.5">
 
             {/* STEP 1: DELIVERY ADDRESS (AMAZON / FLIPKART STYLE) */}
             <div className="checkout-stepper-card">
@@ -2930,121 +2929,31 @@ export function CheckoutPage() {
             </div>
 
             {/* STEP 3: COUPONS & OFFERS (SWIGGY ACCORDION STYLE) */}
-            <div className="checkout-stepper-card p-0 overflow-hidden border-0 shadow-none bg-transparent">
+            <div className="checkout-stepper-card">
+              <div className="checkout-card-header">
+                <div className="step-label-group">
+                  <span className="step-num-pill">3</span>
+                  <div className="flex items-center gap-2">
+                    <BadgePercent size={16} className="text-emerald-600" />
+                    <h2 className="step-title-heading">Coupons &amp; Offers</h2>
+                  </div>
+                </div>
+                {coupon && (
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    🎉 {coupon} APPLIED
+                  </span>
+                )}
+              </div>
+
               <SwiggyCouponBox
                 subtotal={totals.subtotal}
                 totalCount={totalCount}
+                showHeader={false}
                 onAppliedToast={(msg) => {
                   setToast(msg);
                   window.setTimeout(() => setToast(''), 2500);
                 }}
               />
-            </div>
-
-            {/* STEP 4: PAYMENT METHOD (AMAZON / FLIPKART STYLE) */}
-            <div className="checkout-stepper-card">
-              <div className="checkout-card-header">
-                <div className="step-label-group">
-                  <span className="step-num-pill">4</span>
-                  <div className="flex items-center gap-2">
-                    <CreditCard size={16} className="text-neutral-500" />
-                    <h2 className="step-title-heading">Payment Options</h2>
-                  </div>
-                </div>
-                <span className="text-[11px] text-neutral-500 font-bold">
-                  Instant &amp; 100% Secure
-                </span>
-              </div>
-
-              <div className="payment-methods-grid">
-                {/* Method 1: UPI */}
-                <div
-                  onClick={() => setSelectedPaymentMethod('upi')}
-                  className={`payment-method-row ${selectedPaymentMethod === 'upi' ? 'method-selected' : ''}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="payment_choice"
-                      checked={selectedPaymentMethod === 'upi'}
-                      onChange={() => setSelectedPaymentMethod('upi')}
-                      className="accent-neutral-900 cursor-pointer"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-extrabold text-neutral-900">UPI / QR (Recommended)</span>
-                        <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">
-                          FASTEST
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-neutral-500 block">
-                        Google Pay, PhonePe, Paytm, BHIM &amp; Any UPI App
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-400">
-                    <Zap size={14} className="text-amber-500" />
-                  </div>
-                </div>
-
-                {/* Method 2: Cards */}
-                <div
-                  onClick={() => setSelectedPaymentMethod('cards')}
-                  className={`payment-method-row ${selectedPaymentMethod === 'cards' ? 'method-selected' : ''}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="payment_choice"
-                      checked={selectedPaymentMethod === 'cards'}
-                      onChange={() => setSelectedPaymentMethod('cards')}
-                      className="accent-neutral-900 cursor-pointer"
-                    />
-                    <div>
-                      <span className="text-xs font-extrabold text-neutral-900 block">Credit / Debit Cards</span>
-                      <span className="text-[11px] text-neutral-500 block">
-                        Visa, MasterCard, RuPay, Maestro &amp; Diners
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase">
-                    All Indian Cards
-                  </span>
-                </div>
-
-                {/* Method 3: Net Banking */}
-                <div
-                  onClick={() => setSelectedPaymentMethod('netbanking')}
-                  className={`payment-method-row ${selectedPaymentMethod === 'netbanking' ? 'method-selected' : ''}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="payment_choice"
-                      checked={selectedPaymentMethod === 'netbanking'}
-                      onChange={() => setSelectedPaymentMethod('netbanking')}
-                      className="accent-neutral-900 cursor-pointer"
-                    />
-                    <div>
-                      <span className="text-xs font-extrabold text-neutral-900 block">Net Banking</span>
-                      <span className="text-[11px] text-neutral-500 block">
-                        HDFC, ICICI, SBI, Axis, Kotak &amp; 50+ Banks
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Trust Badges */}
-              <div className="mt-4 pt-3.5 border-t border-neutral-100 flex items-center justify-between flex-wrap gap-2 text-[11px] text-neutral-500">
-                <span className="font-semibold">Razorpay Verified Partner</span>
-                <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 bg-neutral-100 rounded text-[10px] font-extrabold text-neutral-700">UPI</span>
-                  <span className="px-1.5 py-0.5 bg-neutral-100 rounded text-[10px] font-extrabold text-neutral-700">GPay</span>
-                  <span className="px-1.5 py-0.5 bg-neutral-100 rounded text-[10px] font-extrabold text-neutral-700">Paytm</span>
-                  <span className="px-1.5 py-0.5 bg-neutral-100 rounded text-[10px] font-extrabold text-neutral-700">Cards</span>
-                </div>
-              </div>
             </div>
           </div>
 
