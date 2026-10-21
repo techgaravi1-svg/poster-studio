@@ -1440,22 +1440,18 @@ button {
   max-width: 185px;
   object-fit: contain;
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 18px;
 }
 
 .footer-brand-tagline {
-  font-size: 13.5px;
-  color: #94a3b8;
-  line-height: 1.6;
-  margin-bottom: 20px;
-  max-width: 320px;
+  display: none;
 }
 
 .footer-subheading {
   font-size: 13.5px;
   font-weight: 700;
   color: #ffffff;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
@@ -1466,10 +1462,14 @@ button {
   gap: 32px;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 640px) and (max-width: 1023px) {
   .footer-grid-sections {
     grid-template-columns: 1fr 1fr;
     gap: 36px;
+  }
+  .footer-grid-sections .newsletter-block {
+    grid-column: span 2;
+    max-width: 500px;
   }
 }
 
@@ -1479,8 +1479,8 @@ button {
   }
 
   .footer-grid-sections {
-    grid-template-columns: 1.4fr 1fr 1fr 1.3fr;
-    gap: 48px;
+    grid-template-columns: 1.25fr 1fr 1.35fr;
+    gap: 60px;
     align-items: start;
   }
 }
@@ -5414,7 +5414,13 @@ button {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 16px 16px 110px;
+  padding: 12px 10px 110px;
+}
+
+@media (min-width: 640px) {
+  .postgenz-checkout-page {
+    padding: 16px 16px 110px;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -6369,7 +6375,13 @@ button {
   width: 100%;
   max-width: 1180px;
   margin: 0 auto;
-  padding: 16px 14px 100px;
+  padding: 12px 0 100px;
+}
+
+@media (min-width: 640px) {
+  .modern-checkout-wrapper {
+    padding: 16px 10px 100px;
+  }
 }
 
 @media (min-width: 768px) {
@@ -8896,9 +8908,18 @@ button {
 .myntra-price-card {
   background-color: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 18px;
+  border-radius: 14px;
+  padding: 16px 14px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .myntra-price-card {
+    border-radius: 16px;
+    padding: 18px 20px;
+  }
 }
 
 .myntra-price-header-title {

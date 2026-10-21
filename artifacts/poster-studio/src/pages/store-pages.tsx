@@ -2955,7 +2955,7 @@ export function CheckoutPage() {
           </div>
 
           {/* Right Column: Price Details & Proceed (Myntra Style - 4 cols on desktop) */}
-          <div className="lg:col-span-4 lg:sticky lg:top-20 flex flex-col gap-4">
+          <div className="lg:col-span-4 lg:sticky lg:top-20 flex flex-col gap-4 w-full">
             <MyntraPriceDetails
               totalMRP={calculatedMRP}
               subtotal={totals.subtotal}

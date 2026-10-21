@@ -663,9 +663,6 @@ export function Footer() {
                 className="footer-dungeons-logo"
               />
             </Link>
-            <p className="footer-brand-tagline">
-              Premium museum-grade archival matte posters. Crafted for art lovers, collectors, and modern walls.
-            </p>
             <div className="footer-contact-wrap">
               <h4 className="footer-subheading">Contact info</h4>
               <div className="footer-subitem">
@@ -679,20 +676,7 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Col 2: Categories */}
-          <div className="footer-block">
-            <h4 className="footer-title">Categories</h4>
-            <ul className="footer-links-list">
-              <li><Link href="/collections/marvel-dc">Marvel &amp; DC</Link></li>
-              <li><Link href="/collections/anime">Anime &amp; Manga</Link></li>
-              <li><Link href="/collections/movies-web-series">Movies &amp; Web Series</Link></li>
-              <li><Link href="/collections/sports">Sports Legends</Link></li>
-              <li><Link href="/collections/landscapes">Landscapes</Link></li>
-              <li><Link href="/collections/posters">All Available Posters →</Link></li>
-            </ul>
-          </div>
-
-          {/* Col 3: Quick links */}
+          {/* Col 2: Quick links */}
           <div className="footer-block">
             <h4 className="footer-title">Quick links</h4>
             <ul className="footer-links-list">
