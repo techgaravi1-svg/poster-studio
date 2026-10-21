@@ -53,7 +53,7 @@ export const paymentService = {
           currency: 'INR',
           name: 'Dungeons Posters',
           description: request.orderDescription || 'Custom Wall Art & Posters',
-          image: '/assets/postgenz-logo-trans.png',
+          image: '/assets/dungeons-logo.png',
           prefill: {
             name: request.customerName,
             email: request.customerEmail,

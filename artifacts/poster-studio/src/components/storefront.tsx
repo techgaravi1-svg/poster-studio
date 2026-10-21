@@ -416,11 +416,11 @@ export function Header() {
             </button>
 
             {!menuOpen && (
-              <Link href="/" className="header-brand-logo" aria-label="POSTGENZ Home">
+              <Link href="/" className="header-brand-logo" aria-label="DUNGEONS Home">
                 <img
-                  src="/assets/postgenz-logo-trans.png"
-                  alt="POSTGENZ"
-                  className="postgenz-logo-img"
+                  src="/assets/dungeons-logo.png"
+                  alt="DUNGEONS"
+                  className="postgenz-logo-img dungeons-navbar-logo"
                 />
               </Link>
             )}
@@ -653,24 +653,46 @@ export function Footer() {
   return (
     <footer className="postgenz-black-footer">
       <div className="footer-inner-content">
-        <div className="footer-brand-header">
-          <img
-            src="/assets/blumun-logo.png"
-            alt="BLUMUN"
-            className="footer-blumun-logo"
-          />
-        </div>
-
         <div className="footer-grid-sections">
-          <div className="footer-block">
-            <h4 className="footer-title">Contact info</h4>
-            <div className="footer-subitem">
-              <a href="mailto:dungeons.support@gmail.com" className="footer-link">
-                Mail: dungeons.support@gmail.com
-              </a>
+          {/* Col 1: Brand & Contact */}
+          <div className="footer-block footer-brand-block">
+            <Link href="/" className="footer-brand-link" aria-label="DUNGEONS Home">
+              <img
+                src="/assets/dungeons-logo.png"
+                alt="DUNGEONS"
+                className="footer-dungeons-logo"
+              />
+            </Link>
+            <p className="footer-brand-tagline">
+              Premium museum-grade archival matte posters. Crafted for art lovers, collectors, and modern walls.
+            </p>
+            <div className="footer-contact-wrap">
+              <h4 className="footer-subheading">Contact info</h4>
+              <div className="footer-subitem">
+                <a
+                  href="mailto:dungeons.support@gmail.com"
+                  className="footer-link footer-email-link"
+                >
+                  Mail: dungeons.support@gmail.com
+                </a>
+              </div>
             </div>
           </div>
 
+          {/* Col 2: Categories */}
+          <div className="footer-block">
+            <h4 className="footer-title">Categories</h4>
+            <ul className="footer-links-list">
+              <li><Link href="/collections/marvel-dc">Marvel &amp; DC</Link></li>
+              <li><Link href="/collections/anime">Anime &amp; Manga</Link></li>
+              <li><Link href="/collections/movies-web-series">Movies &amp; Web Series</Link></li>
+              <li><Link href="/collections/sports">Sports Legends</Link></li>
+              <li><Link href="/collections/landscapes">Landscapes</Link></li>
+              <li><Link href="/collections/posters">All Available Posters →</Link></li>
+            </ul>
+          </div>
+
+          {/* Col 3: Quick links */}
           <div className="footer-block">
             <h4 className="footer-title">Quick links</h4>
             <ul className="footer-links-list">
@@ -683,14 +705,18 @@ export function Footer() {
             </ul>
           </div>
 
+          {/* Col 4: Newsletter */}
           <div className="footer-block newsletter-block">
             <h4 className="footer-title">Subscribe to Our E-mails</h4>
+            <p className="footer-newsletter-desc">
+              Be the first to know about new drops, limited editions, and exclusive member discounts.
+            </p>
             <form onSubmit={handleSubscribe} className="footer-newsletter-form">
               <div className="newsletter-input-wrap">
                 <input
                   type="email"
                   required
-                  placeholder="Email"
+                  placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="newsletter-input"
@@ -711,16 +737,44 @@ export function Footer() {
 
         <div className="footer-bottom-bar">
           <div className="footer-copyright">
-            © 2026·BLUMUN
+            © 2026 DUNGEONS. All rights reserved.
           </div>
+
+          <div className="footer-developer-credit">
+            Developed by{' '}
+            <a
+              href="https://hhtinfotech.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="developer-credit-link"
+            >
+              hhtinfotech.in
+            </a>
+          </div>
+
           <div className="footer-social-row">
-            <a href="https://instagram.com" target="_blank" rel="noreferrer" className="social-icon-box" aria-label="Instagram">
+            <a
+              href="#"
+              onClick={(e) => e.preventDefault()}
+              className="social-icon-box"
+              aria-label="Instagram"
+            >
               <Instagram size={18} />
             </a>
-            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="social-icon-box" aria-label="Facebook">
+            <a
+              href="#"
+              onClick={(e) => e.preventDefault()}
+              className="social-icon-box"
+              aria-label="Facebook"
+            >
               <Facebook size={18} />
             </a>
-            <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="social-icon-box" aria-label="LinkedIn">
+            <a
+              href="#"
+              onClick={(e) => e.preventDefault()}
+              className="social-icon-box"
+              aria-label="LinkedIn"
+            >
               <Linkedin size={18} />
             </a>
           </div>
