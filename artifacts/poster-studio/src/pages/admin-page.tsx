@@ -44,7 +44,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { formatPrice, fetchLiveProducts, products as fallbackCatalog } from '@/lib/catalog';
-import { store } from '@/lib/store';
 
 interface AdminStats {
   totalRevenue: number;
@@ -192,33 +191,43 @@ export function AdminDashboardPage() {
   ]);
 
   const [orders, setOrders] = useState<AdminOrder[]>(() => {
-    // Seed with existing customer orders or local store orders
-    const localStoreOrders = store.getOrders();
-    if (localStoreOrders && localStoreOrders.length > 0) {
-      return localStoreOrders.map((o) => ({
-        id: o.id,
-        orderNumber: o.id.replace('order-', 'DNG-'),
-        customerName: o.customer.name,
-        customerEmail: o.customer.email,
-        customerPhone: o.customer.phone,
-        shippingAddress: o.address,
-        subtotal: o.subtotal,
-        shippingFee: o.shipping,
-        discount: o.discount,
-        total: o.total,
-        paymentStatus: (o.paymentStatus?.toUpperCase() || 'PAID') as any,
-        paymentMethod: 'UPI / Razorpay',
-        fulfillmentStatus: (o.fulfillmentStatus?.toUpperCase() || 'PENDING') as any,
-        items: o.products.map((p) => ({
-          id: p.productId,
-          productTitle: p.title,
-          productImage: p.customUpload?.preview || '/assets/posters/poster-01.jpg',
-          size: p.size,
-          quantity: p.quantity,
-          price: p.price,
-        })),
-        createdAt: o.createdAt,
-      }));
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('poster-studio-store-v2');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.orders) && parsed.orders.length > 0) {
+            return parsed.orders.map((o: any) => ({
+              id: o.id || `ord-${Date.now()}`,
+              orderNumber: (o.id || '').replace('order-', 'DNG-') || 'DNG-1001',
+              customerName: o.customer?.name || 'Customer',
+              customerEmail: o.customer?.email || '',
+              customerPhone: o.customer?.phone || '',
+              shippingAddress: o.address || {},
+              subtotal: Number(o.subtotal) || 0,
+              shippingFee: Number(o.shipping) || 0,
+              discount: Number(o.discount) || 0,
+              total: Number(o.total) || 0,
+              paymentStatus: (o.paymentStatus?.toUpperCase() || 'PAID') as any,
+              paymentMethod: 'UPI / Razorpay',
+              fulfillmentStatus: (o.fulfillmentStatus?.toUpperCase() || 'PENDING') as any,
+              items: Array.isArray(o.products)
+                ? o.products.map((p: any) => ({
+                    id: p.productId || p.key || 'item',
+                    productTitle: p.title || 'Poster',
+                    productImage: p.customUpload?.preview || '/assets/posters/poster-01.jpg',
+                    size: p.size || 'A4',
+                    quantity: Number(p.quantity) || 1,
+                    price: Number(p.price) || 0,
+                  }))
+                : [],
+              createdAt: o.createdAt || new Date().toISOString(),
+            }));
+          }
+        }
+      }
+    } catch {
+      // fallback to default mock orders
     }
     return [
       {
