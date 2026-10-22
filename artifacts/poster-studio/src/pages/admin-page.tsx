@@ -4,19 +4,13 @@ import {
   TrendingUp,
   Package,
   Clock,
-  Truck,
   CheckCircle2,
-  XCircle,
-  AlertCircle,
   Search,
   Plus,
   Edit3,
   Trash2,
   RefreshCw,
-  Database,
   Tag,
-  Copy,
-  Check,
   Eye,
   EyeOff,
   Printer,
@@ -26,7 +20,6 @@ import {
   Users,
   Layers,
   Sparkles,
-  ArrowUpRight,
   X,
   Lock,
   Shield,
@@ -35,14 +28,10 @@ import {
   LogOut,
   KeyRound,
   Mail,
-  SlidersHorizontal,
-  FileText,
-  Calendar,
-  Phone,
-  MapPin,
-  CheckCheck,
+  Menu,
   Zap,
 } from 'lucide-react';
+import './admin.css';
 import { formatPrice, fetchLiveProducts, products as fallbackCatalog } from '@/lib/catalog';
 
 interface AdminStats {
@@ -162,6 +151,7 @@ export function AdminDashboardPage() {
   // DASHBOARD STATE
   // -------------------------------------------------------------
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'coupons' | 'customers' | 'security'>('dashboard');
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -227,7 +217,7 @@ export function AdminDashboardPage() {
         }
       }
     } catch {
-      // fallback to default mock orders
+      // fallback to mock
     }
     return [
       {
@@ -394,7 +384,7 @@ export function AdminDashboardPage() {
   };
 
   // -------------------------------------------------------------
-  // AUTHENTICATION HANDLERS (FAIL-SAFE & ZERO-LOCKOUT)
+  // AUTHENTICATION HANDLERS
   // -------------------------------------------------------------
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -433,12 +423,11 @@ export function AdminDashboardPage() {
             return;
           }
         }
-      } catch (networkErr) {
-        // Backend not answering yet -> continue to client fallback verification!
-        console.warn('Backend API connection notice, authenticating securely via master credentials:', networkErr);
+      } catch {
+        // Fallback to client check
       }
 
-      // 2. Client verification fallback (so store owner is NEVER locked out by static host)
+      // 2. Client verification fallback (guarantees zero-lockout)
       const validEmail = trimmedEmail === 'admin@posterstudio.com';
       const validPw = trimmedPw === 'Admin@Poster2026!';
       const validKey = trimmedKey === 'dungeons_adm_sec_9941a87b1c3e04e2';
@@ -558,7 +547,6 @@ export function AdminDashboardPage() {
     orderId: string,
     updates: { fulfillmentStatus?: string; paymentStatus?: string; trackingNumber?: string }
   ) => {
-    // 1. Optimistic UI update
     setOrders((prev) =>
       prev.map((o) =>
         o.id === orderId
@@ -573,7 +561,6 @@ export function AdminDashboardPage() {
     );
     showToast('Order status updated!');
 
-    // 2. Sync with database
     try {
       await authFetch(`/api/admin/orders/${orderId}/status`, {
         method: 'PATCH',
@@ -621,7 +608,6 @@ export function AdminDashboardPage() {
       setIsProductModalOpen(false);
       setEditingProduct(null);
 
-      // Async database persistence
       const url = editingProduct ? `/api/admin/products/${editingProduct.id}` : '/api/admin/products';
       const method = editingProduct ? 'PUT' : 'POST';
       authFetch(url, { method, body: JSON.stringify(payload) })
@@ -752,197 +738,158 @@ export function AdminDashboardPage() {
   // -------------------------------------------------------------
   if (!authToken) {
     return (
-      <div className="min-h-screen bg-[#070a12] flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans select-none">
-        {/* Ambient Subtle Gradients */}
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-sky-500/10 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none" />
-
-        <div className="w-full max-w-[440px] relative z-10 flex flex-col items-center">
-          {/* Logo & Header */}
-          <div className="text-center mb-6 flex flex-col items-center">
-            <Link href="/" className="inline-block hover:opacity-90 transition">
+      <div className="admin-scope admin-login-wrapper">
+        <div className="admin-login-card">
+          {/* Header */}
+          <div className="admin-brand-header">
+            <Link href="/">
               <img
                 src="/assets/dungeons-logo.png"
                 alt="DUNGEONS"
-                className="h-10 w-auto object-contain drop-shadow-lg"
+                className="admin-brand-logo"
               />
             </Link>
 
-            <div className="inline-flex items-center gap-2 mt-3 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[11px] font-bold uppercase tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Restricted Admin Gateway</span>
+            <div className="admin-security-pill">
+              <span className="admin-pulse-dot" />
+              <span>Restricted Admin Portal</span>
             </div>
-
-            <p className="text-xs text-slate-400 mt-2 max-w-xs leading-relaxed">
-              Sign in with your master credentials to manage catalog, orders & telemetry.
-            </p>
           </div>
 
-          {/* Luxury Card Box */}
-          <div className="w-full bg-[#0e1424]/95 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-sky-950/40 relative">
-            <div className="absolute -top-[1px] left-1/4 right-1/4 h-[2px] bg-gradient-to-r from-transparent via-sky-500 to-transparent" />
+          {/* Mode Switcher Tabs */}
+          <div className="admin-tabs-nav">
+            <button
+              type="button"
+              onClick={() => { setLoginMode('password'); setLoginError(''); }}
+              className={`admin-tab-btn ${loginMode === 'password' ? 'active' : ''}`}
+            >
+              <Lock size={13} />
+              <span>Admin Login</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLoginMode('key'); setLoginError(''); }}
+              className={`admin-tab-btn ${loginMode === 'key' ? 'active' : ''}`}
+            >
+              <KeyRound size={13} />
+              <span>Master Key</span>
+            </button>
+          </div>
 
-            {/* Mode Switcher Tabs */}
-            <div className="grid grid-cols-2 bg-[#090d18] p-1 rounded-2xl mb-6 border border-slate-800/80">
-              <button
-                type="button"
-                onClick={() => { setLoginMode('password'); setLoginError(''); }}
-                className={`py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer ${
-                  loginMode === 'password'
-                    ? 'bg-sky-500 text-black shadow-md shadow-sky-500/20'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Lock size={13} />
-                <span>Admin Login</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setLoginMode('key'); setLoginError(''); }}
-                className={`py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer ${
-                  loginMode === 'key'
-                    ? 'bg-sky-500 text-black shadow-md shadow-sky-500/20'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <KeyRound size={13} />
-                <span>Master Key</span>
-              </button>
+          {/* Error Message */}
+          {loginError && (
+            <div className="admin-error-banner">
+              <ShieldAlert size={16} />
+              <span>{loginError}</span>
             </div>
+          )}
 
-            {/* Error Message */}
-            {loginError && (
-              <div className="mb-5 bg-red-950/60 border border-red-500/40 text-red-200 text-xs px-4 py-3 rounded-2xl flex items-center gap-3">
-                <ShieldAlert size={16} className="text-red-400 shrink-0" />
-                <span className="leading-snug">{loginError}</span>
-              </div>
-            )}
+          <form onSubmit={handleLogin}>
+            {loginMode === 'password' ? (
+              <>
+                <div className="admin-input-group">
+                  <label className="admin-input-label">Admin Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="admin@posterstudio.com"
+                    className="admin-input-field"
+                  />
+                </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
-              {loginMode === 'password' ? (
-                <>
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                      Admin Email
-                    </label>
-                    <div className="relative flex items-center">
-                      <Mail size={16} className="absolute left-4 text-slate-400 pointer-events-none" />
-                      <input
-                        type="email"
-                        required
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        placeholder="admin@posterstudio.com"
-                        className="w-full h-12 bg-[#080c16] border border-slate-800 text-white rounded-xl pl-11 pr-4 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                      Admin Password
-                    </label>
-                    <div className="relative flex items-center">
-                      <Lock size={16} className="absolute left-4 text-slate-400 pointer-events-none" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        required
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        placeholder="••••••••••••"
-                        className="w-full h-12 bg-[#080c16] border border-slate-800 text-white rounded-xl pl-11 pr-11 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 text-slate-400 hover:text-white transition cursor-pointer"
-                        title={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                    Master Secret API Key
-                  </label>
-                  <div className="relative flex items-center">
-                    <KeyRound size={16} className="absolute left-4 text-slate-400 pointer-events-none" />
+                <div className="admin-input-group">
+                  <label className="admin-input-label">Admin Password</label>
+                  <div className="admin-password-wrap">
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
-                      value={loginAdminKey}
-                      onChange={(e) => setLoginAdminKey(e.target.value)}
-                      placeholder="dungeons_adm_sec_..."
-                      className="w-full h-12 bg-[#080c16] border border-slate-800 text-white rounded-xl pl-11 pr-11 text-xs font-mono focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="admin-input-field"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 text-slate-400 hover:text-white transition cursor-pointer"
+                      className="admin-eye-toggle"
+                      title={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-1.5">
-                    Configured in backend environment variables (ADMIN_API_KEY).
-                  </p>
                 </div>
-              )}
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loginLoading}
-                className="w-full h-12 mt-2 bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:via-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-sm shadow-xl shadow-sky-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                {loginLoading ? (
-                  <>
-                    <RefreshCw size={16} className="animate-spin text-white" />
-                    <span>Authorizing Session...</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck size={18} />
-                    <span>Sign In to Admin Portal</span>
-                  </>
-                )}
-              </button>
-            </form>
-
-            {/* Quick Demo Autofill Helper */}
-            <div className="mt-5 pt-4 border-t border-slate-800/80 flex flex-col items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => {
-                  setLoginEmail('admin@posterstudio.com');
-                  setLoginPassword('Admin@Poster2026!');
-                  setLoginAdminKey('dungeons_adm_sec_9941a87b1c3e04e2');
-                  showToast('Autofilled master credentials!');
-                }}
-                className="w-full py-2 px-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-[11px] font-semibold text-sky-400 hover:text-sky-300 transition flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Zap size={13} className="text-amber-400" />
-                <span>Autofill Master Credentials (admin@posterstudio.com)</span>
-              </button>
-
-              <div className="w-full flex items-center justify-between text-xs text-slate-500 pt-1">
-                <span className="flex items-center gap-1.5 text-[11px]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  <span>256-Bit TLS Protected</span>
-                </span>
-                <Link href="/" className="text-slate-400 hover:text-white transition font-medium text-[11px]">
-                  ← Return to Store
-                </Link>
+              </>
+            ) : (
+              <div className="admin-input-group">
+                <label className="admin-input-label">Master Secret API Key</label>
+                <div className="admin-password-wrap">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={loginAdminKey}
+                    onChange={(e) => setLoginAdminKey(e.target.value)}
+                    placeholder="dungeons_adm_sec_..."
+                    className="admin-input-field"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="admin-eye-toggle"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="admin-btn-primary"
+            >
+              {loginLoading ? (
+                <>
+                  <RefreshCw size={16} className="animate-spin" />
+                  <span>Authorizing Session...</span>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck size={18} />
+                  <span>Sign In to Admin Portal</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Quick Demo Autofill Helper */}
+          <div className="admin-autofill-box">
+            <button
+              type="button"
+              onClick={() => {
+                setLoginEmail('admin@posterstudio.com');
+                setLoginPassword('Admin@Poster2026!');
+                setLoginAdminKey('dungeons_adm_sec_9941a87b1c3e04e2');
+                showToast('Autofilled master credentials!');
+              }}
+              className="admin-autofill-pill"
+            >
+              <Zap size={13} style={{ color: '#fbbf24' }} />
+              <span>Autofill Master Credentials (admin@posterstudio.com)</span>
+            </button>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', fontSize: '11px', color: '#64748b' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
+                <span>256-Bit TLS Protected</span>
+              </span>
+              <Link href="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>
+                ← Return to Store
+              </Link>
             </div>
           </div>
-
-          <p className="text-[11px] text-slate-500 text-center mt-5">
-            BLUMUN / DUNGEONS Studio &bull; All administrative access is logged to audit records.
-          </p>
         </div>
       </div>
     );
@@ -952,890 +899,891 @@ export function AdminDashboardPage() {
   // RENDER: STANDALONE LUXURY DASHBOARD
   // -------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-[#070a12] text-slate-100 font-sans flex antialiased">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-5 right-5 z-50 bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 animate-bounce">
-          <CheckCircle2 size={18} />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+    <div className="admin-scope">
+      <div className="admin-workspace">
+        {/* Mobile Backdrop overlay */}
+        {mobileSidebarOpen && (
+          <div
+            onClick={() => setMobileSidebarOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0,0,0,0.7)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 35,
+            }}
+          />
+        )}
 
-      {/* ========================================================= */}
-      {/* 1. LEFT SIDEBAR NAVIGATION */}
-      {/* ========================================================= */}
-      <aside className="w-64 bg-[#0c101b] border-r border-slate-800/80 flex flex-col shrink-0 min-h-screen sticky top-0 h-screen z-20">
-        {/* Brand Header */}
-        <div className="p-4 border-b border-slate-800/80 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <img src="/assets/dungeons-logo.png" alt="DUNGEONS" className="h-7 w-auto object-contain" />
-            <span className="text-[9px] font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded">
-              PORTAL v2.4
-            </span>
-          </Link>
-        </div>
+        {/* ========================================================= */}
+        {/* 1. LEFT SIDEBAR NAVIGATION */}
+        {/* ========================================================= */}
+        <aside className={`admin-sidebar ${mobileSidebarOpen ? 'open' : ''}`}>
+          {/* Brand Header */}
+          <div className="admin-sidebar-header">
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+              <img src="/assets/dungeons-logo.png" alt="DUNGEONS" style={{ height: '26px', width: 'auto' }} />
+              <span style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+                PORTAL v2.4
+              </span>
+            </Link>
 
-        {/* Database Health Card */}
-        <div className="px-4 py-3 border-b border-slate-800/50 bg-[#090d16]">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-[11px] text-emerald-400 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            {/* Close button on mobile */}
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(false)}
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex' }}
+              className="lg-hidden"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Database Health Card */}
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid #1e2638', background: '#090d16', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#34d399', fontWeight: 600 }}>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981' }} />
               <span>Prisma PostgreSQL</span>
             </span>
-            <span className="text-[10px] text-slate-400 font-mono bg-slate-800 px-1.5 py-0.5 rounded">
+            <span style={{ fontSize: '10px', color: '#94a3b8', fontFamily: 'monospace', background: '#161f33', padding: '2px 6px', borderRadius: '4px' }}>
               32ms
             </span>
           </div>
-        </div>
 
-        {/* Navigation Tabs */}
-        <nav className="p-3 flex-1 space-y-1.5 overflow-y-auto">
-          <div className="text-[10px] uppercase font-bold text-slate-400 px-3 py-1 tracking-wider">
-            Main Management
-          </div>
+          {/* Navigation Tabs */}
+          <nav className="admin-sidebar-nav">
+            <div className="admin-nav-section-title">Main Management</div>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-              activeTab === 'dashboard'
-                ? 'bg-gradient-to-r from-sky-500/20 to-blue-600/10 text-sky-300 border-l-4 border-sky-400 font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <TrendingUp size={16} />
-              <span>Dashboard & Analytics</span>
-            </span>
-          </button>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('dashboard'); setMobileSidebarOpen(false); }}
+              className={`admin-nav-link ${activeTab === 'dashboard' ? 'active' : ''}`}
+            >
+              <span className="admin-nav-link-left">
+                <TrendingUp size={16} />
+                <span>Dashboard & Analytics</span>
+              </span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('orders')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-              activeTab === 'orders'
-                ? 'bg-gradient-to-r from-sky-500/20 to-blue-600/10 text-sky-300 border-l-4 border-sky-400 font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <Package size={16} />
-              <span>Orders & Fulfillment</span>
-            </span>
-            <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">
-              {orders.filter((o) => o.fulfillmentStatus === 'PENDING').length}
-            </span>
-          </button>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('orders'); setMobileSidebarOpen(false); }}
+              className={`admin-nav-link ${activeTab === 'orders' ? 'active' : ''}`}
+            >
+              <span className="admin-nav-link-left">
+                <Package size={16} />
+                <span>Orders & Fulfillment</span>
+              </span>
+              <span className="admin-nav-badge amber">
+                {orders.filter((o) => o.fulfillmentStatus === 'PENDING').length}
+              </span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('products')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-              activeTab === 'products'
-                ? 'bg-gradient-to-r from-sky-500/20 to-blue-600/10 text-sky-300 border-l-4 border-sky-400 font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <Layers size={16} />
-              <span>Posters Catalog</span>
-            </span>
-            <span className="text-[10px] font-bold bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
-              {products.length}
-            </span>
-          </button>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('products'); setMobileSidebarOpen(false); }}
+              className={`admin-nav-link ${activeTab === 'products' ? 'active' : ''}`}
+            >
+              <span className="admin-nav-link-left">
+                <Layers size={16} />
+                <span>Posters Catalog</span>
+              </span>
+              <span className="admin-nav-badge">
+                {products.length}
+              </span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('coupons')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-              activeTab === 'coupons'
-                ? 'bg-gradient-to-r from-sky-500/20 to-blue-600/10 text-sky-300 border-l-4 border-sky-400 font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <Tag size={16} />
-              <span>Discount Vouchers</span>
-            </span>
-            <span className="text-[10px] font-bold bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded-full">
-              {coupons.length}
-            </span>
-          </button>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('coupons'); setMobileSidebarOpen(false); }}
+              className={`admin-nav-link ${activeTab === 'coupons' ? 'active' : ''}`}
+            >
+              <span className="admin-nav-link-left">
+                <Tag size={16} />
+                <span>Discount Vouchers</span>
+              </span>
+              <span className="admin-nav-badge">
+                {coupons.length}
+              </span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('customers')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-              activeTab === 'customers'
-                ? 'bg-gradient-to-r from-sky-500/20 to-blue-600/10 text-sky-300 border-l-4 border-sky-400 font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <Users size={16} />
-              <span>Customers & Newsletter</span>
-            </span>
-          </button>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('customers'); setMobileSidebarOpen(false); }}
+              className={`admin-nav-link ${activeTab === 'customers' ? 'active' : ''}`}
+            >
+              <span className="admin-nav-link-left">
+                <Users size={16} />
+                <span>Customers & Newsletter</span>
+              </span>
+            </button>
 
-          <div className="text-[10px] uppercase font-bold text-slate-400 px-3 pt-4 pb-1 tracking-wider">
-            Security & Controls
-          </div>
+            <div className="admin-nav-section-title">Security & Controls</div>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('security')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
-              activeTab === 'security'
-                ? 'bg-gradient-to-r from-sky-500/20 to-blue-600/10 text-sky-300 border-l-4 border-sky-400 font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <ShieldCheck size={16} />
-              <span>Security & Diagnostics</span>
-            </span>
-          </button>
-        </nav>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('security'); setMobileSidebarOpen(false); }}
+              className={`admin-nav-link ${activeTab === 'security' ? 'active' : ''}`}
+            >
+              <span className="admin-nav-link-left">
+                <ShieldCheck size={16} />
+                <span>Security & Diagnostics</span>
+              </span>
+            </button>
+          </nav>
 
-        {/* User Card & Sign Out */}
-        <div className="p-3 border-t border-slate-800/80 bg-[#090d16]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs">
-                SA
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-white">{adminUser?.name || 'Super Admin'}</span>
-                <span className="text-[10px] text-slate-400 truncate max-w-[110px]">{adminUser?.email || 'admin@posterstudio.com'}</span>
+          {/* User Card & Sign Out */}
+          <div className="admin-sidebar-footer">
+            <div className="admin-user-info">
+              <div className="admin-user-avatar">SA</div>
+              <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>
+                  {adminUser?.name || 'Super Admin'}
+                </span>
+                <span style={{ fontSize: '10px', color: '#94a3b8', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '120px' }}>
+                  {adminUser?.email || 'admin@posterstudio.com'}
+                </span>
               </div>
             </div>
             <button
               type="button"
               onClick={() => handleSignOut()}
               title="Sign Out"
-              className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition cursor-pointer"
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '6px', borderRadius: '8px' }}
             >
               <LogOut size={16} />
             </button>
           </div>
-        </div>
-      </aside>
+        </aside>
 
-      {/* ========================================================= */}
-      {/* 2. MAIN CONTENT AREA */}
-      {/* ========================================================= */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        {/* Top Header Bar */}
-        <header className="h-16 border-b border-slate-800/80 bg-[#0c101b]/90 backdrop-blur-md sticky top-0 z-10 px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-              {activeTab === 'dashboard' && 'Executive Store Overview'}
-              {activeTab === 'orders' && 'Customer Orders & Real-time Tracking'}
-              {activeTab === 'products' && 'Posters Catalog & Inventory'}
-              {activeTab === 'coupons' && 'Promotional Vouchers & Discounts'}
-              {activeTab === 'customers' && 'Newsletter Subscribers & Buyers'}
-              {activeTab === 'security' && 'Security Gate & Database Health'}
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={loadAdminData}
-              disabled={refreshing}
-              className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl border border-slate-700 transition cursor-pointer"
-            >
-              <RefreshCw size={13} className={refreshing ? 'animate-spin text-sky-400' : ''} />
-              <span>{refreshing ? 'Syncing...' : 'Sync DB'}</span>
-            </button>
-
-            {activeTab === 'products' && (
+        {/* ========================================================= */}
+        {/* 2. MAIN VIEWPORT */}
+        {/* ========================================================= */}
+        <div className="admin-main-viewport">
+          {/* Header Bar */}
+          <header className="admin-header-bar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Mobile Menu Toggle Button */}
               <button
                 type="button"
-                onClick={() => {
-                  setEditingProduct(null);
-                  setProductFormData({
-                    title: '',
-                    slug: '',
-                    description: '',
-                    category: 'anime',
-                    orientation: 'portrait',
-                    price: 79,
-                    compareAtPrice: 159,
-                    images: ['/assets/posters/poster-01.jpg'],
-                    tags: 'anime, poster, art',
-                    stock: 50,
-                    isBestSeller: true,
-                    isNewRelease: false,
-                  });
-                  setIsProductModalOpen(true);
-                }}
-                className="flex items-center gap-1.5 text-xs bg-sky-500 hover:bg-sky-400 text-black font-bold px-3.5 py-2 rounded-xl shadow-md shadow-sky-500/20 transition cursor-pointer"
+                onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+                style={{ background: '#161f33', border: '1px solid #1e2638', color: '#ffffff', padding: '8px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                <Plus size={14} />
-                <span>Add Poster</span>
+                <Menu size={18} />
               </button>
+
+              <h2 className="admin-header-title">
+                {activeTab === 'dashboard' && 'Executive Store Overview'}
+                {activeTab === 'orders' && 'Orders Fulfillment & Tracking'}
+                {activeTab === 'products' && 'Posters Catalog & Inventory'}
+                {activeTab === 'coupons' && 'Discount Vouchers & Offers'}
+                {activeTab === 'customers' && 'Newsletter Subscribers & Reach'}
+                {activeTab === 'security' && 'Security Gate & Database Health'}
+              </h2>
+            </div>
+
+            <div className="admin-header-actions">
+              <button
+                type="button"
+                onClick={loadAdminData}
+                disabled={refreshing}
+                className="admin-btn-secondary"
+              >
+                <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+                <span>{refreshing ? 'Syncing...' : 'Sync DB'}</span>
+              </button>
+
+              {activeTab === 'products' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingProduct(null);
+                    setProductFormData({
+                      title: '',
+                      slug: '',
+                      description: '',
+                      category: 'anime',
+                      orientation: 'portrait',
+                      price: 79,
+                      compareAtPrice: 159,
+                      images: ['/assets/posters/poster-01.jpg'],
+                      tags: 'anime, poster, art',
+                      stock: 50,
+                      isBestSeller: true,
+                      isNewRelease: false,
+                    });
+                    setIsProductModalOpen(true);
+                  }}
+                  className="admin-btn-accent"
+                >
+                  <Plus size={14} />
+                  <span>Add Poster</span>
+                </button>
+              )}
+
+              <Link
+                href="/"
+                target="_blank"
+                className="admin-btn-secondary"
+              >
+                <span>View Store</span>
+                <ExternalLink size={12} />
+              </Link>
+            </div>
+          </header>
+
+          {/* Canvas Content */}
+          <main className="admin-canvas-content">
+            {/* ===================================================== */}
+            {/* TAB 1: DASHBOARD OVERVIEW */}
+            {/* ===================================================== */}
+            {activeTab === 'dashboard' && (
+              <>
+                {/* 4 KPI Cards */}
+                <div className="admin-kpi-grid">
+                  <div className="admin-kpi-card">
+                    <div className="admin-kpi-top">
+                      <span className="admin-kpi-label">Total Gross Revenue</span>
+                      <div className="admin-kpi-icon-box" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
+                        <DollarSign size={16} />
+                      </div>
+                    </div>
+                    <div className="admin-kpi-val">
+                      {formatPrice(orders.reduce((sum, o) => sum + o.total, 0) || stats.totalRevenue)}
+                    </div>
+                    <div className="admin-kpi-sub" style={{ color: '#34d399' }}>
+                      <CheckCircle2 size={12} />
+                      <span>Real-time from Database</span>
+                    </div>
+                  </div>
+
+                  <div className="admin-kpi-card">
+                    <div className="admin-kpi-top">
+                      <span className="admin-kpi-label">Total Orders</span>
+                      <div className="admin-kpi-icon-box" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+                        <Package size={16} />
+                      </div>
+                    </div>
+                    <div className="admin-kpi-val">{orders.length}</div>
+                    <div className="admin-kpi-sub" style={{ color: '#fbbf24' }}>
+                      <Clock size={12} />
+                      <span>{orders.filter((o) => o.fulfillmentStatus === 'PENDING').length} Pending Dispatch</span>
+                    </div>
+                  </div>
+
+                  <div className="admin-kpi-card">
+                    <div className="admin-kpi-top">
+                      <span className="admin-kpi-label">Catalog Posters</span>
+                      <div className="admin-kpi-icon-box" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>
+                        <Layers size={16} />
+                      </div>
+                    </div>
+                    <div className="admin-kpi-val">{products.length}</div>
+                    <div className="admin-kpi-sub" style={{ color: '#c084fc' }}>
+                      <Tag size={12} />
+                      <span>Across 11 Categories</span>
+                    </div>
+                  </div>
+
+                  <div className="admin-kpi-card">
+                    <div className="admin-kpi-top">
+                      <span className="admin-kpi-label">Newsletter Reach</span>
+                      <div className="admin-kpi-icon-box" style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#22d3ee' }}>
+                        <Users size={16} />
+                      </div>
+                    </div>
+                    <div className="admin-kpi-val">{subscribers.length || 14}</div>
+                    <div className="admin-kpi-sub" style={{ color: '#22d3ee' }}>
+                      <Sparkles size={12} />
+                      <span>Registered Art Collectors</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Analytics & Categories */}
+                <div className="admin-analytics-grid">
+                  {/* Sales Velocity Bar Chart */}
+                  <div className="admin-panel-card">
+                    <div className="admin-panel-header">
+                      <div>
+                        <h3 className="admin-panel-title">7-Day Sales & Order Velocity</h3>
+                        <p className="admin-panel-desc">Daily store revenue performance</p>
+                      </div>
+                      <span style={{ fontSize: '10px', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '3px 8px', borderRadius: '4px', fontWeight: 700, textTransform: 'uppercase' }}>
+                        Live Telemetry
+                      </span>
+                    </div>
+
+                    <div className="admin-chart-bars-wrap">
+                      {salesTrend.map((day, idx) => {
+                        const heightPct = Math.max(15, Math.min(100, Math.round((day.sales / (maxSales || 2000)) * 100)));
+                        return (
+                          <div key={idx} className="admin-chart-col">
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#38bdf8' }}>
+                              ₹{day.sales}
+                            </span>
+                            <div
+                              style={{ height: `${heightPct}%` }}
+                              className="admin-bar-fill"
+                            />
+                            <span className="admin-bar-label">{day.date}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Top Categories */}
+                  <div className="admin-panel-card">
+                    <h3 className="admin-panel-title">Top Poster Categories</h3>
+                    <p className="admin-panel-desc" style={{ marginBottom: '16px' }}>Catalog share by genre</p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {['Anime', 'Marvel & DC', 'Movies & Web Series', 'Sports', 'Landscapes', 'Diva'].map((cat) => {
+                        const count = products.filter((p) =>
+                          p.category.toLowerCase().includes(cat.toLowerCase().split(' ')[0])
+                        ).length;
+                        const pct = Math.round((count / (products.length || 1)) * 100);
+                        return (
+                          <div key={cat} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                              <span style={{ color: '#cbd5e1', fontWeight: 600 }}>{cat}</span>
+                              <span style={{ color: '#94a3b8' }}>{count} posters ({pct}%)</span>
+                            </div>
+                            <div style={{ width: '100%', height: '8px', background: '#161f33', borderRadius: '9999px', overflow: 'hidden' }}>
+                              <div style={{ width: `${Math.max(6, pct)}%`, height: '100%', background: '#38bdf8', borderRadius: '9999px' }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Orders Overview */}
+                <div className="admin-table-box">
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #1e2638', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 className="admin-panel-title">Recent Customer Orders</h3>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('orders')}
+                      style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <span>View All Orders</span>
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+
+                  <div className="admin-table-scroll">
+                    <table className="admin-data-table">
+                      <thead>
+                        <tr>
+                          <th>Order ID</th>
+                          <th>Customer</th>
+                          <th>Items</th>
+                          <th>Total</th>
+                          <th>Fulfillment</th>
+                          <th>Payment</th>
+                          <th style={{ textAlign: 'right' }}>Invoice</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {orders.slice(0, 5).map((order) => (
+                          <tr key={order.id}>
+                            <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#38bdf8' }}>
+                              #{order.orderNumber}
+                            </td>
+                            <td>
+                              <div style={{ fontWeight: 700, color: '#ffffff' }}>{order.customerName}</div>
+                              <div style={{ fontSize: '11px', color: '#94a3b8' }}>{order.customerPhone}</div>
+                            </td>
+                            <td style={{ color: '#cbd5e1' }}>
+                              {order.items?.length || 1} item(s)
+                            </td>
+                            <td style={{ fontWeight: 800, color: '#ffffff' }}>
+                              {formatPrice(order.total)}
+                            </td>
+                            <td>
+                              <span className={`admin-status-pill ${
+                                order.fulfillmentStatus === 'DELIVERED' ? 'success' : order.fulfillmentStatus === 'SHIPPED' ? 'blue' : 'pending'
+                              }`}>
+                                {order.fulfillmentStatus}
+                              </span>
+                            </td>
+                            <td>
+                              <span className={`admin-status-pill ${order.paymentStatus === 'PAID' ? 'success' : 'pending'}`}>
+                                {order.paymentStatus}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedInvoiceOrder(order)}
+                                className="admin-btn-secondary"
+                                style={{ display: 'inline-flex' }}
+                              >
+                                Invoice
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
             )}
 
-            <Link
-              href="/"
-              target="_blank"
-              className="flex items-center gap-1.5 text-xs bg-[#090d16] hover:bg-slate-800 text-slate-300 hover:text-white px-3.5 py-2 rounded-xl border border-slate-800 transition"
-            >
-              <span>View Store</span>
-              <ExternalLink size={12} />
-            </Link>
-          </div>
-        </header>
+            {/* ===================================================== */}
+            {/* TAB 2: ORDERS MANAGEMENT */}
+            {/* ===================================================== */}
+            {activeTab === 'orders' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ position: 'relative', width: '280px' }}>
+                    <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                    <input
+                      type="text"
+                      placeholder="Search Order #, Customer, Phone..."
+                      value={orderSearch}
+                      onChange={(e) => setOrderSearch(e.target.value)}
+                      className="admin-input-field"
+                      style={{ paddingLeft: '36px', height: '40px', fontSize: '12px' }}
+                    />
+                  </div>
 
-        {/* Content Body */}
-        <main className="p-6 max-w-7xl w-full mx-auto space-y-6">
-          {/* ===================================================== */}
-          {/* TAB 1: DASHBOARD OVERVIEW */}
-          {/* ===================================================== */}
-          {activeTab === 'dashboard' && (
-            <div className="space-y-6">
-              {/* 4 KPI Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-[#0e1424] border border-slate-800/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                  <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <span>Total Revenue</span>
-                    <DollarSign size={16} className="text-emerald-400" />
-                  </div>
-                  <div className="mt-3 text-2xl font-black text-white">
-                    {formatPrice(orders.reduce((sum, o) => sum + o.total, 0) || stats.totalRevenue)}
-                  </div>
-                  <div className="mt-1 text-xs text-emerald-400 flex items-center gap-1">
-                    <CheckCircle2 size={12} />
-                    <span>Real-time from Database</span>
+                  <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+                    {['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() => setOrderStatusFilter(status)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          border: orderStatusFilter === status ? 'none' : '1px solid #1e2638',
+                          background: orderStatusFilter === status ? '#38bdf8' : '#0e1424',
+                          color: orderStatusFilter === status ? '#000000' : '#94a3b8',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {status}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                <div className="bg-[#0e1424] border border-slate-800/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                  <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <span>Total Orders</span>
-                    <Package size={16} className="text-sky-400" />
-                  </div>
-                  <div className="mt-3 text-2xl font-black text-white">
-                    {orders.length}
-                  </div>
-                  <div className="mt-1 text-xs text-amber-400 flex items-center gap-1">
-                    <Clock size={12} />
-                    <span>{orders.filter((o) => o.fulfillmentStatus === 'PENDING').length} Pending Dispatch</span>
-                  </div>
-                </div>
+                <div className="admin-table-box">
+                  <div className="admin-table-scroll">
+                    <table className="admin-data-table">
+                      <thead>
+                        <tr>
+                          <th>Order</th>
+                          <th>Customer & Destination</th>
+                          <th>Items</th>
+                          <th>Total</th>
+                          <th>Payment Status</th>
+                          <th>Fulfillment Status</th>
+                          <th>Tracking #</th>
+                          <th style={{ textAlign: 'right' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredOrders.map((order) => (
+                          <tr key={order.id}>
+                            <td>
+                              <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#38bdf8', display: 'block' }}>
+                                #{order.orderNumber}
+                              </span>
+                              <span style={{ fontSize: '10px', color: '#64748b' }}>
+                                {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            </td>
 
-                <div className="bg-[#0e1424] border border-slate-800/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                  <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <span>Catalog Posters</span>
-                    <Layers size={16} className="text-purple-400" />
-                  </div>
-                  <div className="mt-3 text-2xl font-black text-white">
-                    {products.length}
-                  </div>
-                  <div className="mt-1 text-xs text-purple-400 flex items-center gap-1">
-                    <Tag size={12} />
-                    <span>Across 11 Categories</span>
-                  </div>
-                </div>
+                            <td>
+                              <div style={{ fontWeight: 700, color: '#ffffff' }}>{order.customerName}</div>
+                              <div style={{ fontSize: '11px', color: '#94a3b8' }}>{order.customerPhone}</div>
+                              <div style={{ fontSize: '10px', color: '#64748b', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {order.shippingAddress?.city}, {order.shippingAddress?.pincode}
+                              </div>
+                            </td>
 
-                <div className="bg-[#0e1424] border border-slate-800/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                  <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <span>Newsletter Reach</span>
-                    <Users size={16} className="text-cyan-400" />
-                  </div>
-                  <div className="mt-3 text-2xl font-black text-white">
-                    {subscribers.length || 14}
-                  </div>
-                  <div className="mt-1 text-xs text-cyan-400 flex items-center gap-1">
-                    <Sparkles size={12} />
-                    <span>Subscribers Registered</span>
+                            <td style={{ color: '#cbd5e1' }}>
+                              {order.items?.length || 1} item(s)
+                            </td>
+
+                            <td style={{ fontWeight: 800, color: '#ffffff' }}>
+                              {formatPrice(order.total)}
+                            </td>
+
+                            <td>
+                              <select
+                                value={order.paymentStatus}
+                                onChange={(e) => handleUpdateOrderStatus(order.id, { paymentStatus: e.target.value })}
+                                className="admin-status-select"
+                              >
+                                <option value="PENDING">PENDING</option>
+                                <option value="PAID">PAID</option>
+                                <option value="FAILED">FAILED</option>
+                                <option value="REFUNDED">REFUNDED</option>
+                              </select>
+                            </td>
+
+                            <td>
+                              <select
+                                value={order.fulfillmentStatus}
+                                onChange={(e) => handleUpdateOrderStatus(order.id, { fulfillmentStatus: e.target.value })}
+                                className="admin-status-select"
+                              >
+                                <option value="PENDING">PENDING</option>
+                                <option value="PROCESSING">PROCESSING</option>
+                                <option value="SHIPPED">SHIPPED</option>
+                                <option value="DELIVERED">DELIVERED</option>
+                                <option value="CANCELLED">CANCELLED</option>
+                              </select>
+                            </td>
+
+                            <td>
+                              <input
+                                type="text"
+                                defaultValue={order.trackingNumber || ''}
+                                placeholder="AWB / Tracking #"
+                                onBlur={(e) => {
+                                  if (e.target.value !== (order.trackingNumber || '')) {
+                                    handleUpdateOrderStatus(order.id, { trackingNumber: e.target.value });
+                                  }
+                                }}
+                                className="admin-input-field"
+                                style={{ height: '32px', width: '130px', fontSize: '11px', padding: '0 8px' }}
+                              />
+                            </td>
+
+                            <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedInvoiceOrder(order)}
+                                className="admin-btn-secondary"
+                                style={{ display: 'inline-flex', padding: '6px 10px', marginRight: '6px' }}
+                              >
+                                Invoice
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteOrder(order.id)}
+                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px' }}
+                                title="Delete Order"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
+            )}
 
-              {/* Chart & Category Share */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* 7-Day Revenue Trend */}
-                <div className="lg:col-span-2 bg-[#0e1424] border border-slate-800/80 rounded-2xl p-5 shadow-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-sm font-bold text-white">7-Day Sales & Order Velocity</h3>
-                      <p className="text-xs text-slate-400">Daily store revenue performance</p>
-                    </div>
-                    <span className="text-[10px] text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded font-bold uppercase">
-                      Live Telemetry
-                    </span>
+            {/* ===================================================== */}
+            {/* TAB 3: POSTERS CATALOG */}
+            {/* ===================================================== */}
+            {activeTab === 'products' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ position: 'relative', width: '280px' }}>
+                    <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                    <input
+                      type="text"
+                      placeholder="Search posters..."
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      className="admin-input-field"
+                      style={{ paddingLeft: '36px', height: '40px', fontSize: '12px' }}
+                    />
                   </div>
 
-                  <div className="h-52 flex items-end justify-between gap-3 pt-6 pb-2 border-b border-slate-800/80">
-                    {salesTrend.map((day, idx) => {
-                      const heightPct = Math.max(15, Math.min(100, Math.round((day.sales / (maxSales || 2000)) * 100)));
-                      return (
-                        <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group relative">
-                          <div className="opacity-0 group-hover:opacity-100 transition absolute -top-8 bg-slate-900 border border-slate-700 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg pointer-events-none whitespace-nowrap z-10">
-                            {formatPrice(day.sales)} ({day.orders} orders)
-                          </div>
-                          <div
-                            style={{ height: `${heightPct}%` }}
-                            className="w-full max-w-[40px] bg-gradient-to-t from-sky-600 to-blue-500 rounded-t-lg transition-all group-hover:from-sky-400 group-hover:to-blue-400 cursor-pointer shadow-md shadow-sky-500/10"
-                          />
-                          <span className="text-[10px] text-slate-400 font-medium truncate w-full text-center">
-                            {day.date}
+                  <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+                    {CATEGORIES_LIST.map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setProductCategoryFilter(cat.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-'))}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          border: productCategoryFilter === cat.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-') ? 'none' : '1px solid #1e2638',
+                          background: productCategoryFilter === cat.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-') ? '#38bdf8' : '#0e1424',
+                          color: productCategoryFilter === cat.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-') ? '#000000' : '#94a3b8',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="admin-catalog-grid">
+                  {filteredProducts.map((prod) => (
+                    <div key={prod.id} className="admin-poster-card">
+                      <div className="admin-poster-thumb">
+                        <img
+                          src={prod.images[0] || '/assets/posters/poster-01.jpg'}
+                          alt={prod.title}
+                        />
+                        <span style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.8)', color: '#ffffff', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase' }}>
+                          {prod.category}
+                        </span>
+                        {prod.isBestSeller && (
+                          <span style={{ position: 'absolute', top: '8px', right: '8px', background: '#f59e0b', color: '#000000', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase' }}>
+                            Bestseller
                           </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                        )}
+                      </div>
 
-                {/* Categories Progress */}
-                <div className="bg-[#0e1424] border border-slate-800/80 rounded-2xl p-5 shadow-lg">
-                  <h3 className="text-sm font-bold text-white mb-1">Top Poster Categories</h3>
-                  <p className="text-xs text-slate-400 mb-4">Genre breakdown</p>
+                      <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
+                        <div>
+                          <h4 style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff', margin: 0, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {prod.title}
+                          </h4>
+                          <p style={{ fontSize: '10px', color: '#64748b', fontFamily: 'monospace', margin: '4px 0 0 0' }}>
+                            /{prod.slug}
+                          </p>
+                        </div>
 
-                  <div className="space-y-3">
-                    {['Anime', 'Marvel & DC', 'Movies & Web Series', 'Sports', 'Landscapes', 'Diva'].map((cat) => {
-                      const count = products.filter((p) =>
-                        p.category.toLowerCase().includes(cat.toLowerCase().split(' ')[0])
-                      ).length;
-                      const pct = Math.round((count / (products.length || 1)) * 100);
-                      return (
-                        <div key={cat} className="space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-slate-300 font-medium">{cat}</span>
-                            <span className="text-slate-400">{count} posters ({pct}%)</span>
+                        <div style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #1e2638', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <span style={{ fontSize: '14px', fontWeight: 900, color: '#38bdf8' }}>
+                              {formatPrice(prod.price)}
+                            </span>
+                            {prod.compareAtPrice && (
+                              <span style={{ fontSize: '10px', color: '#64748b', textDecoration: 'line-through', marginLeft: '6px' }}>
+                                {formatPrice(prod.compareAtPrice)}
+                              </span>
+                            )}
                           </div>
-                          <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div style={{ width: `${Math.max(8, pct)}%` }} className="h-full bg-sky-500 rounded-full" />
+
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingProduct(prod);
+                                setProductFormData({
+                                  title: prod.title,
+                                  slug: prod.slug,
+                                  description: prod.description || '',
+                                  category: prod.category,
+                                  orientation: prod.orientation,
+                                  price: prod.price,
+                                  compareAtPrice: prod.compareAtPrice || 159,
+                                  images: prod.images,
+                                  tags: prod.tags.join(', '),
+                                  stock: prod.stock,
+                                  isBestSeller: prod.isBestSeller,
+                                  isNewRelease: prod.isNewRelease,
+                                });
+                                setIsProductModalOpen(true);
+                              }}
+                              className="admin-btn-secondary"
+                              style={{ padding: '6px' }}
+                              title="Edit Poster"
+                            >
+                              <Edit3 size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProduct(prod.id)}
+                              style={{ background: '#161f33', border: '1px solid #1e2638', color: '#ef4444', padding: '6px', borderRadius: '10px', cursor: 'pointer', display: 'flex' }}
+                              title="Delete Poster"
+                            >
+                              <Trash2 size={13} />
+                            </button>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
+            )}
 
-              {/* Recent Orders Overview */}
-              <div className="bg-[#0e1424] border border-slate-800/80 rounded-2xl p-5 shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-white">Recent Customer Orders</h3>
+            {/* ===================================================== */}
+            {/* TAB 4: COUPONS & OFFERS */}
+            {/* ===================================================== */}
+            {activeTab === 'coupons' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 className="admin-panel-title">Active Promotional Vouchers</h3>
+                    <p className="admin-panel-desc">Manage store coupons and discounts</p>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => setActiveTab('orders')}
-                    className="text-xs text-sky-400 hover:text-sky-300 font-bold transition flex items-center gap-1 cursor-pointer"
+                    onClick={() => setIsCouponModalOpen(true)}
+                    className="admin-btn-accent"
                   >
-                    <span>View All Orders</span>
-                    <ChevronRight size={14} />
+                    <Plus size={14} />
+                    <span>Create Coupon</span>
                   </button>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="text-[10px] uppercase font-bold text-slate-400 border-b border-slate-800">
-                      <tr>
-                        <th className="pb-2.5">Order ID</th>
-                        <th className="pb-2.5">Customer</th>
-                        <th className="pb-2.5">Items</th>
-                        <th className="pb-2.5">Total</th>
-                        <th className="pb-2.5">Fulfillment</th>
-                        <th className="pb-2.5">Payment</th>
-                        <th className="pb-2.5 text-right">Invoice</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/60">
-                      {orders.slice(0, 5).map((order) => (
-                        <tr key={order.id} className="hover:bg-slate-800/20 transition">
-                          <td className="py-3 font-mono font-bold text-sky-400">
-                            #{order.orderNumber}
-                          </td>
-                          <td className="py-3">
-                            <div className="font-semibold text-white">{order.customerName}</div>
-                            <div className="text-[10px] text-slate-400">{order.customerPhone}</div>
-                          </td>
-                          <td className="py-3 text-slate-300 font-medium">
-                            {order.items?.length || 1} item(s)
-                          </td>
-                          <td className="py-3 font-bold text-white">
-                            {formatPrice(order.total)}
-                          </td>
-                          <td className="py-3">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              order.fulfillmentStatus === 'DELIVERED'
-                                ? 'bg-emerald-500/20 text-emerald-400'
-                                : order.fulfillmentStatus === 'SHIPPED'
-                                ? 'bg-blue-500/20 text-blue-400'
-                                : 'bg-amber-500/20 text-amber-300'
-                            }`}>
-                              {order.fulfillmentStatus}
-                            </span>
-                          </td>
-                          <td className="py-3">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              order.paymentStatus === 'PAID'
-                                ? 'bg-emerald-500/20 text-emerald-400'
-                                : 'bg-amber-500/20 text-amber-300'
-                            }`}>
-                              {order.paymentStatus}
-                            </span>
-                          </td>
-                          <td className="py-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedInvoiceOrder(order)}
-                              className="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition cursor-pointer"
-                            >
-                              Invoice
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ===================================================== */}
-          {/* TAB 2: ORDERS & FULFILLMENT */}
-          {/* ===================================================== */}
-          {activeTab === 'orders' && (
-            <div className="space-y-4">
-              {/* Search & Filters */}
-              <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-                <div className="relative w-full sm:w-80">
-                  <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Search Order #, Customer, Phone..."
-                    value={orderSearch}
-                    onChange={(e) => setOrderSearch(e.target.value)}
-                    className="w-full bg-[#0e1424] border border-slate-800 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-
-                <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
-                  {['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => setOrderStatusFilter(status)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase transition cursor-pointer whitespace-nowrap ${
-                        orderStatusFilter === status
-                          ? 'bg-sky-500 text-black'
-                          : 'bg-[#0e1424] text-slate-400 hover:text-white border border-slate-800'
-                      }`}
-                    >
-                      {status}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Orders Table */}
-              <div className="bg-[#0e1424] border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="text-[10px] uppercase font-bold text-slate-400 bg-slate-900/60 border-b border-slate-800">
-                      <tr>
-                        <th className="p-3.5">Order</th>
-                        <th className="p-3.5">Customer & City</th>
-                        <th className="p-3.5">Items</th>
-                        <th className="p-3.5">Total</th>
-                        <th className="p-3.5">Payment</th>
-                        <th className="p-3.5">Fulfillment</th>
-                        <th className="p-3.5">Tracking Number</th>
-                        <th className="p-3.5 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/60">
-                      {filteredOrders.map((order) => (
-                        <tr key={order.id} className="hover:bg-slate-800/20 transition">
-                          <td className="p-3.5">
-                            <span className="font-mono font-bold text-sky-400 block">#{order.orderNumber}</span>
-                            <span className="text-[10px] text-slate-400">
-                              {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
-                          </td>
-
-                          <td className="p-3.5">
-                            <div className="font-bold text-white">{order.customerName}</div>
-                            <div className="text-slate-400 text-[11px]">{order.customerPhone}</div>
-                            <div className="text-[10px] text-slate-400 truncate max-w-[150px]">
-                              {order.shippingAddress?.city}, {order.shippingAddress?.pincode}
-                            </div>
-                          </td>
-
-                          <td className="p-3.5 text-slate-300 font-medium">
-                            {order.items?.length || 1} item(s)
-                          </td>
-
-                          <td className="p-3.5 font-bold text-white">
-                            {formatPrice(order.total)}
-                          </td>
-
-                          <td className="p-3.5">
-                            <select
-                              value={order.paymentStatus}
-                              onChange={(e) => handleUpdateOrderStatus(order.id, { paymentStatus: e.target.value })}
-                              className="bg-[#090d16] border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1 font-semibold focus:outline-none cursor-pointer"
-                            >
-                              <option value="PENDING">PENDING</option>
-                              <option value="PAID">PAID</option>
-                              <option value="FAILED">FAILED</option>
-                              <option value="REFUNDED">REFUNDED</option>
-                            </select>
-                          </td>
-
-                          <td className="p-3.5">
-                            <select
-                              value={order.fulfillmentStatus}
-                              onChange={(e) => handleUpdateOrderStatus(order.id, { fulfillmentStatus: e.target.value })}
-                              className="bg-[#090d16] border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1 font-semibold focus:outline-none cursor-pointer"
-                            >
-                              <option value="PENDING">PENDING</option>
-                              <option value="PROCESSING">PROCESSING</option>
-                              <option value="SHIPPED">SHIPPED</option>
-                              <option value="DELIVERED">DELIVERED</option>
-                              <option value="CANCELLED">CANCELLED</option>
-                            </select>
-                          </td>
-
-                          <td className="p-3.5">
-                            <input
-                              type="text"
-                              defaultValue={order.trackingNumber || ''}
-                              placeholder="AWB / Tracking #"
-                              onBlur={(e) => {
-                                if (e.target.value !== (order.trackingNumber || '')) {
-                                  handleUpdateOrderStatus(order.id, { trackingNumber: e.target.value });
-                                }
-                              }}
-                              className="bg-[#090d16] border border-slate-800 text-slate-200 text-xs rounded-lg px-2.5 py-1 w-32 focus:border-sky-500"
-                            />
-                          </td>
-
-                          <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedInvoiceOrder(order)}
-                              className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition cursor-pointer"
-                            >
-                              Invoice
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteOrder(order.id)}
-                              className="p-1 text-slate-400 hover:text-red-400 transition cursor-pointer"
-                              title="Delete Order"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ===================================================== */}
-          {/* TAB 3: POSTERS CATALOG */}
-          {/* ===================================================== */}
-          {activeTab === 'products' && (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-                <div className="relative w-full sm:w-80">
-                  <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Search posters..."
-                    value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
-                    className="w-full bg-[#0e1424] border border-slate-800 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-
-                <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
-                  {CATEGORIES_LIST.map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setProductCategoryFilter(cat.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-'))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
-                        productCategoryFilter === cat.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-')
-                          ? 'bg-sky-500 text-black'
-                          : 'bg-[#0e1424] text-slate-400 hover:text-white border border-slate-800'
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Products Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {filteredProducts.map((prod) => (
-                  <div
-                    key={prod.id}
-                    className="bg-[#0e1424] border border-slate-800/80 rounded-2xl overflow-hidden hover:border-slate-700 transition flex flex-col group shadow-lg"
-                  >
-                    <div className="aspect-[3/4] bg-slate-900 relative overflow-hidden">
-                      <img
-                        src={prod.images[0] || '/assets/posters/poster-01.jpg'}
-                        alt={prod.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                      />
-                      <span className="absolute top-2 left-2 bg-black/80 backdrop-blur-md text-[10px] font-bold uppercase text-white px-2 py-0.5 rounded">
-                        {prod.category}
-                      </span>
-                      {prod.isBestSeller && (
-                        <span className="absolute top-2 right-2 bg-amber-500 text-black text-[10px] font-black uppercase px-2 py-0.5 rounded">
-                          Bestseller
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="p-4 flex-1 flex flex-col justify-between">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
+                  {coupons.map((coupon) => (
+                    <div key={coupon.id} className="admin-panel-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                       <div>
-                        <h4 className="text-xs font-bold text-white line-clamp-2 leading-snug">
-                          {prod.title}
-                        </h4>
-                        <p className="text-[10px] text-slate-400 mt-1 font-mono">
-                          /{prod.slug}
-                        </p>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                        <div>
-                          <span className="text-sm font-black text-sky-400">
-                            {formatPrice(prod.price)}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontFamily: 'monospace', fontSize: '15px', fontWeight: 900, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '4px 10px', borderRadius: '8px' }}>
+                            {coupon.code}
                           </span>
-                          {prod.compareAtPrice && (
-                            <span className="text-[10px] text-slate-400 line-through ml-1.5">
-                              {formatPrice(prod.compareAtPrice)}
-                            </span>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleCoupon(coupon.id)}
+                            className={`admin-status-pill ${coupon.isActive ? 'success' : 'pending'}`}
+                            style={{ cursor: 'pointer', border: 'none' }}
+                          >
+                            {coupon.isActive ? 'Active' : 'Inactive'}
+                          </button>
                         </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingProduct(prod);
-                              setProductFormData({
-                                title: prod.title,
-                                slug: prod.slug,
-                                description: prod.description || '',
-                                category: prod.category,
-                                orientation: prod.orientation,
-                                price: prod.price,
-                                compareAtPrice: prod.compareAtPrice || 159,
-                                images: prod.images,
-                                tags: prod.tags.join(', '),
-                                stock: prod.stock,
-                                isBestSeller: prod.isBestSeller,
-                                isNewRelease: prod.isNewRelease,
-                              });
-                              setIsProductModalOpen(true);
-                            }}
-                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition cursor-pointer"
-                            title="Edit"
-                          >
-                            <Edit3 size={13} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteProduct(prod.id)}
-                            className="p-1.5 bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-lg transition cursor-pointer"
-                            title="Delete"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                        <p style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: 600, marginTop: '12px' }}>
+                          {coupon.description || `${coupon.discountValue}% Discount`}
+                        </p>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '8px', lineHeight: 1.6 }}>
+                          <div>Min Spend: {formatPrice(coupon.minSpend)}</div>
+                          <div>Min Quantity: {coupon.minQty} items</div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* ===================================================== */}
-          {/* TAB 4: COUPONS & OFFERS */}
-          {/* ===================================================== */}
-          {activeTab === 'coupons' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-white">Active Discount Codes</h3>
-                  <p className="text-xs text-slate-400">Promotions and user coupons</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsCouponModalOpen(true)}
-                  className="flex items-center gap-1.5 text-xs bg-sky-500 hover:bg-sky-400 text-black font-bold px-3.5 py-2 rounded-xl transition cursor-pointer"
-                >
-                  <Plus size={14} />
-                  <span>Create Coupon</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {coupons.map((coupon) => (
-                  <div key={coupon.id} className="bg-[#0e1424] border border-slate-800/80 rounded-2xl p-5 flex flex-col justify-between shadow-lg">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-base font-black text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2.5 py-1 rounded-lg">
-                          {coupon.code}
+                      <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #1e2638', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 800, color: '#34d399' }}>
+                          {coupon.discountValue}% OFF
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleToggleCoupon(coupon.id)}
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase transition cursor-pointer ${
-                            coupon.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'
-                          }`}
+                          onClick={() => handleDeleteCoupon(coupon.id)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}
                         >
-                          {coupon.isActive ? 'Active' : 'Inactive'}
+                          Delete
                         </button>
                       </div>
-                      <p className="text-xs text-slate-300 mt-3 font-semibold">
-                        {coupon.description || `${coupon.discountValue}% Discount`}
-                      </p>
-                      <div className="text-[11px] text-slate-400 mt-2 space-y-0.5">
-                        <div>Min Spend: {formatPrice(coupon.minSpend)}</div>
-                        <div>Min Quantity: {coupon.minQty} items</div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                      <span className="text-xs font-bold text-emerald-400">
-                        {coupon.discountValue}% OFF
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCoupon(coupon.id)}
-                        className="text-xs text-slate-400 hover:text-red-400 transition cursor-pointer"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ===================================================== */}
-          {/* TAB 5: CUSTOMERS & NEWSLETTER */}
-          {/* ===================================================== */}
-          {activeTab === 'customers' && (
-            <div className="space-y-4">
-              <div className="bg-[#0e1424] border border-slate-800/80 rounded-2xl p-5 shadow-xl">
-                <h3 className="text-sm font-bold text-white mb-1">Newsletter Subscribers</h3>
-                <p className="text-xs text-slate-400 mb-4">Emails captured from store subscribers</p>
-
-                <div className="divide-y divide-slate-800/60">
-                  {subscribers.map((sub) => (
-                    <div key={sub.id} className="py-2.5 flex items-center justify-between text-xs">
-                      <span className="font-semibold text-white">{sub.email}</span>
-                      <span className="text-slate-400 text-[11px]">
-                        {new Date(sub.createdAt).toLocaleDateString('en-IN', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </span>
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* ===================================================== */}
-          {/* TAB 6: SECURITY & SYSTEM DIAGNOSTICS */}
-          {/* ===================================================== */}
-          {activeTab === 'security' && (
-            <div className="space-y-6">
-              <div className="bg-[#0e1424] border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                    <ShieldCheck size={22} />
+            {/* ===================================================== */}
+            {/* TAB 5: CUSTOMERS & NEWSLETTER */}
+            {/* ===================================================== */}
+            {activeTab === 'customers' && (
+              <div className="admin-table-box">
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid #1e2638' }}>
+                  <h3 className="admin-panel-title">Newsletter Subscribers</h3>
+                  <p className="admin-panel-desc">Emails captured through store subscribe box</p>
+                </div>
+
+                <div className="admin-table-scroll">
+                  <table className="admin-data-table">
+                    <thead>
+                      <tr>
+                        <th>Subscriber Email</th>
+                        <th>Subscription Date</th>
+                        <th style={{ textAlign: 'right' }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {subscribers.map((sub) => (
+                        <tr key={sub.id}>
+                          <td style={{ fontWeight: 700, color: '#ffffff' }}>{sub.email}</td>
+                          <td style={{ color: '#94a3b8' }}>
+                            {new Date(sub.createdAt).toLocaleDateString('en-IN', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <span className="admin-status-pill success">Verified</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ===================================================== */}
+            {/* TAB 6: SECURITY & DIAGNOSTICS */}
+            {/* ===================================================== */}
+            {activeTab === 'security' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div className="admin-panel-card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399', flexShrink: 0 }}>
+                    <ShieldCheck size={28} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white">System Security Status: Protected</h3>
-                    <p className="text-xs text-slate-400">Prisma PostgreSQL SSL active • Token authentication enabled</p>
+                    <h3 className="admin-panel-title" style={{ fontSize: '15px' }}>Security Gateway Status: Protected</h3>
+                    <p className="admin-panel-desc">Prisma PostgreSQL SSL active • 256-bit Token Verification</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                  <div className="bg-[#090d16] p-3 rounded-xl border border-slate-800 text-xs">
-                    <div className="text-slate-400 text-[10px] font-bold uppercase">Database Driver</div>
-                    <div className="text-white font-mono mt-1">@prisma/client 6.4.1</div>
-                  </div>
-                  <div className="bg-[#090d16] p-3 rounded-xl border border-slate-800 text-xs">
-                    <div className="text-slate-400 text-[10px] font-bold uppercase">Connection Pool</div>
-                    <div className="text-emerald-400 font-mono mt-1">pooled.db.prisma.io:5432</div>
-                  </div>
-                  <div className="bg-[#090d16] p-3 rounded-xl border border-slate-800 text-xs">
-                    <div className="text-slate-400 text-[10px] font-bold uppercase">Rate Limiting</div>
-                    <div className="text-white font-mono mt-1">Sliding Window (120 req/min)</div>
-                  </div>
+                <div className="admin-panel-card">
+                  <h3 className="admin-panel-title">Update Master Admin Password</h3>
+                  <p className="admin-panel-desc" style={{ marginBottom: '16px' }}>Change your administrative access password</p>
+
+                  <form onSubmit={handleChangePassword} style={{ maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div>
+                      <label className="admin-input-label">Current Password</label>
+                      <input
+                        type="password"
+                        required
+                        value={currentPw}
+                        onChange={(e) => setCurrentPw(e.target.value)}
+                        className="admin-input-field"
+                        style={{ height: '42px' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="admin-input-label">New Password (Min 8 Characters)</label>
+                      <input
+                        type="password"
+                        required
+                        minLength={8}
+                        value={newPw}
+                        onChange={(e) => setNewPw(e.target.value)}
+                        className="admin-input-field"
+                        style={{ height: '42px' }}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={pwChangeLoading}
+                      className="admin-btn-accent"
+                      style={{ height: '42px', marginTop: '6px', justifyContent: 'center' }}
+                    >
+                      {pwChangeLoading ? 'Updating Password...' : 'Save New Password'}
+                    </button>
+                  </form>
                 </div>
               </div>
-
-              {/* Password Change Form */}
-              <div className="bg-[#0e1424] border border-slate-800/80 rounded-2xl p-5 shadow-xl">
-                <h3 className="text-sm font-bold text-white mb-1">Update Admin Password</h3>
-                <p className="text-xs text-slate-400 mb-4">Change the master administrative login password</p>
-
-                <form onSubmit={handleChangePassword} className="space-y-3 max-w-md">
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1">Current Password</label>
-                    <input
-                      type="password"
-                      required
-                      value={currentPw}
-                      onChange={(e) => setCurrentPw(e.target.value)}
-                      className="w-full bg-[#090d16] border border-slate-800 text-white rounded-xl px-3 py-2 text-xs focus:border-sky-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1">New Password (min 8 chars)</label>
-                    <input
-                      type="password"
-                      required
-                      minLength={8}
-                      value={newPw}
-                      onChange={(e) => setNewPw(e.target.value)}
-                      className="w-full bg-[#090d16] border border-slate-800 text-white rounded-xl px-3 py-2 text-xs focus:border-sky-500"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={pwChangeLoading}
-                    className="bg-sky-500 hover:bg-sky-400 text-black font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer"
-                  >
-                    {pwChangeLoading ? 'Updating...' : 'Save New Password'}
-                  </button>
-                </form>
-              </div>
-            </div>
-          )}
-        </main>
+            )}
+          </main>
+        </div>
       </div>
 
       {/* ========================================================= */}
@@ -1844,53 +1792,56 @@ export function AdminDashboardPage() {
 
       {/* Product Add/Edit Modal */}
       {isProductModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0e1424] border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-white">
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ background: '#0e1424', border: '1px solid #1e2638', borderRadius: '20px', maxWidth: '540px', width: '100%', padding: '24px', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e2638', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
                 {editingProduct ? 'Edit Catalog Poster' : 'Add New Poster to Database'}
               </h3>
               <button
                 type="button"
                 onClick={() => setIsProductModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveProduct} className="space-y-3 text-xs">
+            <form onSubmit={handleSaveProduct} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label className="block font-bold text-slate-400 mb-1">Poster Title</label>
+                <label className="admin-input-label">Poster Title</label>
                 <input
                   type="text"
                   required
                   value={productFormData.title}
                   onChange={(e) => setProductFormData({ ...productFormData, title: e.target.value })}
                   placeholder="ASTA POSTER | BLACK CLOVER"
-                  className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  className="admin-input-field"
+                  style={{ height: '40px' }}
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-400 mb-1">URL Slug</label>
+                <label className="admin-input-label">URL Slug</label>
                 <input
                   type="text"
                   required
                   value={productFormData.slug}
                   onChange={(e) => setProductFormData({ ...productFormData, slug: e.target.value })}
                   placeholder="asta-black-clover-anime-poster"
-                  className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                  className="admin-input-field"
+                  style={{ height: '40px', fontFamily: 'monospace' }}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label className="block font-bold text-slate-400 mb-1">Category</label>
+                  <label className="admin-input-label">Category</label>
                   <select
                     value={productFormData.category}
                     onChange={(e) => setProductFormData({ ...productFormData, category: e.target.value })}
-                    className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
                   >
                     <option value="anime">Anime</option>
                     <option value="marvel-dc">Marvel & DC</option>
@@ -1907,11 +1858,12 @@ export function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-400 mb-1">Orientation</label>
+                  <label className="admin-input-label">Orientation</label>
                   <select
                     value={productFormData.orientation}
                     onChange={(e) => setProductFormData({ ...productFormData, orientation: e.target.value })}
-                    className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
                   >
                     <option value="portrait">Portrait</option>
                     <option value="landscape">Landscape</option>
@@ -1920,94 +1872,85 @@ export function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label className="block font-bold text-slate-400 mb-1">Price (₹)</label>
+                  <label className="admin-input-label">Price (₹)</label>
                   <input
                     type="number"
                     required
                     value={productFormData.price}
                     onChange={(e) => setProductFormData({ ...productFormData, price: Number(e.target.value) })}
-                    className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-400 mb-1">Compare Price (₹)</label>
+                  <label className="admin-input-label">Compare Price (₹)</label>
                   <input
                     type="number"
                     value={productFormData.compareAtPrice}
                     onChange={(e) => setProductFormData({ ...productFormData, compareAtPrice: Number(e.target.value) })}
-                    className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-400 mb-1">Stock</label>
+                  <label className="admin-input-label">Stock</label>
                   <input
                     type="number"
                     value={productFormData.stock}
                     onChange={(e) => setProductFormData({ ...productFormData, stock: Number(e.target.value) })}
-                    className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-400 mb-1">Image URL / Path</label>
+                <label className="admin-input-label">Image URL / Path</label>
                 <input
                   type="text"
                   required
                   value={productFormData.images[0] || ''}
                   onChange={(e) => setProductFormData({ ...productFormData, images: [e.target.value] })}
                   placeholder="/assets/posters/poster-01.jpg"
-                  className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                  className="admin-input-field"
+                  style={{ height: '40px', fontFamily: 'monospace' }}
                 />
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-400 mb-1">Tags (Comma-separated)</label>
-                <input
-                  type="text"
-                  value={productFormData.tags}
-                  onChange={(e) => setProductFormData({ ...productFormData, tags: e.target.value })}
-                  placeholder="anime, hero, black clover"
-                  className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2 text-white"
-                />
-              </div>
-
-              <div className="flex items-center gap-6 pt-2">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div style={{ display: 'flex', gap: '20px', marginTop: '6px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px' }}>
                   <input
                     type="checkbox"
                     checked={productFormData.isBestSeller}
                     onChange={(e) => setProductFormData({ ...productFormData, isBestSeller: e.target.checked })}
-                    className="rounded bg-slate-900 border-slate-700 text-sky-500"
                   />
                   <span>Mark as Bestseller</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px' }}>
                   <input
                     type="checkbox"
                     checked={productFormData.isNewRelease}
                     onChange={(e) => setProductFormData({ ...productFormData, isNewRelease: e.target.checked })}
-                    className="rounded bg-slate-900 border-slate-700 text-sky-500"
                   />
                   <span>Mark as New Release</span>
                 </label>
               </div>
 
-              <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #1e2638' }}>
                 <button
                   type="button"
                   onClick={() => setIsProductModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl"
+                  className="admin-btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-sky-500 hover:bg-sky-400 text-black font-bold rounded-xl"
+                  className="admin-btn-accent"
                 >
-                  Save Poster
+                  Save Poster to Catalog
                 </button>
               </div>
             </form>
@@ -2017,75 +1960,81 @@ export function AdminDashboardPage() {
 
       {/* Coupon Modal */}
       {isCouponModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0e1424] border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-white">Create New Coupon Code</h3>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ background: '#0e1424', border: '1px solid #1e2638', borderRadius: '20px', maxWidth: '420px', width: '100%', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e2638', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                Create New Promo Coupon
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsCouponModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
               >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveCoupon} className="space-y-3 text-xs">
+            <form onSubmit={handleSaveCoupon} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label className="block font-bold text-slate-400 mb-1">Coupon Code (e.g. FLASH20)</label>
+                <label className="admin-input-label">Coupon Code (e.g. FLASH20)</label>
                 <input
                   type="text"
                   required
                   value={couponFormData.code}
                   onChange={(e) => setCouponFormData({ ...couponFormData, code: e.target.value.toUpperCase() })}
-                  className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2 text-white font-mono uppercase"
+                  className="admin-input-field"
+                  style={{ height: '40px', textTransform: 'uppercase', fontFamily: 'monospace' }}
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-400 mb-1">Description</label>
+                <label className="admin-input-label">Description</label>
                 <input
                   type="text"
                   value={couponFormData.description}
                   onChange={(e) => setCouponFormData({ ...couponFormData, description: e.target.value })}
                   placeholder="Special 20% discount"
-                  className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2 text-white"
+                  className="admin-input-field"
+                  style={{ height: '40px' }}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label className="block font-bold text-slate-400 mb-1">Discount %</label>
+                  <label className="admin-input-label">Discount %</label>
                   <input
                     type="number"
                     required
                     value={couponFormData.discountValue}
                     onChange={(e) => setCouponFormData({ ...couponFormData, discountValue: Number(e.target.value) })}
-                    className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-400 mb-1">Min Spend (₹)</label>
+                  <label className="admin-input-label">Min Spend (₹)</label>
                   <input
                     type="number"
                     value={couponFormData.minSpend}
                     onChange={(e) => setCouponFormData({ ...couponFormData, minSpend: Number(e.target.value) })}
-                    className="w-full bg-[#090d16] border border-slate-800 rounded-xl px-3 py-2 text-white"
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
                   />
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #1e2638' }}>
                 <button
                   type="button"
                   onClick={() => setIsCouponModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl"
+                  className="admin-btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-sky-500 hover:bg-sky-400 text-black font-bold rounded-xl"
+                  className="admin-btn-accent"
                 >
                   Create Voucher
                 </button>
@@ -2097,20 +2046,20 @@ export function AdminDashboardPage() {
 
       {/* Tax Invoice Modal */}
       {selectedInvoiceOrder && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white text-neutral-900 rounded-2xl max-w-2xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-start border-b border-neutral-200 pb-5">
+        <div style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ background: '#ffffff', color: '#111827', borderRadius: '20px', maxWidth: '640px', width: '100%', padding: '32px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e5e7eb', paddingBottom: '20px' }}>
               <div>
-                <img src="/assets/dungeons-logo.png" alt="DUNGEONS" className="h-8 w-auto mb-1" />
-                <p className="text-xs text-neutral-500">Premium Archival Poster Prints</p>
-                <p className="text-[11px] text-neutral-400 mt-1">support@dungeons.com</p>
+                <img src="/assets/dungeons-logo.png" alt="DUNGEONS" style={{ height: '32px', width: 'auto', marginBottom: '4px' }} />
+                <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>Premium Archival Poster Prints</p>
+                <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0 0' }}>support@dungeons.com</p>
               </div>
-              <div className="text-right">
-                <span className="text-xs font-black uppercase tracking-wider bg-neutral-100 px-2.5 py-1 rounded">
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', background: '#f3f4f6', padding: '4px 8px', borderRadius: '4px' }}>
                   TAX INVOICE
                 </span>
-                <p className="text-sm font-bold text-neutral-900 mt-2">#{selectedInvoiceOrder.orderNumber}</p>
-                <p className="text-xs text-neutral-500">
+                <p style={{ fontSize: '14px', fontWeight: 700, margin: '8px 0 0 0' }}>#{selectedInvoiceOrder.orderNumber}</p>
+                <p style={{ fontSize: '11px', color: '#6b7280', margin: '2px 0 0 0' }}>
                   {new Date(selectedInvoiceOrder.createdAt).toLocaleDateString('en-IN', {
                     year: 'numeric',
                     month: 'short',
@@ -2120,81 +2069,81 @@ export function AdminDashboardPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6 my-6 text-xs">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', margin: '20px 0', fontSize: '12px' }}>
               <div>
-                <p className="font-bold text-neutral-400 uppercase tracking-wider text-[10px]">BILLED TO</p>
-                <p className="font-bold text-sm text-neutral-900 mt-1">{selectedInvoiceOrder.customerName}</p>
-                <p className="text-neutral-600 mt-0.5">{selectedInvoiceOrder.customerPhone}</p>
-                <p className="text-neutral-600">{selectedInvoiceOrder.customerEmail}</p>
+                <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', color: '#9ca3af', margin: 0 }}>BILLED TO</p>
+                <p style={{ fontSize: '14px', fontWeight: 700, margin: '4px 0 0 0' }}>{selectedInvoiceOrder.customerName}</p>
+                <p style={{ color: '#4b5563', margin: '2px 0 0 0' }}>{selectedInvoiceOrder.customerPhone}</p>
+                <p style={{ color: '#4b5563', margin: '2px 0 0 0' }}>{selectedInvoiceOrder.customerEmail}</p>
               </div>
               <div>
-                <p className="font-bold text-neutral-400 uppercase tracking-wider text-[10px]">SHIPPING DESTINATION</p>
-                <p className="text-neutral-700 mt-1">{selectedInvoiceOrder.shippingAddress?.flat}</p>
-                <p className="text-neutral-700">{selectedInvoiceOrder.shippingAddress?.locality}</p>
-                <p className="text-neutral-700 font-semibold">
+                <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', color: '#9ca3af', margin: 0 }}>SHIPPING DESTINATION</p>
+                <p style={{ color: '#374151', margin: '4px 0 0 0' }}>{selectedInvoiceOrder.shippingAddress?.flat}</p>
+                <p style={{ color: '#374151', margin: '2px 0 0 0' }}>{selectedInvoiceOrder.shippingAddress?.locality}</p>
+                <p style={{ fontWeight: 700, color: '#111827', margin: '2px 0 0 0' }}>
                   {selectedInvoiceOrder.shippingAddress?.city}, {selectedInvoiceOrder.shippingAddress?.state} - {selectedInvoiceOrder.shippingAddress?.pincode}
                 </p>
               </div>
             </div>
 
-            <table className="w-full text-xs text-left my-6">
-              <thead className="bg-neutral-100 text-neutral-600 font-bold uppercase text-[10px]">
-                <tr>
-                  <th className="p-2.5">Item Description</th>
-                  <th className="p-2.5">Size</th>
-                  <th className="p-2.5 text-center">Qty</th>
-                  <th className="p-2.5 text-right">Price</th>
-                  <th className="p-2.5 text-right">Total</th>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', margin: '20px 0', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: '#f9fafb', textTransform: 'uppercase', fontSize: '10px', color: '#4b5563', fontWeight: 800 }}>
+                  <th style={{ padding: '10px 12px' }}>Description</th>
+                  <th style={{ padding: '10px 12px' }}>Size</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'center' }}>Qty</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'right' }}>Price</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'right' }}>Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100">
+              <tbody>
                 {(selectedInvoiceOrder.items || []).map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="p-2.5 font-semibold text-neutral-800">{item.productTitle}</td>
-                    <td className="p-2.5 text-neutral-600">{item.size}</td>
-                    <td className="p-2.5 text-center">{item.quantity}</td>
-                    <td className="p-2.5 text-right">{formatPrice(item.price)}</td>
-                    <td className="p-2.5 text-right font-bold">{formatPrice(item.price * item.quantity)}</td>
+                  <tr key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 600 }}>{item.productTitle}</td>
+                    <td style={{ padding: '10px 12px', color: '#6b7280' }}>{item.size}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'center' }}>{item.quantity}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right' }}>{formatPrice(item.price)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }}>{formatPrice(item.price * item.quantity)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
-            <div className="border-t border-neutral-200 pt-4 flex justify-end text-xs">
-              <div className="w-64 space-y-1.5">
-                <div className="flex justify-between text-neutral-600">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #e5e7eb', paddingTop: '16px', fontSize: '12px' }}>
+              <div style={{ width: '240px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280' }}>
                   <span>Subtotal</span>
                   <span>{formatPrice(selectedInvoiceOrder.subtotal)}</span>
                 </div>
                 {selectedInvoiceOrder.discount > 0 && (
-                  <div className="flex justify-between text-emerald-600 font-semibold">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981', fontWeight: 600 }}>
                     <span>Discount</span>
                     <span>-{formatPrice(selectedInvoiceOrder.discount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-neutral-600">
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280' }}>
                   <span>Standard Shipping</span>
                   <span>Free</span>
                 </div>
-                <div className="border-t border-neutral-200 pt-2 flex justify-between font-bold text-sm text-neutral-900">
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: '14px', borderTop: '1px solid #e5e7eb', paddingTop: '8px' }}>
                   <span>Total Amount Paid</span>
                   <span>{formatPrice(selectedInvoiceOrder.total)}</span>
                 </div>
               </div>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-neutral-200 flex justify-end gap-3 no-print">
+            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: '10px' }} className="no-print">
               <button
                 type="button"
                 onClick={() => setSelectedInvoiceOrder(null)}
-                className="px-4 py-2 border border-neutral-300 rounded-xl text-xs font-bold text-neutral-700 hover:bg-neutral-50"
+                style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: '#ffffff', color: '#374151' }}
               >
                 Close
               </button>
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-2"
+                style={{ padding: '8px 16px', background: '#090d16', color: '#ffffff', borderRadius: '10px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 <Printer size={14} />
                 <span>Print Tax Invoice</span>
@@ -2206,4 +2155,5 @@ export function AdminDashboardPage() {
     </div>
   );
 }
+
 export default AdminDashboardPage;
