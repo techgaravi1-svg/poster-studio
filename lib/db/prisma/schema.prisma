@@ -1,0 +1,222 @@
+// ==============================================================================
+// PRISMA SCHEMA - DUNGEONS POSTER STUDIO SECURE DATABASE
+// ==============================================================================
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ------------------------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------------------------
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum OrderPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum OrderFulfillmentStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum AddressType {
+  HOME
+  OFFICE
+  OTHER
+}
+
+// ------------------------------------------------------------------------------
+// USER / CUSTOMER & AUTH
+// ------------------------------------------------------------------------------
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String?
+  phone        String?
+  passwordHash String?
+  role         Role      @default(CUSTOMER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  orders       Order[]
+  addresses    Address[]
+
+  @@map("users")
+}
+
+// ------------------------------------------------------------------------------
+// SAVED ADDRESSES
+// ------------------------------------------------------------------------------
+
+model Address {
+  id        String      @id @default(cuid())
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String
+  pincode   String
+  city      String
+  state     String
+  locality  String
+  flat      String
+  landmark  String?
+  type      AddressType @default(HOME)
+  isDefault Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([phone])
+  @@map("addresses")
+}
+
+// ------------------------------------------------------------------------------
+// PRODUCTS CATALOG
+// ------------------------------------------------------------------------------
+
+model Product {
+  id             String      @id @default(cuid())
+  title          String
+  slug           String      @unique
+  description    String?
+  category       String      // e.g. "marvel-dc", "anime", "movies-web-series"
+  orientation    String      @default("portrait")
+  price          Float
+  compareAtPrice Float?
+  images         String[]
+  tags           String[]    @default([])
+  isBestSeller   Boolean     @default(false)
+  isNewRelease   Boolean     @default(false)
+  isStaffPick    Boolean     @default(false)
+  stock          Int         @default(100)
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([category])
+  @@index([slug])
+  @@map("products")
+}
+
+// ------------------------------------------------------------------------------
+// ORDERS & CHECKOUT
+// ------------------------------------------------------------------------------
+
+model Order {
+  id                String                 @id @default(cuid())
+  orderNumber       String                 @unique // Human-friendly ID, e.g. DNG-8942
+  userId            String?
+  user              User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customerName      String
+  customerEmail     String
+  customerPhone     String
+  shippingAddress   Json                   // Saved address snapshot
+  subtotal          Float
+  shippingFee       Float                  @default(0)
+  discount          Float                  @default(0)
+  total             Float
+  paymentStatus     OrderPaymentStatus     @default(PENDING)
+  paymentMethod     String                 @default("razorpay")
+  paymentId         String?                // Payment Gateway Transaction ID
+  fulfillmentStatus OrderFulfillmentStatus @default(PENDING)
+  trackingNumber    String?
+  notes             String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  items             OrderItem[]
+
+  @@index([userId])
+  @@index([customerEmail])
+  @@index([customerPhone])
+  @@index([orderNumber])
+  @@map("orders")
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String?
+  title        String
+  slug         String?
+  size         String   // A4, A3, etc.
+  quantity     Int      @default(1)
+  price        Float
+  orientation  String   @default("portrait")
+  customUpload Json?    // Snapshot of custom print files/options
+  createdAt    DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+// ------------------------------------------------------------------------------
+// COUPONS & DISCOUNTS
+// ------------------------------------------------------------------------------
+
+model Coupon {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  description   String?
+  discountType  String    @default("percentage") // "percentage" | "fixed"
+  discountValue Float
+  minSpend      Float     @default(0)
+  minQty        Int       @default(1)
+  maxDiscount   Float?
+  isActive      Boolean   @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([code])
+  @@map("coupons")
+}
+
+// ------------------------------------------------------------------------------
+// NEWSLETTER & SUBSCRIBERS
+// ------------------------------------------------------------------------------
+
+model NewsletterSubscriber {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  subscribedAt DateTime @default(now())
+
+  @@map("newsletter_subscribers")
+}
+
+// ------------------------------------------------------------------------------
+// SECURITY & AUDIT LOGS
+// ------------------------------------------------------------------------------
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String?
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

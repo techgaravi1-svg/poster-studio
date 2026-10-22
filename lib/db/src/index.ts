@@ -1,18 +1,25 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
-import * as schema from "./schema";
+import { PrismaClient } from '@prisma/client';
 
-const { Pool } = pg;
-
-if (!process.env.DATABASE_URL) {
-  console.warn(
-    "DATABASE_URL is not set. Database operations will fail unless configured.",
-  );
+declare global {
+  // eslint-disable-next-line no-var
+  var __prismaClient: PrismaClient | undefined;
 }
 
-export const pool = new Pool(
-  process.env.DATABASE_URL ? { connectionString: process.env.DATABASE_URL } : undefined,
-);
-export const db = drizzle(pool, { schema });
+/**
+ * Singleton PrismaClient instance to prevent exhausting database connections
+ * in development (hot-reloading) and production serverless environments.
+ */
+export const prisma: PrismaClient =
+  globalThis.__prismaClient ??
+  new PrismaClient({
+    log:
+      process.env.NODE_ENV === 'development'
+        ? ['warn', 'error']
+        : ['error'],
+  });
 
-export * from "./schema";
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.__prismaClient = prisma;
+}
+
+export * from '@prisma/client';

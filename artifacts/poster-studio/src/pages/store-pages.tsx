@@ -2799,6 +2799,50 @@ export function CheckoutPage() {
           fulfillmentStatus: 'processing',
         });
 
+        // Sync with secure Prisma PostgreSQL Backend
+        try {
+          const apiRes = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              customerName: form.name,
+              customerEmail: form.email || `${form.phone}@dungeons.in`,
+              customerPhone: form.phone,
+              shippingAddress: {
+                name: activeAddress?.name || form.name,
+                phone: activeAddress?.phone || form.phone,
+                pincode: activeAddress?.pincode || form.pincode,
+                city: activeAddress?.city || form.city,
+                state: activeAddress?.state || form.state,
+                locality: activeAddress?.locality || form.address,
+                flat: activeAddress?.flat || form.address,
+                landmark: activeAddress?.landmark || '',
+                type: activeAddress?.type || 'home',
+              },
+              items: cart.map((item) => ({
+                productId: item.productId,
+                title: item.title,
+                slug: item.slug,
+                size: item.size,
+                quantity: item.quantity,
+                price: item.price,
+                orientation: item.orientation || 'portrait',
+                customUpload: item.customUpload,
+              })),
+              couponCode: coupon || undefined,
+            }),
+          });
+
+          if (apiRes.ok) {
+            const data = await apiRes.json();
+            if (data.order?.orderNumber) {
+              order.id = data.order.orderNumber;
+            }
+          }
+        } catch (apiErr) {
+          console.warn('Backend order sync warning:', apiErr);
+        }
+
         store.addOrder(order);
         navigate(`/checkout/success?order=${order.id}`);
       } else if (paymentResult.status === 'cancelled') {
