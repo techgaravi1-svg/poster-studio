@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 export type PosterSize = 'A5' | 'A4' | 'A3' | '50×70' | '70×100';
 export type Orientation = 'portrait' | 'landscape' | 'square';
 
@@ -829,14 +831,100 @@ export const collections = [
   { slug: 'aesthetic', title: 'MOVIES & WEB SERIES', description: 'Editorial fashion and cinema classics.', treatment: 'art-dive' },
 ];
 
-export function getProduct(slug?: string) {
-  return products.find((product) => product.slug === slug);
+export function transformDbProductToFrontend(p: any): Product {
+  const compareAt = p.compareAtPrice ?? (p.price * 2 - 1);
+  const discount = compareAt > p.price ? Math.round(((compareAt - p.price) / compareAt) * 100) : 0;
+  return {
+    id: p.id,
+    slug: p.slug,
+    title: p.title,
+    description: p.description || '',
+    category: (p.category || 'POSTERS').toUpperCase(),
+    collection: (p.category || 'posters').toLowerCase(),
+    images: Array.isArray(p.images) && p.images.length > 0 ? p.images : ['/assets/posters/poster-01.jpg'],
+    artTreatment: 'art-signal',
+    price: Number(p.price),
+    compareAtPrice: Number(compareAt),
+    discount,
+    sizes: ['A5', 'A4', 'A3', '50×70', '70×100'],
+    orientation: (p.orientation as Orientation) || 'portrait',
+    stock: p.stock ?? 50,
+    featured: Boolean(p.isStaffPick || p.isBestSeller),
+    bestseller: Boolean(p.isBestSeller),
+    newArrival: Boolean(p.isNewRelease),
+    tags: Array.isArray(p.tags) ? p.tags : [],
+    rating: 4.9,
+    subtitle: `${(p.category || 'PREMIUM').toUpperCase()} 350 GSM ARCHIVAL POSTER`,
+    features: defaultFeatures,
+    notes: defaultNotes,
+    shipping: defaultShipping,
+  };
 }
 
-export function searchProducts(query: string) {
+export async function fetchLiveProducts(): Promise<Product[]> {
+  try {
+    const res = await fetch('/api/products?limit=250');
+    if (!res.ok) return products;
+    const data = await res.json();
+    if (data.success && Array.isArray(data.products) && data.products.length > 0) {
+      const transformed = data.products.map(transformDbProductToFrontend);
+      // Synchronize in-memory products array
+      products.length = 0;
+      products.push(...transformed);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('dungeons:products-updated', { detail: transformed }));
+      }
+      return transformed;
+    }
+  } catch (err) {
+    console.warn('[Catalog] Database fetch fallback to local cache:', err);
+  }
+  return products;
+}
+
+export function useLiveProducts(): Product[] {
+  const [list, setList] = useState<Product[]>(() => [...products]);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchLiveProducts().then((dbList) => {
+      if (isMounted && dbList && dbList.length > 0) {
+        setList([...dbList]);
+      }
+    });
+
+    const onUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setList([...e.detail]);
+      } else {
+        setList([...products]);
+      }
+    };
+
+    window.addEventListener('dungeons:products-updated', onUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('dungeons:products-updated', onUpdate);
+    };
+  }, []);
+
+  return list;
+}
+
+// Auto-fetch from Prisma database on client startup
+if (typeof window !== 'undefined') {
+  fetchLiveProducts();
+}
+
+export function getProduct(slug?: string) {
+  if (!slug) return undefined;
+  return products.find((product) => product.slug === slug || product.id === slug);
+}
+
+export function searchProducts(query: string, sourceProducts: Product[] = products) {
   const needle = query.trim().toLowerCase();
   if (!needle) return [];
-  return products.filter((product) =>
+  return sourceProducts.filter((product) =>
     [product.title, product.category, product.collection, product.description, ...product.tags]
       .join(' ')
       .toLowerCase()

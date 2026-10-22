@@ -44,7 +44,7 @@ import {
   Download,
   FileText,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, products, searchProducts, storeCategories, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, products, searchProducts, storeCategories, useLiveProducts, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, Toast } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
@@ -127,10 +127,11 @@ function SizeChartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 export function HomePage() {
   const [toast, setToast] = useState('');
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const liveProducts = useLiveProducts();
 
-  const bestSellers = products.filter((p) => p.bestseller).slice(0, 6);
-  const trending = products.filter((p) => p.newArrival || p.collection === 'football').slice(0, 6);
-  const newArrivals = products.filter((p) => p.newArrival || p.collection === 'marvel-dc' || p.tags.includes('sports')).slice(0, 6);
+  const bestSellers = liveProducts.filter((p) => p.bestseller).slice(0, 6);
+  const trending = liveProducts.filter((p) => p.newArrival || p.collection === 'football').slice(0, 6);
+  const newArrivals = liveProducts.filter((p) => p.newArrival || p.collection === 'marvel-dc' || p.tags.includes('sports')).slice(0, 6);
 
   const customCategories = [
     {
@@ -568,6 +569,8 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     { slug: 'devotional', label: 'DEVOTIONAL' },
   ];
 
+  const liveProducts = useLiveProducts();
+
   const currentCategoryLabel = !isPostersActive
     ? `${activeCategory.name} — COMING SOON`
     : activePosterSubSlug === 'bestsellers'
@@ -578,12 +581,12 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
 
   const filteredProducts = useMemo(() => {
     if (!isPostersActive) return [];
-    let list = products;
+    let list = liveProducts;
     if (activePosterSubSlug === 'bestsellers') {
-      list = products.filter((p) => p.bestseller);
+      list = liveProducts.filter((p) => p.bestseller);
     } else if (activePosterSubSlug !== 'all') {
       const slug = activePosterSubSlug.toLowerCase();
-      list = products.filter((p) => {
+      list = liveProducts.filter((p) => {
         if (p.collection === slug) return true;
         if (slug === 'marvel-dc') return p.collection === 'marvel-dc' || p.tags.some((t) => t.includes('marvel') || t.includes('dc') || t.includes('spider'));
         if (slug === 'anime') return p.collection === 'anime' || p.category.toLowerCase().includes('anime') || p.tags.some((t) => t.includes('anime') || t.includes('manga') || t.includes('clover'));
@@ -605,7 +608,7 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     if (selectedSort === 'high') return [...list].sort((a, b) => b.price - a.price);
     if (selectedSort === 'rating') return [...list].sort((a, b) => b.rating - a.rating);
     return list;
-  }, [isPostersActive, activePosterSubSlug, minPrice, maxPrice, selectedSort]);
+  }, [liveProducts, isPostersActive, activePosterSubSlug, minPrice, maxPrice, selectedSort]);
 
   const handleVipSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -939,7 +942,8 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
 
 export function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
-  const product = getProduct(slug) || products[0];
+  const liveProducts = useLiveProducts();
+  const product = liveProducts.find((p) => p.slug === slug || p.id === slug) || getProduct(slug) || liveProducts[0] || products[0];
   const [, navigate] = useLocation();
   const { wishlist = [] } = useStore();
   const [selectedSize, setSelectedSize] = useState<PosterSize>('A5');
@@ -956,11 +960,11 @@ export function ProductPage() {
   };
 
   const similarProducts = useMemo(() => {
-    const list = products.filter((p) => p.id !== product.id);
+    const list = liveProducts.filter((p) => p.id !== product.id);
     const sameCategory = list.filter((p) => p.category === product.category || p.collection === product.collection);
     const others = list.filter((p) => p.category !== product.category && p.collection !== product.collection);
     return [...sameCategory, ...others].slice(0, 4);
-  }, [product.id, product.category, product.collection]);
+  }, [liveProducts, product.id, product.category, product.collection]);
 
   const toggleAccordion = (name: string) => {
     setOpenAccordion(openAccordion === name ? null : name);
@@ -2325,8 +2329,9 @@ export function CustomPage() {
 export function WishlistPage() {
   const { wishlist = [] } = useStore();
   const [toast, setToast] = useState('');
+  const liveProducts = useLiveProducts();
 
-  const wishlistProducts = products.filter(
+  const wishlistProducts = liveProducts.filter(
     (p) => wishlist.includes(p.slug) || wishlist.includes(p.id)
   );
 
@@ -3313,7 +3318,8 @@ export function OrderSuccessPage() {
 export function SearchPage() {
   const [, navigate] = useLocation();
   const initial = new URLSearchParams(window.location.search).get('q') || '';
-  const results = searchProducts(initial);
+  const liveProducts = useLiveProducts();
+  const results = searchProducts(initial, liveProducts);
 
   return (
     <main className="postgenz-search-page">

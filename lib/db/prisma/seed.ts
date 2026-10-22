@@ -1,4 +1,5 @@
 import { prisma } from '../src/index';
+import { products as catalogProducts } from '../../../artifacts/poster-studio/src/lib/catalog';
 
 async function main() {
   console.log('🌱 Starting database seed into Prisma PostgreSQL...');
@@ -114,64 +115,46 @@ async function main() {
   }
   console.log(`✅ Seeded ${addresses.length} addresses`);
 
-  // 3. Seed Products
-  const products = [
-    {
-      slug: 'asta-black-clover-anime-poster',
-      title: 'ASTA POSTER | BLACK CLOVER ANIME POSTER',
-      description: 'Fierce, vibrant yellow background Asta artwork from Black Clover, printed on 350 GSM premium archival matte paper.',
-      category: 'anime',
-      price: 79.0,
-      compareAtPrice: 159.0,
-      images: ['/assets/posters/poster-01.jpg'],
-      isBestSeller: true,
-      tags: ['anime', 'black clover', 'asta', 'action'],
-    },
-    {
-      slug: 'batman-dark-knight-dc-poster',
-      title: 'THE DARK KNIGHT | BATMAN DC POSTER',
-      description: 'The brooding protector of Gotham in stark contrast noir aesthetic.',
-      category: 'marvel-dc',
-      price: 79.0,
-      compareAtPrice: 159.0,
-      images: ['/assets/posters/poster-02.jpg'],
-      isBestSeller: true,
-      tags: ['dc', 'batman', 'dark knight', 'gotham'],
-    },
-    {
-      slug: 'spider-man-across-spider-verse',
-      title: 'MILES MORALES | SPIDER-MAN ACROSS SPIDER-VERSE',
-      description: 'Vibrant neon dimensional leap of Miles Morales over Neo-Manhattan.',
-      category: 'marvel-dc',
-      price: 79.0,
-      compareAtPrice: 159.0,
-      images: ['/assets/posters/poster-03.jpg'],
-      isBestSeller: true,
-      tags: ['marvel', 'spider-man', 'miles morales'],
-    },
-    {
-      slug: 'mount-fuji-cherry-blossoms-landscape',
-      title: 'MOUNT FUJI & SAKURA | JAPANESE LANDSCAPE POSTER',
-      description: 'Serene sunrise over Mount Fuji framed by blooming cherry blossoms in misty spring.',
-      category: 'landscapes',
-      price: 79.0,
-      compareAtPrice: 159.0,
-      images: ['/assets/posters/poster-04.jpg'],
-      isBestSeller: false,
-      tags: ['landscapes', 'japan', 'fuji', 'nature'],
-    },
-  ];
-
-  for (const prod of products) {
+  // 3. Seed All Catalog Products (30 Products)
+  console.log(`📦 Seeding ${catalogProducts.length} full catalog posters...`);
+  for (const prod of catalogProducts) {
+    const category = prod.collection || prod.category.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-');
     await prisma.product.upsert({
       where: { slug: prod.slug },
-      update: prod,
-      create: prod,
+      update: {
+        title: prod.title,
+        description: prod.description,
+        category,
+        orientation: prod.orientation || 'portrait',
+        price: prod.price,
+        compareAtPrice: prod.compareAtPrice,
+        images: prod.images,
+        tags: prod.tags || [],
+        isBestSeller: Boolean(prod.bestseller),
+        isNewRelease: Boolean(prod.newArrival),
+        stock: prod.stock || 50,
+        isActive: true,
+      },
+      create: {
+        title: prod.title,
+        slug: prod.slug,
+        description: prod.description,
+        category,
+        orientation: prod.orientation || 'portrait',
+        price: prod.price,
+        compareAtPrice: prod.compareAtPrice,
+        images: prod.images,
+        tags: prod.tags || [],
+        isBestSeller: Boolean(prod.bestseller),
+        isNewRelease: Boolean(prod.newArrival),
+        stock: prod.stock || 50,
+        isActive: true,
+      },
     });
   }
-  console.log(`✅ Seeded ${products.length} products`);
+  console.log(`✅ Successfully seeded all ${catalogProducts.length} posters into PostgreSQL!`);
 
-  console.log('🎉 Seeding successfully completed!');
+  console.log('🎉 Database seeding completely finished!');
 }
 
 main()

@@ -21,6 +21,7 @@ import {
 } from '@/pages/store-pages';
 import { FaqPage, TermsPage, ReturnPolicyPage, PrivacyPolicyPage } from '@/pages/policy-pages';
 import { AddressesPage } from '@/pages/addresses-page';
+import { AdminDashboardPage } from '@/pages/admin-page';
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -51,7 +52,7 @@ function Router() {
     <Route path="/addresses" component={AddressesPage} />
     <Route path="/account" component={AccountPage} />
     <Route path="/search" component={SearchPage} />
-    <Route path="/admin" component={AdminPage} />
+    <Route path="/admin" component={AdminDashboardPage} />
     <Route path="/faqs" component={FaqPage} />
     <Route path="/faq" component={FaqPage} />
     <Route path="/terms" component={TermsPage} />
