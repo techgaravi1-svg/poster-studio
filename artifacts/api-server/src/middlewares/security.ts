@@ -119,19 +119,96 @@ export function sanitizeInputs(req: Request, _res: Response, next: NextFunction)
   next();
 }
 
+import crypto from 'node:crypto';
+
+const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || 'dungeons_super_secret_master_key_2026_x89a';
+const MASTER_API_KEY = process.env.ADMIN_API_KEY || 'dungeons_adm_sec_9941a87b1c3e04e2';
+
+export interface AdminSessionPayload {
+  email: string;
+  role: string;
+  name: string;
+  issuedAt: number;
+  expiresAt: number;
+}
+
 /**
- * Verifies optional administrative authorization header
+ * Creates a tamper-proof signed admin token valid for 24 hours
+ */
+export function createAdminToken(email: string, role = 'SUPER_ADMIN', name = 'Super Admin'): string {
+  const payload: AdminSessionPayload = {
+    email,
+    role,
+    name,
+    issuedAt: Date.now(),
+    expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+  };
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = crypto.createHmac('sha256', ADMIN_SECRET).update(payloadB64).digest('base64url');
+  return `dg_adm.${payloadB64}.${signature}`;
+}
+
+/**
+ * Verifies a signed admin token
+ */
+export function verifyAdminToken(token: string): AdminSessionPayload | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3 || parts[0] !== 'dg_adm') return null;
+
+    const [, payloadB64, signature] = parts;
+    const expectedSig = crypto.createHmac('sha256', ADMIN_SECRET).update(payloadB64).digest('base64url');
+
+    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
+      return null;
+    }
+
+    const payload: AdminSessionPayload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+    if (Date.now() > payload.expiresAt) {
+      return null; // Expired
+    }
+
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Enterprise Guard: Strict Administrative Authorization Middleware
+ * Protects all /api/admin endpoints against unauthorized access.
  */
 export function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
-  const adminKey = req.headers['x-admin-key'];
-  const configuredKey = process.env.ADMIN_API_KEY || 'dungeons_adm_sec_9941a87b1c3e04e2';
+  // Check Authorization Bearer header
+  const authHeader = req.headers.authorization;
+  const adminTokenHeader = req.headers['x-admin-token'] as string | undefined;
+  const adminKeyHeader = req.headers['x-admin-key'] as string | undefined;
 
-  if (!adminKey || adminKey !== configuredKey) {
-    return res.status(401).json({
-      success: false,
-      error: 'Unauthorized: Valid Admin API Key required.',
-    });
+  let token = adminTokenHeader;
+  if (!token && authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7).trim();
   }
 
-  next();
+  // 1. Check Bearer / Token Authentication
+  if (token) {
+    const verified = verifyAdminToken(token);
+    if (verified) {
+      (req as any).adminUser = verified;
+      return next();
+    }
+  }
+
+  // 2. Check Master API Key Fallback
+  if (adminKeyHeader && adminKeyHeader === MASTER_API_KEY) {
+    (req as any).adminUser = { email: 'master@dungeons.com', role: 'ROOT_ADMIN', name: 'Master Admin' };
+    return next();
+  }
+
+  // 3. Reject with 401 Unauthorized
+  return res.status(401).json({
+    success: false,
+    error: 'Access Denied: High-level admin authorization required. Please authenticate.',
+    code: 'ADMIN_UNAUTHORIZED',
+  });
 }
+

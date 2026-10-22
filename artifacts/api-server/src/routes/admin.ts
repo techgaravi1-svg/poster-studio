@@ -1,9 +1,141 @@
 import { Router, type Request, type Response } from 'express';
 import { prisma } from '@workspace/db';
 import { z } from 'zod';
-import { rateLimiter } from '../middlewares/security';
+import { rateLimiter, requireAdminAuth, createAdminToken } from '../middlewares/security';
 
 const router: Router = Router();
+
+// In-memory brute force lockout store for admin login
+interface FailedAttemptRecord {
+  attempts: number;
+  lockoutUntil: number;
+}
+const loginAttemptStore = new Map<string, FailedAttemptRecord>();
+
+// Configurable credentials
+let currentAdminPassword = process.env.ADMIN_PASSWORD || 'Admin@Poster2026!';
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@posterstudio.com').toLowerCase();
+const MASTER_KEY = process.env.ADMIN_API_KEY || 'dungeons_adm_sec_9941a87b1c3e04e2';
+
+// Clean up stale login attempts every 15 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, record] of loginAttemptStore.entries()) {
+    if (now > record.lockoutUntil) loginAttemptStore.delete(key);
+  }
+}, 15 * 60 * 1000);
+
+// ==============================================================================
+// 0. ADMIN AUTHENTICATION & SECURITY GATES
+// ==============================================================================
+
+/**
+ * POST /api/admin/auth/login
+ * High-security login with brute-force lockout (5 attempts / 15m)
+ */
+router.post('/admin/auth/login', rateLimiter({ windowMs: 60 * 1000, maxRequests: 20 }), async (req: Request, res: Response) => {
+  try {
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+    const now = Date.now();
+    const attemptRecord = loginAttemptStore.get(ip) || { attempts: 0, lockoutUntil: 0 };
+
+    if (attemptRecord.lockoutUntil > now) {
+      const waitSeconds = Math.ceil((attemptRecord.lockoutUntil - now) / 1000);
+      return res.status(429).json({
+        success: false,
+        error: `Account temporarily locked due to consecutive failed attempts. Please retry in ${waitSeconds} seconds.`,
+        lockoutSeconds: waitSeconds,
+      });
+    }
+
+    const { email, password, adminKey } = req.body;
+
+    // Direct Master Key login
+    if (adminKey && adminKey === MASTER_KEY) {
+      loginAttemptStore.delete(ip);
+      const token = createAdminToken('master@dungeons.com', 'ROOT_ADMIN', 'Master Admin');
+      return res.json({
+        success: true,
+        token,
+        admin: {
+          email: 'master@dungeons.com',
+          name: 'Master Admin',
+          role: 'ROOT_ADMIN',
+        },
+      });
+    }
+
+    // Email + Password login
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    const isValidUser = normalizedEmail === ADMIN_EMAIL && password === currentAdminPassword;
+
+    if (!isValidUser) {
+      attemptRecord.attempts += 1;
+      if (attemptRecord.attempts >= 5) {
+        attemptRecord.lockoutUntil = now + 15 * 60 * 1000; // 15 minutes lockout
+      }
+      loginAttemptStore.set(ip, attemptRecord);
+
+      const remainingAttempts = Math.max(0, 5 - attemptRecord.attempts);
+      return res.status(401).json({
+        success: false,
+        error: remainingAttempts > 0
+          ? `Invalid credentials. ${remainingAttempts} attempts remaining before temporary lockout.`
+          : 'Too many failed login attempts. Portal locked for 15 minutes.',
+        remainingAttempts,
+      });
+    }
+
+    // Login successful
+    loginAttemptStore.delete(ip);
+    const token = createAdminToken(ADMIN_EMAIL, 'SUPER_ADMIN', 'Super Admin');
+
+    return res.json({
+      success: true,
+      token,
+      admin: {
+        email: ADMIN_EMAIL,
+        name: 'Super Admin',
+        role: 'SUPER_ADMIN',
+      },
+      expiresIn: '24h',
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Login authentication failed' });
+  }
+});
+
+/**
+ * GET /api/admin/auth/verify
+ * Validates current session token
+ */
+router.get('/admin/auth/verify', requireAdminAuth, async (req: Request, res: Response) => {
+  return res.json({
+    success: true,
+    valid: true,
+    admin: (req as any).adminUser || { name: 'Super Admin', role: 'SUPER_ADMIN' },
+  });
+});
+
+/**
+ * POST /api/admin/auth/change-password
+ * Allows changing the admin password securely
+ */
+router.post('/admin/auth/change-password', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (currentPassword !== currentAdminPassword) {
+      return res.status(400).json({ success: false, error: 'Current password is incorrect' });
+    }
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ success: false, error: 'New password must be at least 8 characters long' });
+    }
+    currentAdminPassword = newPassword;
+    return res.json({ success: true, message: 'Admin password updated successfully' });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to update password' });
+  }
+});
 
 // Zod Schema for Product creation and update
 const ProductMutationSchema = z.object({
@@ -47,7 +179,7 @@ const UpdateOrderStatusSchema = z.object({
 // 1. DASHBOARD ANALYTICS & METRICS
 // ==============================================================================
 
-router.get('/admin/stats', async (_req: Request, res: Response) => {
+router.get('/admin/stats', requireAdminAuth, async (_req: Request, res: Response) => {
   try {
     const [orders, products, coupons, subscribers] = await Promise.all([
       prisma.order.findMany({
@@ -127,7 +259,7 @@ router.get('/admin/stats', async (_req: Request, res: Response) => {
 // 2. ORDER MANAGEMENT & STATUS TRACKING
 // ==============================================================================
 
-router.get('/admin/orders', async (req: Request, res: Response) => {
+router.get('/admin/orders', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { status, search, limit = '100', offset = '0' } = req.query;
 
@@ -161,7 +293,7 @@ router.get('/admin/orders', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/admin/orders/:id', async (req: Request, res: Response) => {
+router.get('/admin/orders/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const order = await prisma.order.findFirst({
@@ -175,7 +307,7 @@ router.get('/admin/orders/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.patch('/admin/orders/:id/status', async (req: Request, res: Response) => {
+router.patch('/admin/orders/:id/status', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const parsed = UpdateOrderStatusSchema.safeParse(req.body);
@@ -205,7 +337,7 @@ router.patch('/admin/orders/:id/status', async (req: Request, res: Response) => 
   }
 });
 
-router.delete('/admin/orders/:id', async (req: Request, res: Response) => {
+router.delete('/admin/orders/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await prisma.order.delete({ where: { id } });
@@ -219,7 +351,7 @@ router.delete('/admin/orders/:id', async (req: Request, res: Response) => {
 // 3. PRODUCT CATALOG CRUD
 // ==============================================================================
 
-router.get('/admin/products', async (req: Request, res: Response) => {
+router.get('/admin/products', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { category, search } = req.query;
     const where: any = {};
@@ -244,7 +376,7 @@ router.get('/admin/products', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/admin/products', async (req: Request, res: Response) => {
+router.post('/admin/products', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const parsed = ProductMutationSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -264,7 +396,7 @@ router.post('/admin/products', async (req: Request, res: Response) => {
   }
 });
 
-router.put('/admin/products/:id', async (req: Request, res: Response) => {
+router.put('/admin/products/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const parsed = ProductMutationSchema.safeParse(req.body);
@@ -283,7 +415,7 @@ router.put('/admin/products/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/admin/products/:id', async (req: Request, res: Response) => {
+router.delete('/admin/products/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await prisma.product.delete({ where: { id } });
@@ -297,7 +429,7 @@ router.delete('/admin/products/:id', async (req: Request, res: Response) => {
 // 4. COUPONS CRUD
 // ==============================================================================
 
-router.get('/admin/coupons', async (_req: Request, res: Response) => {
+router.get('/admin/coupons', requireAdminAuth, async (_req: Request, res: Response) => {
   try {
     const coupons = await prisma.coupon.findMany({
       orderBy: { createdAt: 'desc' },
@@ -308,7 +440,7 @@ router.get('/admin/coupons', async (_req: Request, res: Response) => {
   }
 });
 
-router.post('/admin/coupons', async (req: Request, res: Response) => {
+router.post('/admin/coupons', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const parsed = CouponMutationSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -331,7 +463,7 @@ router.post('/admin/coupons', async (req: Request, res: Response) => {
   }
 });
 
-router.put('/admin/coupons/:id', async (req: Request, res: Response) => {
+router.put('/admin/coupons/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const parsed = CouponMutationSchema.safeParse(req.body);
@@ -355,7 +487,7 @@ router.put('/admin/coupons/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/admin/coupons/:id', async (req: Request, res: Response) => {
+router.delete('/admin/coupons/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await prisma.coupon.delete({ where: { id } });
@@ -369,7 +501,7 @@ router.delete('/admin/coupons/:id', async (req: Request, res: Response) => {
 // 5. CATEGORIES
 // ==============================================================================
 
-router.get('/admin/categories', async (_req: Request, res: Response) => {
+router.get('/admin/categories', requireAdminAuth, async (_req: Request, res: Response) => {
   try {
     const products = await prisma.product.findMany({ select: { category: true } });
     const counts: Record<string, number> = {};
@@ -382,6 +514,34 @@ router.get('/admin/categories', async (_req: Request, res: Response) => {
     });
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Failed to retrieve categories' });
+  }
+});
+
+// Toggle coupon status
+router.patch('/admin/coupons/:id/toggle', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.coupon.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, error: 'Coupon not found' });
+    const updated = await prisma.coupon.update({
+      where: { id },
+      data: { isActive: !existing.isActive },
+    });
+    return res.json({ success: true, coupon: updated });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to toggle coupon' });
+  }
+});
+
+// Newsletter subscribers list
+router.get('/admin/subscribers', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    const subscribers = await prisma.newsletterSubscriber.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    return res.json({ success: true, subscribers });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to retrieve subscribers' });
   }
 });
 
