@@ -777,3 +777,47 @@
     padding: 24px 20px;
   }
 }
+
+/* ==============================================================
+   8. CLEAN PRINTING (Suppresses browser header & date stamps)
+   ============================================================== */
+@media print {
+  @page {
+    margin: 0 !important;
+    size: auto;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  /* Hide entire dashboard UI during invoice printing */
+  body * {
+    visibility: hidden;
+  }
+
+  #admin-tax-invoice-printable,
+  #admin-tax-invoice-printable * {
+    visibility: visible;
+  }
+
+  #admin-tax-invoice-printable {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 15mm 20mm !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

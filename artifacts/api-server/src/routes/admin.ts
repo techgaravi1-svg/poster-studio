@@ -404,11 +404,29 @@ router.put('/admin/products/:id', requireAdminAuth, async (req: Request, res: Re
       return res.status(400).json({ success: false, error: 'Invalid product data', details: parsed.error.format() });
     }
 
-    const updatedProduct = await prisma.product.update({
-      where: { id },
-      data: parsed.data,
+    const existing = await prisma.product.findFirst({
+      where: {
+        OR: [
+          { id },
+          { slug: id },
+          ...(parsed.data.slug ? [{ slug: parsed.data.slug }] : []),
+        ],
+      },
     });
 
+    let updatedProduct;
+    if (existing) {
+      updatedProduct = await prisma.product.update({
+        where: { id: existing.id },
+        data: parsed.data,
+      });
+    } else {
+      updatedProduct = await prisma.product.create({
+        data: parsed.data,
+      });
+    }
+
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.json({ success: true, product: updatedProduct });
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Could not update product' });
@@ -418,7 +436,15 @@ router.put('/admin/products/:id', requireAdminAuth, async (req: Request, res: Re
 router.delete('/admin/products/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await prisma.product.delete({ where: { id } });
+    const existing = await prisma.product.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }],
+      },
+    });
+    if (existing) {
+      await prisma.product.delete({ where: { id: existing.id } });
+    }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.json({ success: true, message: 'Product deleted from database' });
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Could not delete product' });

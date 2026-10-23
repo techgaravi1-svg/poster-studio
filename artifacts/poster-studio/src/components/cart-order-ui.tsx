@@ -12,6 +12,7 @@ import {
   Percent,
   Bookmark,
   ShoppingBag,
+  Lock,
 } from 'lucide-react';
 import { formatPrice, products, type PosterSize } from '@/lib/catalog';
 import { store, useStore, type CartItem } from '@/lib/store';
@@ -110,6 +111,12 @@ export function MyntraItemCard({
             src={imageSrc}
             alt={item.title}
             className="myntra-thumb-img"
+            onError={(e) => {
+              const target = e.currentTarget as HTMLImageElement;
+              if (!target.src.includes('poster-01.jpg')) {
+                target.src = '/assets/posters/poster-01.jpg';
+              }
+            }}
           />
         </Link>
         {/* Pink checkmark badge like in Myntra reference */}
@@ -120,9 +127,9 @@ export function MyntraItemCard({
 
       {/* Right Column: Item Information & Details */}
       <div className="myntra-details-col">
-        {/* Top Meta Line: NEW Badge & Remove Button */}
+        {/* Top Meta Line: Remove Button & Order Status */}
         <div className="myntra-card-top-row">
-          <span className="myntra-badge-new">NEW</span>
+          <div />
 
           {!isOrderMode && onRemove && (
             <button
@@ -208,9 +215,6 @@ export function MyntraItemCard({
               <span>Qty: <strong>{item.quantity}</strong></span>
             </div>
           )}
-
-          {/* Low stock tag like reference */}
-          <span className="myntra-stock-left-tag">8 left</span>
         </div>
 
         {/* Price Row */}
@@ -226,17 +230,13 @@ export function MyntraItemCard({
           </span>
         </div>
 
-        {/* Return Policy Line */}
-        <div className="myntra-trust-line">
-          <RotateCcw size={13} className="text-neutral-700 shrink-0" />
-          <span><strong>7 days</strong> return</span>
-        </div>
-
-        {/* Delivery Date Line */}
-        <div className="myntra-delivery-line">
-          <Truck size={13} className="text-emerald-600 shrink-0" />
-          <span>Delivery by <strong>{orderDate || deliveryDateStr}</strong></span>
-        </div>
+        {/* Delivery Date Line (only in order history if explicitly provided) */}
+        {isOrderMode && orderDate && (
+          <div className="myntra-delivery-line">
+            <Truck size={13} className="text-emerald-600 shrink-0" />
+            <span>Delivery: <strong>{orderDate}</strong></span>
+          </div>
+        )}
 
         {/* Bottom Actions (Save for later) */}
         {!isOrderMode && onSaveForLater && (
@@ -478,6 +478,8 @@ interface MyntraPriceDetailsProps {
   totalSavings: number;
   onProceed?: () => void;
   proceedLabel?: string;
+  subtext?: React.ReactNode;
+  disabled?: boolean;
 }
 
 export function MyntraPriceDetails({
@@ -489,6 +491,8 @@ export function MyntraPriceDetails({
   totalSavings,
   onProceed,
   proceedLabel = 'PROCEED TO CHECKOUT',
+  subtext,
+  disabled = false,
 }: MyntraPriceDetailsProps) {
   const discountOnMRP = Math.max(0, totalMRP - subtotal);
 
@@ -555,13 +559,38 @@ export function MyntraPriceDetails({
       )}
 
       {onProceed && (
-        <button
-          type="button"
-          onClick={onProceed}
-          className="btn-myntra-checkout-black hidden lg:flex"
-        >
-          {proceedLabel}
-        </button>
+        <div className="w-full flex flex-col gap-2.5 mt-3">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onProceed}
+            className="btn-myntra-checkout-black"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              width: '100%',
+              minHeight: '48px',
+              backgroundColor: '#0f172a',
+              color: '#ffffff',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: 800,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              border: 'none',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              opacity: disabled ? 0.6 : 1,
+              boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
+              margin: '8px 0 0 0',
+            }}
+          >
+            <Lock size={15} className="shrink-0" />
+            <span>{proceedLabel}</span>
+          </button>
+          {subtext}
+        </div>
       )}
     </div>
   );

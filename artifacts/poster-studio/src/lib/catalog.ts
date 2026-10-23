@@ -47,7 +47,7 @@ const defaultShipping = [
   { title: 'Delivery Timeline', desc: 'Once dispatched, orders are typically delivered within 7 working days. Delivery times may vary depending on your location and courier partner.' },
 ];
 
-export const products: Product[] = [
+export const defaultCatalogProducts: Product[] = [
   {
     id: 'prod-asta-black-clover',
     slug: 'asta-black-clover-anime-poster',
@@ -841,7 +841,9 @@ export function transformDbProductToFrontend(p: any): Product {
     description: p.description || '',
     category: (p.category || 'POSTERS').toUpperCase(),
     collection: (p.category || 'posters').toLowerCase(),
-    images: Array.isArray(p.images) && p.images.length > 0 ? p.images : ['/assets/posters/poster-01.jpg'],
+    images: Array.isArray(p.images) && p.images.some((img: any) => typeof img === 'string' && img.trim().length > 0)
+      ? p.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0)
+      : ['/assets/posters/poster-01.jpg'],
     artTreatment: 'art-signal',
     price: Number(p.price),
     compareAtPrice: Number(compareAt),
@@ -861,32 +863,147 @@ export function transformDbProductToFrontend(p: any): Product {
   };
 }
 
+const STORAGE_KEY = 'dungeons_catalog_products';
+
+export function loadCatalogFromStorage(): Product[] {
+  if (typeof window === 'undefined') return defaultCatalogProducts;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((item: any, idx: number) => {
+          const fallback = defaultCatalogProducts.find(
+            (d) => d.id === item.id || (item.slug && d.slug === item.slug)
+          ) || defaultCatalogProducts[idx % defaultCatalogProducts.length];
+
+          const hasValidImages =
+            Array.isArray(item.images) &&
+            item.images.length > 0 &&
+            item.images.some((img: any) => typeof img === 'string' && img.trim().length > 0);
+
+          const validImages = hasValidImages
+            ? item.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0)
+            : fallback?.images || ['/assets/posters/poster-01.jpg'];
+
+          return {
+            ...fallback,
+            ...item,
+            images: validImages,
+          };
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('[Catalog] Error loading catalog from localStorage:', e);
+  }
+  return defaultCatalogProducts;
+}
+
+export const products: Product[] = typeof window !== 'undefined'
+  ? loadCatalogFromStorage()
+  : [...defaultCatalogProducts];
+
+export function saveCatalogToStorage(newList: Product[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
+    products.length = 0;
+    products.push(...newList);
+    window.dispatchEvent(new CustomEvent('dungeons:products-updated', { detail: newList }));
+  } catch (e) {
+    console.warn('[Catalog] Error saving catalog to localStorage:', e);
+  }
+}
+
+export function saveSingleProduct(productData: Partial<Product> & { id: string }): Product[] {
+  const current = loadCatalogFromStorage();
+  const index = current.findIndex(
+    (p) => p.id === productData.id || (productData.slug && p.slug === productData.slug)
+  );
+
+  let updatedList: Product[];
+  if (index >= 0) {
+    const existing = current[index];
+    const compareAt = productData.compareAtPrice !== undefined
+      ? Number(productData.compareAtPrice)
+      : existing.compareAtPrice;
+    const price = productData.price !== undefined
+      ? Number(productData.price)
+      : existing.price;
+    const discount = compareAt && compareAt > price
+      ? Math.round(((compareAt - price) / compareAt) * 100)
+      : 0;
+
+    const updated: Product = {
+      ...existing,
+      ...productData,
+      price,
+      compareAtPrice: compareAt,
+      discount,
+      stock: productData.stock !== undefined ? Number(productData.stock) : existing.stock,
+      images: Array.isArray(productData.images) && productData.images.length > 0
+        ? productData.images
+        : existing.images,
+      tags: Array.isArray(productData.tags) ? productData.tags : existing.tags,
+    };
+    updatedList = [...current];
+    updatedList[index] = updated;
+  } else {
+    const newProd = transformDbProductToFrontend({
+      ...productData,
+      price: Number(productData.price || 79),
+    });
+    updatedList = [newProd, ...current];
+  }
+
+  saveCatalogToStorage(updatedList);
+  return updatedList;
+}
+
+export function deleteSingleProduct(productId: string): Product[] {
+  const current = loadCatalogFromStorage();
+  const updatedList = current.filter((p) => p.id !== productId && p.slug !== productId);
+  saveCatalogToStorage(updatedList);
+  return updatedList;
+}
+
 export async function fetchLiveProducts(): Promise<Product[]> {
   try {
-    const res = await fetch('/api/products?limit=250');
-    if (!res.ok) return products;
+    const res = await fetch(`/api/products?limit=250&_t=${Date.now()}`, {
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    const contentType = res.headers.get('content-type') || '';
+    if (!res.ok || !contentType.includes('application/json')) {
+      return loadCatalogFromStorage();
+    }
     const data = await res.json();
     if (data.success && Array.isArray(data.products) && data.products.length > 0) {
       const transformed = data.products.map(transformDbProductToFrontend);
-      // Synchronize in-memory products array
-      products.length = 0;
-      products.push(...transformed);
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('dungeons:products-updated', { detail: transformed }));
-      }
+      saveCatalogToStorage(transformed);
       return transformed;
     }
   } catch (err) {
-    console.warn('[Catalog] Database fetch fallback to local cache:', err);
+    console.warn('[Catalog] Database fetch fallback to local storage:', err);
   }
-  return products;
+  return loadCatalogFromStorage();
 }
 
 export function useLiveProducts(): Product[] {
-  const [list, setList] = useState<Product[]>(() => [...products]);
+  const [list, setList] = useState<Product[]>(() => {
+    return typeof window !== 'undefined' ? loadCatalogFromStorage() : [...products];
+  });
 
   useEffect(() => {
     let isMounted = true;
+
+    // Immediately sync with localStorage in case it updated
+    const localCurrent = loadCatalogFromStorage();
+    if (localCurrent && localCurrent.length > 0) {
+      setList([...localCurrent]);
+    }
+
+    // Try fetching live from Prisma PostgreSQL
     fetchLiveProducts().then((dbList) => {
       if (isMounted && dbList && dbList.length > 0) {
         setList([...dbList]);
@@ -897,7 +1014,7 @@ export function useLiveProducts(): Product[] {
       if (e.detail && Array.isArray(e.detail)) {
         setList([...e.detail]);
       } else {
-        setList([...products]);
+        setList([...loadCatalogFromStorage()]);
       }
     };
 
@@ -911,20 +1028,36 @@ export function useLiveProducts(): Product[] {
   return list;
 }
 
-// Auto-fetch from Prisma database on client startup
+// Auto-fetch from Prisma database on client startup and listen to other tabs
 if (typeof window !== 'undefined') {
   fetchLiveProducts();
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEY && e.newValue) {
+      try {
+        const parsed = JSON.parse(e.newValue);
+        if (Array.isArray(parsed)) {
+          products.length = 0;
+          products.push(...parsed);
+          window.dispatchEvent(new CustomEvent('dungeons:products-updated', { detail: parsed }));
+        }
+      } catch {}
+    }
+  });
 }
 
 export function getProduct(slug?: string) {
   if (!slug) return undefined;
-  return products.find((product) => product.slug === slug || product.id === slug);
+  const current = typeof window !== 'undefined' ? loadCatalogFromStorage() : products;
+  return current.find((product) => product.slug === slug || product.id === slug);
 }
 
 export function searchProducts(query: string, sourceProducts: Product[] = products) {
   const needle = query.trim().toLowerCase();
   if (!needle) return [];
-  return sourceProducts.filter((product) =>
+  const list = sourceProducts && sourceProducts.length > 0
+    ? sourceProducts
+    : (typeof window !== 'undefined' ? loadCatalogFromStorage() : defaultCatalogProducts);
+  return list.filter((product) =>
     [product.title, product.category, product.collection, product.description, ...product.tags]
       .join(' ')
       .toLowerCase()

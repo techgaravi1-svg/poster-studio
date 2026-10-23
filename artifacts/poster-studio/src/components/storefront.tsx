@@ -35,27 +35,22 @@ export function PosterArt({
   title: string;
   compact?: boolean;
 }) {
-  if (src) {
-    return (
-      <div className={`poster-art-img-wrapper ${compact ? 'poster-art-compact' : ''}`}>
-        <img
-          src={src}
-          alt={title}
-          className="poster-art-real-img"
-          loading="lazy"
-        />
-      </div>
-    );
-  }
+  const displaySrc = src && src.trim().length > 0 ? src : '/assets/posters/poster-01.jpg';
+
   return (
-    <div
-      className={`poster-art ${treatment || 'art-aurora'} ${compact ? 'poster-art-compact' : ''}`}
-      role="img"
-      aria-label={`${title} poster artwork`}
-    >
-      <small>POSTGENZ / STUDIO</small>
-      <strong>{title.split(' ').slice(0, 2).join(' ')}</strong>
-      <span>350 GSM MATTE PRINT</span>
+    <div className={`poster-art-img-wrapper ${compact ? 'poster-art-compact' : ''}`}>
+      <img
+        src={displaySrc}
+        alt={title}
+        className="poster-art-real-img"
+        loading="lazy"
+        onError={(e) => {
+          const target = e.currentTarget as HTMLImageElement;
+          if (!target.src.includes('poster-01.jpg')) {
+            target.src = '/assets/posters/poster-01.jpg';
+          }
+        }}
+      />
     </div>
   );
 }
@@ -76,7 +71,7 @@ export function ProductCard({
     store.toggleWishlist(product.slug);
   };
 
-  const imageSrc = product.images?.[0];
+  const imageSrc = product.images?.[0] || '/assets/posters/poster-01.jpg';
 
   return (
     <article className="postgenz-product-card" data-testid={`card-product-${product.id}`}>

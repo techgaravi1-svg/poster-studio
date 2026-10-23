@@ -1,4 +1,11 @@
-import 'dotenv/config';
+import path from 'node:path';
+import dotenv from 'dotenv';
+
+// Robust environment configuration loading from workspace root
+dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(import.meta.dirname, '../../../.env') });
+
 import app from './app';
 import { logger } from './lib/logger';
 import { prisma } from '@workspace/db';

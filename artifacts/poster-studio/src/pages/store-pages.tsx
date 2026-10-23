@@ -1005,6 +1005,12 @@ export function ProductPage() {
           src={heroImageSrc}
           alt={product.title}
           className="product-hero-real-img"
+          onError={(e) => {
+            const target = e.currentTarget as HTMLImageElement;
+            if (!target.src.includes('poster-01.jpg')) {
+              target.src = '/assets/posters/poster-01.jpg';
+            }
+          }}
         />
       </section>
 
@@ -2487,18 +2493,7 @@ export function CartPage() {
   };
 
   return (
-    <main className="postgenz-cart-page min-h-[75vh] bg-[#f8f9fa]">
-      <div className="collection-top-header">
-        <div className="flex items-center justify-center gap-2 text-xs text-neutral-400 mb-2">
-          <Link href="/" className="hover:text-neutral-900 transition-colors">Home</Link>
-          <span>/</span>
-          <span className="text-neutral-900 font-semibold">Shopping Bag</span>
-        </div>
-        <h1 className="collection-main-title bag-main-title">
-          YOUR SHOPPING BAG {totalCount > 0 ? `(${totalCount} ${totalCount === 1 ? 'ITEM' : 'ITEMS'})` : ''}
-        </h1>
-      </div>
-
+    <main className="postgenz-cart-page min-h-[75vh] bg-[#f8f9fa] pb-16">
       {cart.length === 0 ? (
         <div className="empty-state cart-empty py-16 px-4 text-center bg-white border border-neutral-200 rounded-2xl shadow-xs max-w-xl mx-auto my-8">
           <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-5 text-neutral-400">
@@ -2521,44 +2516,55 @@ export function CartPage() {
           </div>
         </div>
       ) : (
-        <div className="bag-modern-wrapper">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-start">
-            {/* Left Column: Cart Items List (8 cols on desktop) */}
-            <div className="lg:col-span-8 flex flex-col gap-4">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-xs md:text-sm font-bold text-neutral-700 uppercase tracking-wider">
-                  ITEMS IN YOUR BAG ({totalCount})
-                </span>
-                <span className="text-xs text-neutral-500">
-                  Prices include all taxes
-                </span>
-              </div>
+        <div className="bag-modern-wrapper w-full">
+          {/* Clean Top Navigation Bar matching Checkout */}
+          <div className="checkout-clean-nav">
+            <Link href="/" className="checkout-back-btn">
+              <ChevronLeft size={16} />
+              <span>Continue Shopping</span>
+            </Link>
 
-              {cart.map((item) => (
-                <MyntraItemCard
-                  key={item.key}
-                  item={item}
-                  onRemove={() => {
-                    store.removeFromCart(item.key);
-                    setToast('Item removed from bag');
-                    window.setTimeout(() => setToast(''), 2000);
-                  }}
-                  onSaveForLater={() => handleSaveForLater(item)}
-                />
-              ))}
+            <div className="flex items-center gap-2">
+              <span className="checkout-trust-badge-pill">
+                <ShoppingBag size={14} />
+                <span>SHOPPING BAG ({totalCount})</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full">
+            {/* Left Column: Cart Items List (8 cols on desktop) */}
+            <div className="lg:col-span-8 flex flex-col gap-3.5 w-full">
+              <div className="checkout-stepper-card">
+                <div className="checkout-card-header">
+                  <div className="step-label-group">
+                    <div className="flex items-center gap-2">
+                      <Package size={16} className="text-neutral-500" />
+                      <h2 className="step-title-heading">Items In Your Bag ({totalCount})</h2>
+                    </div>
+                  </div>
+                  <span className="text-xs text-neutral-500 font-medium">Prices include all taxes</span>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {cart.map((item) => (
+                    <MyntraItemCard
+                      key={item.key}
+                      item={item}
+                      onRemove={() => {
+                        store.removeFromCart(item.key);
+                        setToast('Item removed from bag');
+                        window.setTimeout(() => setToast(''), 2000);
+                      }}
+                      onSaveForLater={() => handleSaveForLater(item)}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
 
-            {/* Right Column: Swiggy Coupon Drawer & Myntra Price Details (4 cols on desktop) */}
-            <div className="lg:col-span-4 flex flex-col gap-4">
-              <SwiggyCouponBox
-                subtotal={totals.subtotal}
-                totalCount={totalCount}
-                onAppliedToast={(msg) => {
-                  setToast(msg);
-                  window.setTimeout(() => setToast(''), 2500);
-                }}
-              />
-
+            {/* Right Column: Myntra Price Details & Place Order (4 cols on desktop) */}
+            <div className="lg:col-span-4 lg:sticky lg:top-20 flex flex-col gap-4 w-full">
               <MyntraPriceDetails
                 totalMRP={totalMRP}
                 subtotal={totals.subtotal}
@@ -2567,35 +2573,20 @@ export function CartPage() {
                 totalItemCount={totals.totalItemCount}
                 totalSavings={totalSavings}
                 onProceed={() => navigate('/checkout')}
+                proceedLabel={`PLACE ORDER • ${formatPrice(totals.total)}`}
+                subtext={
+                  <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-center mt-1">
+                    <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-800">
+                      <Lock size={14} className="text-emerald-600 shrink-0" />
+                      <span>Secure checkout with Razorpay</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-1.5 pt-1 text-[10px] font-semibold text-slate-500">
+                      <span>UPI</span> • <span>GPay</span> • <span>Paytm</span> • <span>Cards</span> • <span>NetBanking</span>
+                    </div>
+                  </div>
+                }
               />
             </div>
-          </div>
-
-          {/* Mobile Sticky Checkout Bar */}
-          <div className="cart-mobile-sticky-checkout">
-            <div>
-              <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider block">
-                Total ({totals.totalItemCount} Items)
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-lg font-black text-neutral-900">
-                  {formatPrice(totals.total)}
-                </span>
-                {totalSavings > 0 && (
-                  <span className="text-[10px] text-emerald-600 font-bold">
-                    Save {formatPrice(totalSavings)}
-                  </span>
-                )}
-              </div>
-            </div>
-            <button
-              type="button"
-              className="cart-mobile-buy-btn"
-              onClick={() => navigate('/checkout')}
-            >
-              <span>PROCEED TO BUY</span>
-              <ArrowRight size={15} />
-            </button>
           </div>
         </div>
       )}
@@ -2863,7 +2854,7 @@ export function CheckoutPage() {
   };
 
   return (
-    <main className="postgenz-checkout-page min-h-screen bg-[#f8f9fa] pb-36 md:pb-20">
+    <main className="postgenz-checkout-page min-h-screen bg-[#f8f9fa] pb-16">
       <div className="modern-checkout-wrapper">
         {/* Clean Top Navigation Bar */}
         <div className="checkout-clean-nav">
@@ -2895,11 +2886,10 @@ export function CheckoutPage() {
           {/* Left Column: Checkout Steps (8 cols on desktop) */}
           <div className="lg:col-span-8 flex flex-col gap-3.5">
 
-            {/* STEP 1: DELIVERY ADDRESS (AMAZON / FLIPKART STYLE) */}
+            {/* STEP 1: DELIVERY ADDRESS */}
             <div className="checkout-stepper-card">
               <div className="checkout-card-header">
                 <div className="step-label-group">
-                  <span className="step-num-pill">1</span>
                   <div className="flex items-center gap-2">
                     <MapPin size={16} className="text-neutral-500" />
                     <h2 className="step-title-heading">Delivery Address</h2>
@@ -2938,16 +2928,11 @@ export function CheckoutPage() {
             <div className="checkout-stepper-card">
               <div className="checkout-card-header">
                 <div className="step-label-group">
-                  <span className="step-num-pill">2</span>
                   <div className="flex items-center gap-2">
                     <Package size={16} className="text-neutral-500" />
                     <h2 className="step-title-heading">Order Items ({totalCount})</h2>
                   </div>
                 </div>
-                <span className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
-                  <Truck size={13} />
-                  <span>Free Express Delivery</span>
-                </span>
               </div>
 
               {cart.length === 0 ? (
@@ -2978,7 +2963,6 @@ export function CheckoutPage() {
             <div className="checkout-stepper-card">
               <div className="checkout-card-header">
                 <div className="step-label-group">
-                  <span className="step-num-pill">3</span>
                   <div className="flex items-center gap-2">
                     <BadgePercent size={16} className="text-emerald-600" />
                     <h2 className="step-title-heading">Coupons &amp; Offers</h2>
@@ -3003,7 +2987,7 @@ export function CheckoutPage() {
             </div>
           </div>
 
-          {/* Right Column: Price Details & Proceed (Myntra Style - 4 cols on desktop) */}
+          {/* Right Column: Price Details & Place Order with Razorpay Guarantee */}
           <div className="lg:col-span-4 lg:sticky lg:top-20 flex flex-col gap-4 w-full">
             <MyntraPriceDetails
               totalMRP={calculatedMRP}
@@ -3013,38 +2997,22 @@ export function CheckoutPage() {
               totalItemCount={totalCount}
               totalSavings={calculatedSavings}
               onProceed={() => handlePlaceOrder()}
+              disabled={isProcessing || cart.length === 0}
               proceedLabel={isProcessing ? 'PROCESSING...' : `PLACE ORDER • ${formatPrice(totals.total)}`}
+              subtext={
+                <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-center mt-1">
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-800">
+                    <Lock size={14} className="text-emerald-600 shrink-0" />
+                    <span>Secure checkout with Razorpay</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-1.5 pt-1 text-[10px] font-semibold text-slate-500">
+                    <span>UPI</span> • <span>GPay</span> • <span>Paytm</span> • <span>Cards</span> • <span>NetBanking</span>
+                  </div>
+                </div>
+              }
             />
           </div>
         </form>
-
-        {/* Mobile Sticky Place Order Bar */}
-        <div className="mobile-checkout-sticky-bar">
-          <div>
-            <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider block">
-              Total Amount
-            </span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-lg font-black text-neutral-900">
-                {formatPrice(totals.total)}
-              </span>
-              {calculatedSavings > 0 && (
-                <span className="text-[10px] text-emerald-600 font-bold">
-                  Save {formatPrice(calculatedSavings)}
-                </span>
-              )}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => handlePlaceOrder()}
-            disabled={isProcessing || cart.length === 0}
-            className="mobile-place-order-btn"
-          >
-            <Lock size={15} />
-            <span>{isProcessing ? 'PROCESSING...' : 'PLACE ORDER'}</span>
-          </button>
-        </div>
       </div>
       <Toast message={toast} />
     </main>

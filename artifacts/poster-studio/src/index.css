@@ -5408,24 +5408,68 @@ button {
 }
 
 /* ============================================================
-   CHECKOUT PAGE RESPONSIVE 2-COLUMN & STICKY PLACE ORDER BAR
+   SHOPPING BAG / CART & CHECKOUT PAGE CONSISTENT BOXES & LAYOUT
 ============================================================ */
+.postgenz-cart-page,
 .postgenz-checkout-page {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 12px 10px 110px;
+  padding: 12px 10px 40px;
+  box-sizing: border-box;
 }
 
 @media (min-width: 640px) {
+  .postgenz-cart-page,
   .postgenz-checkout-page {
-    padding: 16px 16px 110px;
+    padding: 16px 16px 40px;
   }
 }
 
 @media (min-width: 1024px) {
+  .postgenz-cart-page,
   .postgenz-checkout-page {
     padding-bottom: 50px;
+  }
+}
+
+.bag-modern-wrapper,
+.modern-checkout-wrapper {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .postgenz-cart-page,
+  .postgenz-checkout-page {
+    padding: 8px 6px 40px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .bag-modern-wrapper,
+  .modern-checkout-wrapper {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .bag-modern-wrapper .grid,
+  .modern-checkout-wrapper .grid {
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .checkout-stepper-card,
+  .myntra-price-card,
+  .swiggy-coupon-card-box,
+  .myntra-item-card {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+    border-radius: 12px !important;
+    padding: 14px 12px !important;
   }
 }
 
@@ -9065,6 +9109,58 @@ button {
 
 @media (max-width: 1023px) {
   .btn-myntra-checkout-black {
-    display: none !important;
+    display: flex !important;
+    width: 100% !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ============================================================
+   UNIFIED EDGE-TO-EDGE BOX WIDTH FOR BAG & CHECKOUT PAGES
+============================================================ */
+@media (max-width: 768px) {
+  .postgenz-cart-page,
+  .postgenz-checkout-page {
+    padding: 8px 6px 40px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .bag-modern-wrapper,
+  .modern-checkout-wrapper {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .bag-modern-wrapper .grid,
+  .modern-checkout-wrapper .grid {
+    gap: 12px !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .checkout-stepper-card,
+  .myntra-price-card,
+  .swiggy-coupon-card-box,
+  .myntra-item-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    box-sizing: border-box !important;
+    border-radius: 14px !important;
+  }
+
+  .checkout-clean-nav {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    margin-bottom: 12px !important;
   }
 }
