@@ -50,73 +50,7 @@ export type SavedAddress = {
   isDefault?: boolean;
 };
 
-export const defaultSavedAddresses: SavedAddress[] = [
-  {
-    id: 'addr-1',
-    name: 'Kaushik Vansh',
-    phone: '9265964547',
-    pincode: '362560',
-    city: 'Una',
-    state: 'Gujarat',
-    locality: 'Opp bus station, Una',
-    flat: 'Natraj hospital',
-    landmark: 'Opp bus station',
-    type: 'office',
-    isDefault: true,
-  },
-  {
-    id: 'addr-2',
-    name: 'Kaushik Vansh',
-    phone: '9265964547',
-    pincode: '362560',
-    city: 'Gir Somnath',
-    state: 'Gujarat',
-    locality: 'Dudhala Road, Rohisa',
-    flat: 'Kaushik Vansh, Near Mahakali Temple',
-    landmark: 'Near Mahakali Temple',
-    type: 'home',
-    isDefault: false,
-  },
-  {
-    id: 'addr-3',
-    name: 'Ayush',
-    phone: '9099702068',
-    pincode: '380060',
-    city: 'Ahmedabad',
-    state: 'Gujarat',
-    locality: 'Nr shraddha nursery, Opp satyam mandapam',
-    flat: 'Success Cricket academy',
-    landmark: 'Opp satyam mandapam',
-    type: 'other',
-    isDefault: false,
-  },
-  {
-    id: 'addr-4',
-    name: 'Rajeshree Vansh',
-    phone: '6351082318',
-    pincode: '360006',
-    city: 'Rajkot',
-    state: 'Gujarat',
-    locality: 'Gayatridham Society, Jamnagar - Rajkot Highway',
-    flat: 'Aashirvad felt 201',
-    landmark: 'Jamnagar - Rajkot Highway',
-    type: 'home',
-    isDefault: false,
-  },
-  {
-    id: 'addr-5',
-    name: 'Vansh Rajeshree',
-    phone: '6351082318',
-    pincode: '360006',
-    city: 'Rajkot',
-    state: 'Gujarat',
-    locality: 'Near Bajrangvadi police station',
-    flat: 'Chandrani Hospital Ashirvad felt 201',
-    landmark: 'Near Bajrangvadi police station',
-    type: 'office',
-    isDefault: false,
-  },
-];
+export const defaultSavedAddresses: SavedAddress[] = [];
 
 type StoreState = {
   cart: CartItem[];
@@ -131,6 +65,9 @@ type StoreState = {
 };
 
 const STORAGE_KEY = 'poster-studio-store-v2';
+const LEAKED_IDS = new Set(['addr-1', 'addr-2', 'addr-3', 'addr-4', 'addr-5']);
+const LEAKED_PHONES = new Set(['9265964547', '9099702068', '6351082318']);
+
 const emptyState: StoreState = {
   cart: [],
   wishlist: [],
@@ -139,8 +76,8 @@ const emptyState: StoreState = {
   coupon: '',
   demoUser: null,
   wishlistNotice: null,
-  savedAddresses: defaultSavedAddresses,
-  selectedAddressId: defaultSavedAddresses[0].id,
+  savedAddresses: [],
+  selectedAddressId: '',
 };
 function clampCartQuantities(cartList: CartItem[]): { cart: CartItem[]; hasChanged: boolean } {
   let hasChanged = false;
@@ -172,19 +109,26 @@ function load(): StoreState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyState;
     const parsed = JSON.parse(raw);
-    const savedAddresses = parsed.savedAddresses && parsed.savedAddresses.length > 0
-      ? parsed.savedAddresses
-      : defaultSavedAddresses;
+    
+    // Privacy safeguard: automatically sanitize any previously cached addresses that came from old demo seeds
+    const rawAddresses: SavedAddress[] = Array.isArray(parsed.savedAddresses) ? parsed.savedAddresses : [];
+    const savedAddresses = rawAddresses.filter(
+      (a) => a && a.id && !LEAKED_IDS.has(a.id) && !LEAKED_PHONES.has(String(a.phone || '').trim())
+    );
 
     const rawCart: CartItem[] = Array.isArray(parsed.cart) ? parsed.cart : [];
     const { cart } = clampCartQuantities(rawCart);
+
+    const validSelectedId = savedAddresses.some((a) => a.id === parsed.selectedAddressId)
+      ? parsed.selectedAddressId
+      : savedAddresses[0]?.id || '';
 
     return {
       ...emptyState,
       ...parsed,
       cart,
       savedAddresses,
-      selectedAddressId: parsed.selectedAddressId || savedAddresses[0]?.id || 'addr-1',
+      selectedAddressId: validSelectedId,
     };
   } catch {
     return emptyState;
@@ -305,7 +249,7 @@ export const store = {
   setDemoUser(demoUser: StoreState['demoUser']) { commit({ ...state, demoUser }); },
   updateOrders(orders: DemoOrder[]) { commit({ ...state, orders }); },
   saveAddress(addr: Omit<SavedAddress, 'id'> & { id?: string }) {
-    const addresses = state.savedAddresses && state.savedAddresses.length > 0 ? [...state.savedAddresses] : [...defaultSavedAddresses];
+    const addresses = Array.isArray(state.savedAddresses) ? [...state.savedAddresses] : [];
     let nextAddresses: SavedAddress[];
     let targetId = addr.id;
 
@@ -332,11 +276,11 @@ export const store = {
     commit({
       ...state,
       savedAddresses: nextAddresses,
-      selectedAddressId: targetId || state.selectedAddressId || nextAddresses[0]?.id || 'addr-1',
+      selectedAddressId: targetId || state.selectedAddressId || nextAddresses[0]?.id || '',
     });
   },
   deleteAddress(id: string) {
-    const addresses = state.savedAddresses && state.savedAddresses.length > 0 ? state.savedAddresses : defaultSavedAddresses;
+    const addresses = Array.isArray(state.savedAddresses) ? state.savedAddresses : [];
     const nextAddresses = addresses.filter((a) => a.id !== id);
     commit({
       ...state,
@@ -345,7 +289,7 @@ export const store = {
     });
   },
   setDefaultAddress(id: string) {
-    const addresses = state.savedAddresses && state.savedAddresses.length > 0 ? state.savedAddresses : defaultSavedAddresses;
+    const addresses = Array.isArray(state.savedAddresses) ? state.savedAddresses : [];
     const nextAddresses = addresses.map((a) => ({
       ...a,
       isDefault: a.id === id,

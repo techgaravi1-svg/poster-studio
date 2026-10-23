@@ -141,7 +141,7 @@ export function AddEditAddressForm({ initialAddress, onBack, onSaved }: AddEditA
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Kaushik Vansh"
+              placeholder="e.g. John Doe"
               className="underline-field-input"
             />
           </div>
@@ -153,7 +153,7 @@ export function AddEditAddressForm({ initialAddress, onBack, onSaved }: AddEditA
               maxLength={10}
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-              placeholder="9265964547"
+              placeholder="10-digit mobile number"
               className="underline-field-input"
             />
           </div>
@@ -175,7 +175,7 @@ export function AddEditAddressForm({ initialAddress, onBack, onSaved }: AddEditA
                 maxLength={6}
                 value={pincode}
                 onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
-                placeholder="362560"
+                placeholder="e.g. 560001"
                 className="underline-field-input"
               />
             </div>
@@ -186,7 +186,7 @@ export function AddEditAddressForm({ initialAddress, onBack, onSaved }: AddEditA
                 required
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="Una"
+                placeholder="e.g. Mumbai"
                 className="underline-field-input"
               />
             </div>
@@ -199,7 +199,7 @@ export function AddEditAddressForm({ initialAddress, onBack, onSaved }: AddEditA
               required
               value={stateVal}
               onChange={(e) => setStateVal(e.target.value)}
-              placeholder="Gujarat"
+              placeholder="e.g. Maharashtra"
               className="underline-field-input"
             />
           </div>
@@ -211,7 +211,7 @@ export function AddEditAddressForm({ initialAddress, onBack, onSaved }: AddEditA
               required
               value={locality}
               onChange={(e) => setLocality(e.target.value)}
-              placeholder="Opp bus station"
+              placeholder="e.g. Indiranagar, 12th Main Road"
               className="underline-field-input"
             />
           </div>
@@ -223,7 +223,7 @@ export function AddEditAddressForm({ initialAddress, onBack, onSaved }: AddEditA
               required
               value={flat}
               onChange={(e) => setFlat(e.target.value)}
-              placeholder="Natraj hospital"
+              placeholder="e.g. Flat 402, Lotus Apartments"
               className="underline-field-input"
             />
           </div>
@@ -234,7 +234,7 @@ export function AddEditAddressForm({ initialAddress, onBack, onSaved }: AddEditA
               type="text"
               value={landmark}
               onChange={(e) => setLandmark(e.target.value)}
-              placeholder="Near Bus Station"
+              placeholder="e.g. Near Metro Station (optional)"
               className="underline-field-input"
             />
           </div>
@@ -421,97 +421,116 @@ export function SavedAddressesView({
           <span className="saved-addresses-label">Saved addresses</span>
         </div>
 
-        {/* Addresses Cards List */}
-        <div className="saved-address-cards-list">
-          {savedAddresses.map((addr) => {
-            const isSelected = currentSelectedId === addr.id;
-            const isMenuOpen = openMenuId === addr.id;
+        {savedAddresses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center py-12 px-4 bg-white rounded-2xl border border-neutral-100 shadow-sm mt-4">
+            <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mb-3">
+              <MapPin size={26} strokeWidth={2} />
+            </div>
+            <h3 className="text-base font-bold text-neutral-900 mb-1">No saved addresses</h3>
+            <p className="text-xs text-neutral-500 max-w-xs mb-5">
+              Add your delivery address to enjoy fast, seamless checkout on your poster orders.
+            </p>
+            <button
+              type="button"
+              onClick={() => setActiveView('add')}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider hover:bg-neutral-800 transition"
+            >
+              <Plus size={16} strokeWidth={2.5} />
+              <span>Add New Address</span>
+            </button>
+          </div>
+        ) : (
+          <div className="saved-address-cards-list">
+            {savedAddresses.map((addr) => {
+              const isSelected = currentSelectedId === addr.id;
+              const isMenuOpen = openMenuId === addr.id;
 
-            return (
-              <div
-                key={addr.id}
-                className={`saved-address-card ${isSelected ? 'address-card-selected' : ''}`}
-                onClick={() => handleCardClick(addr)}
-              >
-                {/* Left Icon Badge */}
-                <div className="address-type-icon-box" aria-hidden="true">
-                  {addr.type === 'office' ? (
-                    <Building2 size={24} strokeWidth={1.8} className="text-neutral-800" />
-                  ) : addr.type === 'home' ? (
-                    <Home size={24} strokeWidth={1.8} className="text-neutral-800" />
-                  ) : (
-                    <MapPin size={24} strokeWidth={1.8} className="text-neutral-800" />
-                  )}
-                </div>
-
-                {/* Center Content */}
-                <div className="address-card-center-col">
-                  <div className="address-card-name-row">
-                    <span className="address-recipient-name">{addr.name}</span>
-                    {addr.isDefault && (
-                      <span className="address-default-badge">DEFAULT</span>
+              return (
+                <div
+                  key={addr.id}
+                  className={`saved-address-card ${isSelected ? 'address-card-selected' : ''}`}
+                  onClick={() => handleCardClick(addr)}
+                >
+                  {/* Left Icon Badge */}
+                  <div className="address-type-icon-box" aria-hidden="true">
+                    {addr.type === 'office' ? (
+                      <Building2 size={24} strokeWidth={1.8} className="text-neutral-800" />
+                    ) : addr.type === 'home' ? (
+                      <Home size={24} strokeWidth={1.8} className="text-neutral-800" />
+                    ) : (
+                      <MapPin size={24} strokeWidth={1.8} className="text-neutral-800" />
                     )}
                   </div>
-                  <p className="address-card-full-text">
-                    {[addr.flat, addr.locality, addr.landmark, addr.city, addr.state, addr.pincode]
-                      .filter(Boolean)
-                      .join(', ')}
-                  </p>
-                  <div className="address-card-phone-row">
-                    <Phone size={13} className="text-neutral-600 shrink-0" />
-                    <span className="address-card-phone-text">{addr.phone}</span>
+
+                  {/* Center Content */}
+                  <div className="address-card-center-col">
+                    <div className="address-card-name-row">
+                      <span className="address-recipient-name">{addr.name}</span>
+                      {addr.isDefault && (
+                        <span className="address-default-badge">DEFAULT</span>
+                      )}
+                    </div>
+                    <p className="address-card-full-text">
+                      {[addr.flat, addr.locality, addr.landmark, addr.city, addr.state, addr.pincode]
+                        .filter(Boolean)
+                        .join(', ')}
+                    </p>
+                    <div className="address-card-phone-row">
+                      <Phone size={13} className="text-neutral-600 shrink-0" />
+                      <span className="address-card-phone-text">{addr.phone}</span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Right Actions: 3-dots menu */}
-                <div
-                  className="address-card-right-col"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    type="button"
-                    className="address-dots-menu-btn"
-                    aria-label={`Options for ${addr.name}`}
-                    onClick={() => setOpenMenuId(isMenuOpen ? null : addr.id)}
+                  {/* Right Actions: 3-dots menu */}
+                  <div
+                    className="address-card-right-col"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <MoreVertical size={19} className="text-neutral-600" />
-                  </button>
+                    <button
+                      type="button"
+                      className="address-dots-menu-btn"
+                      aria-label={`Options for ${addr.name}`}
+                      onClick={() => setOpenMenuId(isMenuOpen ? null : addr.id)}
+                    >
+                      <MoreVertical size={19} className="text-neutral-600" />
+                    </button>
 
-                  {isMenuOpen && (
-                    <div className="address-dropdown-popover" role="menu">
-                      <button
-                        type="button"
-                        className="address-popover-item"
-                        onClick={() => handleEdit(addr)}
-                      >
-                        <Edit2 size={14} />
-                        <span>Edit</span>
-                      </button>
-                      {!addr.isDefault && (
+                    {isMenuOpen && (
+                      <div className="address-dropdown-popover" role="menu">
                         <button
                           type="button"
                           className="address-popover-item"
-                          onClick={() => handleSetDefault(addr)}
+                          onClick={() => handleEdit(addr)}
                         >
-                          <Check size={14} />
-                          <span>Set as Default</span>
+                          <Edit2 size={14} />
+                          <span>Edit</span>
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        className="address-popover-item text-red-600"
-                        onClick={() => handleDelete(addr)}
-                      >
-                        <Trash2 size={14} />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  )}
+                        {!addr.isDefault && (
+                          <button
+                            type="button"
+                            className="address-popover-item"
+                            onClick={() => handleSetDefault(addr)}
+                          >
+                            <Check size={14} />
+                            <span>Set as Default</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="address-popover-item text-red-600"
+                          onClick={() => handleDelete(addr)}
+                        >
+                          <Trash2 size={14} />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <Toast message={toast} onClose={() => setToast('')} />

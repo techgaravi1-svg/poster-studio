@@ -53,67 +53,7 @@ async function main() {
   }
   console.log(`✅ Seeded ${coupons.length} coupons`);
 
-  // 2. Seed Default Addresses
-  const addresses = [
-    {
-      name: 'Kaushik Vansh',
-      phone: '9265964547',
-      pincode: '362560',
-      city: 'Una',
-      state: 'Gujarat',
-      locality: 'Opp bus station, Una',
-      flat: 'Natraj hospital',
-      landmark: 'Opp bus station',
-      type: 'OFFICE' as const,
-      isDefault: true,
-    },
-    {
-      name: 'Kaushik Vansh',
-      phone: '9265964547',
-      pincode: '362560',
-      city: 'Gir Somnath',
-      state: 'Gujarat',
-      locality: 'Dudhala Road, Rohisa',
-      flat: 'Kaushik Vansh, Near Mahakali Temple',
-      landmark: 'Near Mahakali Temple',
-      type: 'HOME' as const,
-      isDefault: false,
-    },
-    {
-      name: 'Ayush',
-      phone: '9099702068',
-      pincode: '380060',
-      city: 'Ahmedabad',
-      state: 'Gujarat',
-      locality: 'Nr shraddha nursery, Opp satyam mandapam',
-      flat: 'Success Cricket academy',
-      landmark: 'Opp satyam mandapam',
-      type: 'OTHER' as const,
-      isDefault: false,
-    },
-    {
-      name: 'Rajeshree Vansh',
-      phone: '6351082318',
-      pincode: '360006',
-      city: 'Rajkot',
-      state: 'Gujarat',
-      locality: 'Gayatridham Society, Jamnagar - Rajkot Highway',
-      flat: 'Aashirvad felt 201',
-      landmark: 'Jamnagar - Rajkot Highway',
-      type: 'HOME' as const,
-      isDefault: false,
-    },
-  ];
-
-  for (const addr of addresses) {
-    const existing = await prisma.address.findFirst({
-      where: { phone: addr.phone, flat: addr.flat },
-    });
-    if (!existing) {
-      await prisma.address.create({ data: addr });
-    }
-  }
-  console.log(`✅ Seeded ${addresses.length} addresses`);
+  // 2. Addresses - left blank for actual customer self-registration
 
   // 3. Seed All Catalog Products (30 Products)
   console.log(`📦 Seeding ${catalogProducts.length} full catalog posters...`);

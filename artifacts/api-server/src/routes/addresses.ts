@@ -26,8 +26,12 @@ router.get('/addresses', async (req: Request, res: Response) => {
   try {
     const { phone } = req.query;
 
+    if (!phone || !String(phone).trim()) {
+      return res.json({ success: true, addresses: [] });
+    }
+
     const addresses = await prisma.address.findMany({
-      where: phone ? { phone: String(phone) } : undefined,
+      where: { phone: String(phone).trim() },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
 

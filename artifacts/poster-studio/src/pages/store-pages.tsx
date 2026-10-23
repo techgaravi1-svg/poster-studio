@@ -2658,13 +2658,13 @@ export function CheckoutPage() {
   const activeAddress = savedAddresses.find((a) => a.id === selectedAddressId) || savedAddresses[0] || null;
 
   const [form, setForm] = useState({
-    name: activeAddress?.name || 'Kaushik Vansh',
-    email: 'kaushik@dungeons.in',
-    phone: activeAddress?.phone || '9265964547',
-    address: activeAddress ? [activeAddress.flat, activeAddress.locality, activeAddress.landmark].filter(Boolean).join(', ') : '417, Satyamev Eminence, Near Shukan Mall, Science City, Sola',
-    city: activeAddress?.city || 'Ahmedabad',
-    state: activeAddress?.state || 'Gujarat',
-    pincode: activeAddress?.pincode || '380060',
+    name: activeAddress?.name || '',
+    email: '',
+    phone: activeAddress?.phone || '',
+    address: activeAddress ? [activeAddress.flat, activeAddress.locality, activeAddress.landmark].filter(Boolean).join(', ') : '',
+    city: activeAddress?.city || '',
+    state: activeAddress?.state || '',
+    pincode: activeAddress?.pincode || '',
     country: 'India',
   });
 
@@ -2951,28 +2951,42 @@ export function CheckoutPage() {
                   onClick={() => navigate('/addresses')}
                   className="step-edit-btn"
                 >
-                  Change
+                  {activeAddress || form.name ? 'Change' : 'Add'}
                 </button>
               </div>
 
-              <div className="space-y-1.5 text-xs sm:text-sm text-neutral-700">
-                <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-sm sm:text-base text-neutral-900">
-                    {activeAddress ? activeAddress.name : form.name}
-                  </span>
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    {activeAddress ? activeAddress.type.toUpperCase() : 'HOME'}
-                  </span>
+              {activeAddress || (form.name && form.address) ? (
+                <div className="space-y-1.5 text-xs sm:text-sm text-neutral-700">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-sm sm:text-base text-neutral-900">
+                      {activeAddress ? activeAddress.name : form.name}
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      {activeAddress ? activeAddress.type.toUpperCase() : 'HOME'}
+                    </span>
+                  </div>
+                  <p className="text-neutral-600 leading-relaxed pt-0.5">
+                    {activeAddress
+                      ? `${[activeAddress.flat, activeAddress.locality, activeAddress.landmark, activeAddress.city, activeAddress.state].filter(Boolean).join(', ')} – ${activeAddress.pincode}`
+                      : `${form.address}, ${form.city}, ${form.state} – ${form.pincode}`}
+                  </p>
+                  <p className="text-neutral-800 font-semibold pt-1">
+                    Mobile: <span className="font-extrabold text-neutral-900">+91 {activeAddress ? activeAddress.phone : form.phone}</span>
+                  </p>
                 </div>
-                <p className="text-neutral-600 leading-relaxed pt-0.5">
-                  {activeAddress
-                    ? `${[activeAddress.flat, activeAddress.locality, activeAddress.landmark, activeAddress.city, activeAddress.state].filter(Boolean).join(', ')} – ${activeAddress.pincode}`
-                    : `${form.address}, ${form.city}, ${form.state} – ${form.pincode}`}
-                </p>
-                <p className="text-neutral-800 font-semibold pt-1">
-                  Mobile: <span className="font-extrabold text-neutral-900">+91 {activeAddress ? activeAddress.phone : form.phone}</span>
-                </p>
-              </div>
+              ) : (
+                <div className="py-2">
+                  <p className="text-xs text-neutral-500 mb-3">No delivery address selected.</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/addresses')}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider hover:bg-neutral-800 transition"
+                  >
+                    <Plus size={14} />
+                    <span>Add Delivery Address</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* STEP 2: ORDER ITEMS SUMMARY */}
@@ -3075,24 +3089,31 @@ export function OrderSuccessPage() {
   const { orders } = useStore();
   const [copied, setCopied] = useState(false);
 
-  // Find order or provide fallback demo order
-  const order = orders.find((item) => item.id === id) || orders[0] || {
-    id: id || 'PS-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
-    customer: { name: 'Kaushik Vansh', email: 'kaushik@example.com', phone: '9265964547' },
-    address: { address: '417, Satyamev Eminence, Near Shukan Mall, Science City', city: 'Ahmedabad', state: 'Gujarat', pincode: '380060' },
-    products: [
-      {
-        key: 'demo-1',
-        id: 'spiderman-1',
-        title: 'SPIDERMAN POSTER - 8 | MARVEL SERIES',
-        price: 79,
-        quantity: 1,
-        size: 'A5' as PosterSize,
-      }
-    ],
-    total: 128,
-    createdAt: new Date().toISOString(),
-  };
+  // Find order
+  const order = orders.find((item) => item.id === id) || orders[0] || null;
+
+  if (!order) {
+    return (
+      <main className="success-page-shell">
+        <div className="success-container">
+          <div className="orders-empty-state-box text-center py-16 px-4 bg-white rounded-2xl border border-neutral-100 shadow-sm">
+            <h2 className="text-xl font-black text-neutral-900 mb-2">No Active Order Found</h2>
+            <p className="text-sm text-neutral-500 mb-6 max-w-sm mx-auto">
+              We couldn't find details for this order session. You can view all your placed orders in your account.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Link href="/account/orders" className="px-5 py-2.5 rounded-full bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider hover:bg-neutral-800 transition">
+                View My Orders
+              </Link>
+              <Link href="/collections/posters" className="px-5 py-2.5 rounded-full bg-neutral-100 text-neutral-800 text-xs font-bold uppercase tracking-wider hover:bg-neutral-200 transition">
+                Browse Posters
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   // Calculate delivery date (7–8 business days from order)
   const estimatedDate = new Date();
@@ -3471,35 +3492,8 @@ export function OrdersPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'in_progress' | 'delivered'>('all');
 
-  // Handle fallback if no orders exist yet
-  const displayOrders = orders.length > 0 ? orders : [
-    {
-      id: 'PS-MVC7ZYPH',
-      customer: { name: 'Kaushik Vansh', email: 'kaushik@example.com', phone: '9265964547' },
-      address: { address: '417, Satyamev Eminence, Near Shukan Mall, Science City', city: 'Ahmedabad', state: 'Gujarat', pincode: '380060', country: 'India' },
-      products: [
-        {
-          key: 'item-1',
-          productId: 'prod-spiderman-andrew',
-          title: 'SPIDERMAN POSTER - ANDREW GARFIELD | MARVEL POSTERS',
-          slug: 'andrew-garfield-spiderman-poster',
-          price: 79,
-          size: 'A5' as PosterSize,
-          quantity: 1,
-          orientation: 'portrait' as Orientation,
-          artTreatment: 'standard',
-        }
-      ],
-      customUploads: [],
-      subtotal: 79,
-      shipping: 0,
-      discount: 0,
-      total: 128,
-      paymentStatus: 'paid' as const,
-      fulfillmentStatus: 'processing' as const,
-      createdAt: '2026-10-17T10:00:00.000Z',
-    }
-  ];
+  // User orders list
+  const displayOrders = orders;
 
   const filteredOrders = displayOrders.filter((order) => {
     if (filter === 'in_progress') return order.fulfillmentStatus === 'processing' || order.fulfillmentStatus === 'pending' || order.fulfillmentStatus === 'shipped';
@@ -3740,33 +3734,8 @@ export function OrderDetailPage() {
   const { orders } = useStore();
   const [copied, setCopied] = useState(false);
 
-  // Find order or fallback
-  const order = orders.find((o) => o.id === id) || (id === 'PS-MVC7ZYPH' ? {
-    id: 'PS-MVC7ZYPH',
-    customer: { name: 'Kaushik Vansh', email: 'kaushik@example.com', phone: '9265964547' },
-    address: { address: '417, Satyamev Eminence, Near Shukan Mall, Science City', city: 'Ahmedabad', state: 'Gujarat', pincode: '380060', country: 'India' },
-    products: [
-      {
-        key: 'item-1',
-        productId: 'prod-spiderman-andrew',
-        title: 'SPIDERMAN POSTER - ANDREW GARFIELD | MARVEL POSTERS',
-        slug: 'andrew-garfield-spiderman-poster',
-        price: 79,
-        size: 'A5' as PosterSize,
-        quantity: 1,
-        orientation: 'portrait' as Orientation,
-        artTreatment: 'standard',
-      }
-    ],
-    customUploads: [],
-    subtotal: 79,
-    shipping: 0,
-    discount: 0,
-    total: 128,
-    paymentStatus: 'paid' as const,
-    fulfillmentStatus: 'processing' as const,
-    createdAt: '2026-10-17T10:00:00.000Z',
-  } : null);
+  // Find order
+  const order = orders.find((o) => o.id === id) || null;
 
   if (!order) {
     return (
