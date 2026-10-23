@@ -295,7 +295,7 @@ router.get('/admin/orders', requireAdminAuth, async (req: Request, res: Response
 
 router.get('/admin/orders/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const order = await prisma.order.findFirst({
       where: { OR: [{ id }, { orderNumber: id }] },
       include: { items: true },
@@ -309,7 +309,7 @@ router.get('/admin/orders/:id', requireAdminAuth, async (req: Request, res: Resp
 
 router.patch('/admin/orders/:id/status', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const parsed = UpdateOrderStatusSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ success: false, error: 'Invalid status update', details: parsed.error.format() });
@@ -339,7 +339,7 @@ router.patch('/admin/orders/:id/status', requireAdminAuth, async (req: Request, 
 
 router.delete('/admin/orders/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     await prisma.order.delete({ where: { id } });
     return res.json({ success: true, message: 'Order deleted successfully' });
   } catch (error) {
@@ -398,7 +398,7 @@ router.post('/admin/products', requireAdminAuth, async (req: Request, res: Respo
 
 router.put('/admin/products/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const parsed = ProductMutationSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ success: false, error: 'Invalid product data', details: parsed.error.format() });
@@ -435,7 +435,7 @@ router.put('/admin/products/:id', requireAdminAuth, async (req: Request, res: Re
 
 router.delete('/admin/products/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const existing = await prisma.product.findFirst({
       where: {
         OR: [{ id }, { slug: id }],
@@ -491,7 +491,7 @@ router.post('/admin/coupons', requireAdminAuth, async (req: Request, res: Respon
 
 router.put('/admin/coupons/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const parsed = CouponMutationSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ success: false, error: 'Invalid coupon data', details: parsed.error.format() });
@@ -515,7 +515,7 @@ router.put('/admin/coupons/:id', requireAdminAuth, async (req: Request, res: Res
 
 router.delete('/admin/coupons/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     await prisma.coupon.delete({ where: { id } });
     return res.json({ success: true, message: 'Coupon deleted successfully' });
   } catch (error) {
@@ -546,7 +546,7 @@ router.get('/admin/categories', requireAdminAuth, async (_req: Request, res: Res
 // Toggle coupon status
 router.patch('/admin/coupons/:id/toggle', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const existing = await prisma.coupon.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ success: false, error: 'Coupon not found' });
     const updated = await prisma.coupon.update({
@@ -563,7 +563,7 @@ router.patch('/admin/coupons/:id/toggle', requireAdminAuth, async (req: Request,
 router.get('/admin/subscribers', requireAdminAuth, async (_req: Request, res: Response) => {
   try {
     const subscribers = await prisma.newsletterSubscriber.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { subscribedAt: 'desc' },
     });
     return res.json({ success: true, subscribers });
   } catch (error) {

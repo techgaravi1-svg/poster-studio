@@ -44,7 +44,7 @@ import {
   Download,
   FileText,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, products, searchProducts, storeCategories, useLiveProducts, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, getProductStock, products, searchProducts, storeCategories, useLiveProducts, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, Toast } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
@@ -945,7 +945,7 @@ export function ProductPage() {
   const liveProducts = useLiveProducts();
   const product = liveProducts.find((p) => p.slug === slug || p.id === slug) || getProduct(slug) || liveProducts[0] || products[0];
   const [, navigate] = useLocation();
-  const { wishlist = [] } = useStore();
+  const { cart, wishlist = [] } = useStore();
   const [selectedSize, setSelectedSize] = useState<PosterSize>('A5');
   const [quantity, setQuantity] = useState(1);
   const [openAccordion, setOpenAccordion] = useState<string | null>('features');
@@ -970,14 +970,36 @@ export function ProductPage() {
     setOpenAccordion(openAccordion === name ? null : name);
   };
 
+  const availableStock = typeof product.stock === 'number' && !isNaN(product.stock)
+    ? Math.max(0, product.stock)
+    : 50;
+  const isOutOfStock = availableStock <= 0;
+
   const handleAddToCart = (buyNow = false) => {
+    if (isOutOfStock) {
+      setToast('Sorry, this poster is currently out of stock.');
+      window.setTimeout(() => setToast(''), 3000);
+      return;
+    }
+
+    const currentInCart = cart?.find((i: CartItem) => i.productId === product.id || i.slug === product.slug);
+    const currentQty = currentInCart ? currentInCart.quantity : 0;
+
+    if (currentQty >= availableStock) {
+      setToast(`You already have all available stock (${availableStock}) in your bag.`);
+      window.setTimeout(() => setToast(''), 3000);
+      return;
+    }
+
+    const addQty = Math.min(quantity, availableStock - currentQty);
+
     store.addToCart({
       productId: product.id,
       slug: product.slug,
       title: product.title,
       price: product.price,
       size: selectedSize,
-      quantity,
+      quantity: addQty,
       orientation: product.orientation,
       artTreatment: product.artTreatment,
     });
@@ -1061,16 +1083,25 @@ export function ProductPage() {
               type="button"
               className="stepper-btn"
               aria-label="Decrease quantity"
+              disabled={isOutOfStock}
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
             >
               <Minus size={14} />
             </button>
-            <span className="stepper-val">{quantity}</span>
+            <span className="stepper-val">{isOutOfStock ? 0 : quantity}</span>
             <button
               type="button"
-              className="stepper-btn"
+              className={`stepper-btn ${quantity >= availableStock ? 'opacity-30 cursor-not-allowed pointer-events-none' : ''}`}
               aria-label="Increase quantity"
-              onClick={() => setQuantity(quantity + 1)}
+              disabled={quantity >= availableStock}
+              onClick={() => {
+                if (quantity < availableStock) {
+                  setQuantity(quantity + 1);
+                } else {
+                  setToast(`Only ${availableStock} item${availableStock === 1 ? '' : 's'} available in stock.`);
+                  window.setTimeout(() => setToast(''), 2500);
+                }
+              }}
             >
               <Plus size={14} />
             </button>
@@ -1078,11 +1109,12 @@ export function ProductPage() {
 
           <button
             type="button"
-            className="btn-add-to-cart-cyan"
+            disabled={isOutOfStock}
+            className={`btn-add-to-cart-cyan ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={() => handleAddToCart(false)}
           >
             <ShoppingBag size={18} strokeWidth={2.2} />
-            <span>ADD TO CART</span>
+            <span>{isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}</span>
           </button>
 
           <button
@@ -1096,14 +1128,22 @@ export function ProductPage() {
           </button>
         </div>
 
+        {availableStock === 1 && (
+          <div className="mt-2 text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 inline-flex items-center gap-1.5">
+            <span>⚠️</span>
+            <span>Only 1 item left in stock — order soon!</span>
+          </div>
+        )}
+
         {/* 5. BUY IT NOW FULL WIDTH */}
         <button
           type="button"
-          className="btn-buy-it-now-blue"
+          disabled={isOutOfStock}
+          className={`btn-buy-it-now-blue ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}
           onClick={() => handleAddToCart(true)}
         >
           <Zap size={18} strokeWidth={2.4} />
-          <span>BUY NOW • FAST CHECKOUT</span>
+          <span>{isOutOfStock ? 'OUT OF STOCK' : 'BUY NOW • FAST CHECKOUT'}</span>
         </button>
 
         {/* 6. SECURE CHECKOUT WITH BADGES */}
@@ -2481,6 +2521,17 @@ export function CartPage() {
   }, [cart]);
 
   const totalSavings = Math.max(0, (totalMRP - totals.subtotal) + totals.discount);
+
+  // Automatically clamp any cart item if its quantity exceeds current catalog stock
+  useEffect(() => {
+    for (const item of cart) {
+      if (item.customUpload) continue;
+      const maxStock = getProductStock(item.slug || item.productId, item.title);
+      if (maxStock > 0 && item.quantity > maxStock) {
+        store.updateQuantity(item.key, maxStock);
+      }
+    }
+  }, [cart]);
 
   const handleSaveForLater = (item: CartItem) => {
     const slugOrId = item.slug || item.productId;

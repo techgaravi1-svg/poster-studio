@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { Product, PosterSize, Orientation } from './catalog';
+import { getProductStock, type Product, type PosterSize, type Orientation } from './catalog';
 
 export type CartItem = {
   key: string;
@@ -142,8 +142,30 @@ const emptyState: StoreState = {
   savedAddresses: defaultSavedAddresses,
   selectedAddressId: defaultSavedAddresses[0].id,
 };
-let state: StoreState = load();
-const listeners = new Set<() => void>();
+function clampCartQuantities(cartList: CartItem[]): { cart: CartItem[]; hasChanged: boolean } {
+  let hasChanged = false;
+  const clamped: CartItem[] = [];
+
+  for (const item of cartList) {
+    if (item.customUpload) {
+      clamped.push(item);
+      continue;
+    }
+    const maxStock = getProductStock(item.slug || item.productId, item.title);
+    if (maxStock <= 0) {
+      hasChanged = true;
+      continue;
+    }
+    if (item.quantity > maxStock) {
+      hasChanged = true;
+      clamped.push({ ...item, quantity: maxStock });
+    } else {
+      clamped.push(item);
+    }
+  }
+
+  return { cart: clamped, hasChanged };
+}
 
 function load(): StoreState {
   try {
@@ -153,9 +175,14 @@ function load(): StoreState {
     const savedAddresses = parsed.savedAddresses && parsed.savedAddresses.length > 0
       ? parsed.savedAddresses
       : defaultSavedAddresses;
+
+    const rawCart: CartItem[] = Array.isArray(parsed.cart) ? parsed.cart : [];
+    const { cart } = clampCartQuantities(rawCart);
+
     return {
       ...emptyState,
       ...parsed,
+      cart,
       savedAddresses,
       selectedAddressId: parsed.selectedAddressId || savedAddresses[0]?.id || 'addr-1',
     };
@@ -164,10 +191,23 @@ function load(): StoreState {
   }
 }
 
+let state: StoreState = load();
+const listeners = new Set<() => void>();
+
 function commit(next: StoreState) {
   state = next;
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* private mode */ }
   listeners.forEach((listener) => listener());
+}
+
+// Automatically clamp cart quantities when catalog updates in real-time
+if (typeof window !== 'undefined') {
+  window.addEventListener('dungeons:products-updated', () => {
+    const { cart, hasChanged } = clampCartQuantities(state.cart);
+    if (hasChanged) {
+      commit({ ...state, cart });
+    }
+  });
 }
 
 function subscribe(listener: () => void) {
@@ -182,14 +222,41 @@ export const store = {
     const key = item.key || (item.customUpload
       ? `custom-${item.productId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
       : `${item.productId}-${item.size}`);
+
+    const maxStock = item.customUpload ? 999 : getProductStock(item.slug || item.productId, item.title);
+    if (maxStock <= 0) {
+      return { success: false, maxStock: 0, reason: 'OUT_OF_STOCK' };
+    }
+
     const existing = state.cart.find((cartItem) => cartItem.key === key);
-    const cart = existing
-      ? state.cart.map((cartItem) => cartItem.key === key ? { ...cartItem, quantity: cartItem.quantity + item.quantity } : cartItem)
-      : [...state.cart, { ...item, key }];
+    let cart: CartItem[];
+    if (existing) {
+      const targetQty = Math.min(existing.quantity + item.quantity, maxStock);
+      cart = state.cart.map((cartItem) =>
+        cartItem.key === key ? { ...cartItem, quantity: targetQty } : cartItem
+      );
+    } else {
+      const initialQty = Math.min(item.quantity, maxStock);
+      cart = [...state.cart, { ...item, key, quantity: initialQty }];
+    }
     commit({ ...state, cart });
+    return { success: true, maxStock };
   },
   updateQuantity(key: string, quantity: number) {
-    commit({ ...state, cart: quantity <= 0 ? state.cart.filter((item) => item.key !== key) : state.cart.map((item) => item.key === key ? { ...item, quantity } : item) });
+    if (quantity <= 0) {
+      commit({ ...state, cart: state.cart.filter((item) => item.key !== key) });
+      return;
+    }
+    const existing = state.cart.find((item) => item.key === key);
+    if (!existing) return;
+
+    const maxStock = existing.customUpload ? 999 : getProductStock(existing.slug || existing.productId, existing.title);
+    const clampedQty = Math.min(quantity, maxStock);
+
+    commit({
+      ...state,
+      cart: state.cart.map((item) => (item.key === key ? { ...item, quantity: clampedQty } : item)),
+    });
   },
   updateItemSize(key: string, newSize: PosterSize) {
     const item = state.cart.find((i) => i.key === key);

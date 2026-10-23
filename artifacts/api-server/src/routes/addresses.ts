@@ -91,7 +91,7 @@ router.post(
  */
 router.delete('/addresses/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     await prisma.address.delete({ where: { id } });
     return res.json({ success: true, message: 'Address removed successfully' });
   } catch (error) {

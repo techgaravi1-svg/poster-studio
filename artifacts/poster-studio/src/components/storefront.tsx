@@ -21,7 +21,7 @@ import {
   Check,
 } from 'lucide-react';
 import type { Product } from '@/lib/catalog';
-import { formatPrice, products, storeCategories } from '@/lib/catalog';
+import { formatPrice, products, storeCategories, getProductStock } from '@/lib/catalog';
 import { cartTotals, store, useStore } from '@/lib/store';
 
 export function PosterArt({
@@ -176,8 +176,15 @@ function CartDrawer({ onClose }: { onClose: () => void }) {
                       <span>{item.quantity}</span>
                       <button
                         type="button"
+                        disabled={item.quantity >= (item.customUpload ? 999 : getProductStock(item.slug || item.productId, item.title))}
+                        className={item.quantity >= (item.customUpload ? 999 : getProductStock(item.slug || item.productId, item.title)) ? 'opacity-30 cursor-not-allowed' : ''}
                         aria-label={`Increase ${item.title}`}
-                        onClick={() => store.updateQuantity(item.key, item.quantity + 1)}
+                        onClick={() => {
+                          const stockLimit = item.customUpload ? 999 : getProductStock(item.slug || item.productId, item.title);
+                          if (item.quantity < stockLimit) {
+                            store.updateQuantity(item.key, item.quantity + 1);
+                          }
+                        }}
                       >
                         <Plus size={13} />
                       </button>

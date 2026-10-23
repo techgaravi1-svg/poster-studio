@@ -1051,6 +1051,23 @@ export function getProduct(slug?: string) {
   return current.find((product) => product.slug === slug || product.id === slug);
 }
 
+export function getProductStock(productIdOrSlug?: string, title?: string): number {
+  if (!productIdOrSlug && !title) return 999;
+  const list = typeof window !== 'undefined' ? loadCatalogFromStorage() : products;
+  const match = list.find((p) =>
+    (productIdOrSlug && (p.id === productIdOrSlug || p.slug === productIdOrSlug)) ||
+    (title && (
+      p.title.toLowerCase() === title.toLowerCase() ||
+      (p.slug && title.toLowerCase().includes(p.slug.toLowerCase())) ||
+      (p.title && title.toLowerCase().includes(p.title.toLowerCase().split('|')[0].trim()))
+    ))
+  );
+  if (match && typeof match.stock === 'number' && !isNaN(match.stock)) {
+    return Math.max(0, match.stock);
+  }
+  return 50;
+}
+
 export function searchProducts(query: string, sourceProducts: Product[] = products) {
   const needle = query.trim().toLowerCase();
   if (!needle) return [];

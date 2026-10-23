@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import {
   Check,
@@ -102,6 +102,19 @@ export function MyntraItemCard({
     ? matchProduct.sizes
     : ['A5', 'A4', 'A3'];
 
+  const maxStock = item.customUpload
+    ? 999
+    : typeof matchProduct?.stock === 'number'
+      ? Math.max(0, matchProduct.stock)
+      : 50;
+  const isAtMaxStock = item.quantity >= maxStock;
+
+  useEffect(() => {
+    if (!isOrderMode && !item.customUpload && item.quantity > maxStock && maxStock > 0) {
+      store.updateQuantity(item.key, maxStock);
+    }
+  }, [item.key, item.quantity, maxStock, isOrderMode, item.customUpload]);
+
   return (
     <div className="myntra-item-card" data-testid={`cart-item-${item.key}`}>
       {/* Left Column: Product Thumbnail with Pink Checkmark Badge */}
@@ -191,24 +204,38 @@ export function MyntraItemCard({
 
           {/* Qty Pill / Stepper */}
           {!isOrderMode ? (
-            <div className="myntra-qty-stepper-pill">
-              <button
-                type="button"
-                onClick={() => store.updateQuantity(item.key, item.quantity - 1)}
-                className="myntra-qty-btn"
-                aria-label="Decrease quantity"
-              >
-                <Minus size={11} strokeWidth={2.5} />
-              </button>
-              <span className="myntra-qty-num">Qty: {item.quantity}</span>
-              <button
-                type="button"
-                onClick={() => store.updateQuantity(item.key, item.quantity + 1)}
-                className="myntra-qty-btn"
-                aria-label="Increase quantity"
-              >
-                <Plus size={11} strokeWidth={2.5} />
-              </button>
+            <div className="flex items-center gap-2">
+              <div className="myntra-qty-stepper-pill">
+                <button
+                  type="button"
+                  onClick={() => store.updateQuantity(item.key, item.quantity - 1)}
+                  className="myntra-qty-btn"
+                  aria-label="Decrease quantity"
+                >
+                  <Minus size={11} strokeWidth={2.5} />
+                </button>
+                <span className="myntra-qty-num">Qty: {item.quantity}</span>
+                <button
+                  type="button"
+                  disabled={isAtMaxStock}
+                  onClick={() => {
+                    if (!isAtMaxStock) {
+                      store.updateQuantity(item.key, item.quantity + 1);
+                    }
+                  }}
+                  className={`myntra-qty-btn ${isAtMaxStock ? 'opacity-30 cursor-not-allowed pointer-events-none' : ''}`}
+                  title={isAtMaxStock ? `Max available stock reached (${maxStock})` : 'Increase quantity'}
+                  aria-label="Increase quantity"
+                >
+                  <Plus size={11} strokeWidth={2.5} />
+                </button>
+              </div>
+
+              {maxStock === 1 && (
+                <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                  Only 1 available
+                </span>
+              )}
             </div>
           ) : (
             <div className="myntra-pill-btn">

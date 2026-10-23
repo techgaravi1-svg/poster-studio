@@ -57,7 +57,7 @@ router.get('/products', async (req: Request, res: Response) => {
  */
 router.get('/products/:slug', async (req: Request, res: Response) => {
   try {
-    const { slug } = req.params;
+    const slug = String(req.params.slug);
 
     const product = await prisma.product.findFirst({
       where: {

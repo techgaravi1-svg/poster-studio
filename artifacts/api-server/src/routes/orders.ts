@@ -93,6 +93,28 @@ router.post(
       const finalTotal = Math.max(0, calculatedSubtotal - calculatedDiscount + shippingFee);
       const orderNumber = generateOrderNumber();
 
+      // Verify product stock availability in database
+      for (const item of items) {
+        if (item.customUpload) continue;
+        const product = await prisma.product.findFirst({
+          where: {
+            OR: [
+              { id: item.productId },
+              ...(item.slug ? [{ slug: item.slug }] : []),
+              { title: item.title },
+            ],
+          },
+        });
+        if (product && typeof product.stock === 'number') {
+          if (product.stock < item.quantity) {
+            return res.status(400).json({
+              success: false,
+              error: `Only ${product.stock} unit(s) of "${product.title}" are available in stock. Please adjust your bag quantity.`,
+            });
+          }
+        }
+      }
+
       // Atomic Transaction: Create Order & OrderItems & Audit Log
       const newOrder = await prisma.$transaction(async (tx) => {
         const order = await tx.order.create({
@@ -127,6 +149,25 @@ router.post(
             items: true,
           },
         });
+
+        // Decrement stock for purchased items
+        for (const item of items) {
+          if (item.customUpload) continue;
+          await tx.product.updateMany({
+            where: {
+              OR: [
+                { id: item.productId },
+                ...(item.slug ? [{ slug: item.slug }] : []),
+                { title: item.title },
+              ],
+            },
+            data: {
+              stock: {
+                decrement: item.quantity,
+              },
+            },
+          });
+        }
 
         // Audit Trail
         await tx.auditLog.create({
@@ -166,7 +207,7 @@ router.post(
  */
 router.get('/orders/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     if (!id || id.length > 50) {
       return res.status(400).json({ success: false, error: 'Invalid order identifier' });
     }
@@ -199,7 +240,7 @@ router.get('/orders/:id', async (req: Request, res: Response) => {
  */
 router.patch('/orders/:id/payment', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { paymentId, status } = req.body;
 
     if (!paymentId || !status) {
