@@ -906,20 +906,48 @@ export const products: Product[] = typeof window !== 'undefined'
 
 export function saveCatalogToStorage(newList: Product[]) {
   if (typeof window === 'undefined') return;
+
+  // 1. Always update memory and notify listeners first so UI never drops data
+  products.length = 0;
+  products.push(...newList);
+  window.dispatchEvent(new CustomEvent('dungeons:products-updated', { detail: newList }));
+
+  // 2. Persist to localStorage safely handling quota limits
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
-    products.length = 0;
-    products.push(...newList);
-    window.dispatchEvent(new CustomEvent('dungeons:products-updated', { detail: newList }));
-  } catch (e) {
-    console.warn('[Catalog] Error saving catalog to localStorage:', e);
+  } catch (e: any) {
+    console.warn('[Catalog] localStorage quota exceeded, trimming payload safely:', e);
+    try {
+      // If quota exceeded, sanitize images: keep first 500 characters of data URLs or replace with placeholder
+      const sanitized = newList.map((item) => {
+        const hasHeavyImages = item.images?.some((img) => img.startsWith('data:') && img.length > 250000);
+        if (hasHeavyImages) {
+          return {
+            ...item,
+            images: item.images.map((img) => (img.startsWith('data:') && img.length > 250000 ? '/assets/posters/poster-01.jpg' : img)),
+          };
+        }
+        return item;
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+    } catch {
+      // Memory state is maintained even if localStorage is completely full
+    }
   }
 }
 
 export function saveSingleProduct(productData: Partial<Product> & { id: string }): Product[] {
   const current = loadCatalogFromStorage();
+
+  // Ensure slug is clean and present
+  const safeSlug = (productData.slug || productData.title || productData.id || `poster-${Date.now()}`)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+
   const index = current.findIndex(
-    (p) => p.id === productData.id || (productData.slug && p.slug === productData.slug)
+    (p) => p.id === productData.id || (productData.slug && p.slug === productData.slug) || p.slug === safeSlug
   );
 
   let updatedList: Product[];
@@ -938,6 +966,7 @@ export function saveSingleProduct(productData: Partial<Product> & { id: string }
     const updated: Product = {
       ...existing,
       ...productData,
+      slug: safeSlug,
       price,
       compareAtPrice: compareAt,
       discount,
@@ -952,6 +981,7 @@ export function saveSingleProduct(productData: Partial<Product> & { id: string }
   } else {
     const newProd = transformDbProductToFrontend({
       ...productData,
+      slug: safeSlug,
       price: Number(productData.price || 79),
     });
     updatedList = [newProd, ...current];
@@ -980,8 +1010,16 @@ export async function fetchLiveProducts(): Promise<Product[]> {
     const data = await res.json();
     if (data.success && Array.isArray(data.products) && data.products.length > 0) {
       const transformed = data.products.map(transformDbProductToFrontend);
-      saveCatalogToStorage(transformed);
-      return transformed;
+
+      // Merge: preserve locally created custom posters that might still be syncing
+      const localList = loadCatalogFromStorage();
+      const localCustom = localList.filter((item) =>
+        item.id.startsWith('prod-custom-') && !transformed.some((dbItem: Product) => dbItem.id === item.id || dbItem.slug === item.slug)
+      );
+
+      const mergedList = [...localCustom, ...transformed];
+      saveCatalogToStorage(mergedList);
+      return mergedList;
     }
   } catch (err) {
     console.warn('[Catalog] Database fetch fallback to local storage:', err);

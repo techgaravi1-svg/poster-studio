@@ -1470,70 +1470,123 @@ export function CustomPage() {
   const posterUnitCost = posterSizePrices[posterSize];
   const posterTotalPrice = posterUnitCost * posterQuantity;
 
+  // Compress custom uploaded photos on client to preserve localStorage quota and high speed
+  const compressCustomImage = (file: File, maxDim = 1200, quality = 0.85): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!file.type.startsWith('image/')) {
+        reject(new Error('Error 400: Invalid file type. Please select a valid JPG, PNG, or WEBP photo.'));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Error 500: Failed to read image file'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Error 400: Unable to parse photo'));
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(String(reader.result));
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = String(reader.result);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   // UPLOAD HANDLERS
-  const handleStripBulkUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleStripBulkUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || !files.length) return;
     const maxPhotos = stripFormat === '3-strip' ? 3 : 4;
-    Array.from(files).slice(0, maxPhotos - stripPhotos.length).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setStripPhotos((prev) => [...prev, { id: Math.random().toString(36), url: String(reader.result) }].slice(0, maxPhotos));
-      };
-      reader.readAsDataURL(file);
-    });
+    const targets = Array.from(files).slice(0, maxPhotos - stripPhotos.length);
+    for (const file of targets) {
+      try {
+        const compressedUrl = await compressCustomImage(file);
+        setStripPhotos((prev) => [...prev, { id: Math.random().toString(36), url: compressedUrl }].slice(0, maxPhotos));
+      } catch (err: any) {
+        setToast(err.message || 'Error 400: Upload failed');
+        window.setTimeout(() => setToast(''), 3000);
+      }
+    }
   };
 
-  const handleStripSingleUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleStripSingleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || activeStripSlot === null) return;
-    const reader = new FileReader();
-    reader.onload = () => {
+    try {
+      const compressedUrl = await compressCustomImage(file);
       setStripPhotos((prev) => {
         const next = [...prev];
-        next[activeStripSlot] = { id: Math.random().toString(36), url: String(reader.result) };
+        next[activeStripSlot] = { id: Math.random().toString(36), url: compressedUrl };
         return next;
       });
       setActiveStripSlot(null);
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      setToast(err.message || 'Error 400: Upload failed');
+      window.setTimeout(() => setToast(''), 3000);
+    }
   };
 
-  const handlePocketBulkUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handlePocketBulkUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || !files.length) return;
-    Array.from(files).slice(0, maxPocketPhotos - pocketPhotos.length).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setPocketPhotos((prev) => [...prev, { id: Math.random().toString(36), url: String(reader.result) }].slice(0, maxPocketPhotos));
-      };
-      reader.readAsDataURL(file);
-    });
+    const targets = Array.from(files).slice(0, maxPocketPhotos - pocketPhotos.length);
+    for (const file of targets) {
+      try {
+        const compressedUrl = await compressCustomImage(file);
+        setPocketPhotos((prev) => [...prev, { id: Math.random().toString(36), url: compressedUrl }].slice(0, maxPocketPhotos));
+      } catch (err: any) {
+        setToast(err.message || 'Error 400: Upload failed');
+        window.setTimeout(() => setToast(''), 3000);
+      }
+    }
   };
 
-  const handlePocketSingleUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handlePocketSingleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || activePocketSlot === null) return;
-    const reader = new FileReader();
-    reader.onload = () => {
+    try {
+      const compressedUrl = await compressCustomImage(file);
       setPocketPhotos((prev) => {
         const next = [...prev];
-        next[activePocketSlot] = { id: Math.random().toString(36), url: String(reader.result) };
+        next[activePocketSlot] = { id: Math.random().toString(36), url: compressedUrl };
         return next;
       });
       setActivePocketSlot(null);
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      setToast(err.message || 'Error 400: Upload failed');
+      window.setTimeout(() => setToast(''), 3000);
+    }
   };
 
-  const handlePosterUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handlePosterUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPosterPhoto(String(reader.result));
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressedUrl = await compressCustomImage(file);
+      setPosterPhoto(compressedUrl);
+    } catch (err: any) {
+      setToast(err.message || 'Error 400: Upload failed');
+      window.setTimeout(() => setToast(''), 3000);
+    }
   };
 
   // ADD TO CART HANDLERS WITH VALIDATION, DETAILED METADATA & CLEAN RESET
@@ -2597,7 +2650,7 @@ export function CartPage() {
                   <span className="text-xs text-neutral-500 font-medium">Prices include all taxes</span>
                 </div>
 
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2.5">
                   {cart.map((item) => (
                     <MyntraItemCard
                       key={item.key}
@@ -2625,17 +2678,6 @@ export function CartPage() {
                 totalSavings={totalSavings}
                 onProceed={() => navigate('/checkout')}
                 proceedLabel={`PLACE ORDER • ${formatPrice(totals.total)}`}
-                subtext={
-                  <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-center mt-1">
-                    <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-800">
-                      <Lock size={14} className="text-emerald-600 shrink-0" />
-                      <span>Secure checkout with Razorpay</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-1.5 pt-1 text-[10px] font-semibold text-slate-500">
-                      <span>UPI</span> • <span>GPay</span> • <span>Paytm</span> • <span>Cards</span> • <span>NetBanking</span>
-                    </div>
-                  </div>
-                }
               />
             </div>
           </div>
@@ -2885,9 +2927,13 @@ export function CheckoutPage() {
             if (data.order?.orderNumber) {
               order.id = data.order.orderNumber;
             }
+          } else {
+            const status = apiRes.status;
+            const errData = await apiRes.json().catch(() => ({}));
+            console.warn(`[Checkout] Server API error ${status}:`, errData);
           }
-        } catch (apiErr) {
-          console.warn('Backend order sync warning:', apiErr);
+        } catch (apiErr: any) {
+          console.warn('[Checkout] Backend order sync warning (Error 500 / network):', apiErr);
         }
 
         store.addOrder(order);
@@ -2898,7 +2944,8 @@ export function CheckoutPage() {
         setError(`Payment could not be completed: ${paymentResult.message}`);
       }
     } catch (err: any) {
-      setError(err?.message || 'Payment service error. Please try again.');
+      const code = err?.statusCode || 500;
+      setError(`Error ${code}: ${err?.message || 'Payment service error. Please try again.'}`);
     } finally {
       setIsProcessing(false);
     }
@@ -3008,7 +3055,7 @@ export function CheckoutPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2.5">
                   {cart.map((item) => (
                     <MyntraItemCard
                       key={item.key}
@@ -3064,17 +3111,6 @@ export function CheckoutPage() {
               onProceed={() => handlePlaceOrder()}
               disabled={isProcessing || cart.length === 0}
               proceedLabel={isProcessing ? 'PROCESSING...' : `PLACE ORDER • ${formatPrice(totals.total)}`}
-              subtext={
-                <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-center mt-1">
-                  <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-800">
-                    <Lock size={14} className="text-emerald-600 shrink-0" />
-                    <span>Secure checkout with Razorpay</span>
-                  </div>
-                  <div className="flex items-center justify-center gap-1.5 pt-1 text-[10px] font-semibold text-slate-500">
-                    <span>UPI</span> • <span>GPay</span> • <span>Paytm</span> • <span>Cards</span> • <span>NetBanking</span>
-                  </div>
-                </div>
-              }
             />
           </div>
         </form>

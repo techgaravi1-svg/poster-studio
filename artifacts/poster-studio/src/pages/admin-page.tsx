@@ -32,6 +32,7 @@ import {
   Upload,
   Download,
   Image as ImageIcon,
+  AlertTriangle,
 } from 'lucide-react';
 import './admin.css';
 import {
@@ -355,6 +356,10 @@ export function AdminDashboardPage() {
   } | null>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
+  const [productModalError, setProductModalError] = useState<{ title: string; message: string; statusCode?: number } | null>(null);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [imageCompressing, setImageCompressing] = useState(false);
+
   const [productFormData, setProductFormData] = useState({
     title: '',
     slug: '',
@@ -385,34 +390,79 @@ export function AdminDashboardPage() {
   const [newPw, setNewPw] = useState('');
   const [pwChangeLoading, setPwChangeLoading] = useState(false);
 
-  const handleImageFileUpload = (file: File) => {
+  // Client-side Canvas Image Compressor: Resizes large high-res camera photos to max 1200x1200px
+  // at 85% JPEG quality (~120KB-200KB), completely eliminating localStorage quota & payload limits!
+  const compressImageFile = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.85): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Failed to read image file'));
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Failed to parse uploaded image'));
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(e.target?.result as string);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressedDataUrl);
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageFileUpload = async (file: File) => {
     if (!file) return;
     if (!['image/jpeg', 'image/png', 'image/jpg', 'image/webp'].includes(file.type)) {
-      showToast('Please upload a valid JPG, PNG, or WEBP image.');
+      showToast('Error 400: Please upload a valid JPG, PNG, or WEBP image.');
       return;
     }
-    if (file.size > 15 * 1024 * 1024) {
-      showToast('File size must be under 15MB.');
+    if (file.size > 20 * 1024 * 1024) {
+      showToast('Error 413: Artwork file size must be under 20MB.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      if (dataUrl) {
-        setProductFormData((prev) => ({
-          ...prev,
-          images: [dataUrl],
-        }));
-        showToast('Poster image uploaded and attached!');
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      setImageCompressing(true);
+      showToast('Compressing poster artwork for instant loading...');
+      const compressedDataUrl = await compressImageFile(file);
+      setProductFormData((prev) => ({
+        ...prev,
+        images: [compressedDataUrl],
+      }));
+      setProductModalError(null);
+      showToast('Artwork image attached and optimized!');
+    } catch (err: any) {
+      showToast(`Error: ${err.message || 'Image processing failed'}`);
+    } finally {
+      setImageCompressing(false);
+    }
   };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3500);
+    setTimeout(() => setToastMessage(''), 4000);
   };
 
   const handlePrintInvoice = () => {
@@ -627,66 +677,151 @@ export function AdminDashboardPage() {
     orderId: string,
     updates: { fulfillmentStatus?: string; paymentStatus?: string; trackingNumber?: string }
   ) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? {
-              ...o,
-              fulfillmentStatus: (updates.fulfillmentStatus?.toUpperCase() as any) || o.fulfillmentStatus,
-              paymentStatus: (updates.paymentStatus?.toUpperCase() as any) || o.paymentStatus,
-              trackingNumber: updates.trackingNumber !== undefined ? updates.trackingNumber : o.trackingNumber,
-            }
-          : o
-      )
-    );
-    showToast('Order status updated!');
-
     try {
-      await authFetch(`/api/admin/orders/${orderId}/status`, {
+      const res = await authFetch(`/api/admin/orders/${orderId}/status`, {
         method: 'PATCH',
         body: JSON.stringify(updates),
       });
-    } catch (err) {
-      console.warn('Backend sync error:', err);
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        showToast(`Error ${res.status}: ${errData.error || 'Failed to update order status on server'}`);
+        return;
+      }
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                fulfillmentStatus: (updates.fulfillmentStatus?.toUpperCase() as any) || o.fulfillmentStatus,
+                paymentStatus: (updates.paymentStatus?.toUpperCase() as any) || o.paymentStatus,
+                trackingNumber: updates.trackingNumber !== undefined ? updates.trackingNumber : o.trackingNumber,
+              }
+            : o
+        )
+      );
+      showToast('Order status updated successfully!');
+    } catch (err: any) {
+      showToast(`Error 500: Could not reach server to update order (${err.message})`);
     }
   };
 
   const handleDeleteOrder = async (orderId: string) => {
     if (!window.confirm('Delete this order permanently?')) return;
-    setOrders((prev) => prev.filter((o) => o.id !== orderId));
-    showToast('Order removed from list');
     try {
-      await authFetch(`/api/admin/orders/${orderId}`, { method: 'DELETE' });
-    } catch (err) {
-      console.warn('Backend delete error:', err);
+      const res = await authFetch(`/api/admin/orders/${orderId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        showToast(`Error ${res.status}: ${errData.error || 'Failed to delete order from server'}`);
+        return;
+      }
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      showToast('Order removed from database');
+    } catch (err: any) {
+      showToast(`Error 500: Server delete error (${err.message})`);
     }
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const payload: AdminProduct = {
-        id: editingProduct ? editingProduct.id : `prod-custom-${Date.now()}`,
-        ...productFormData,
-        price: Number(productFormData.price),
-        compareAtPrice: Number(productFormData.compareAtPrice) || null,
-        stock: Number(productFormData.stock),
-        tags: typeof productFormData.tags === 'string'
-          ? productFormData.tags.split(',').map((t) => t.trim()).filter(Boolean)
-          : productFormData.tags,
-        isActive: true,
-      };
+    setSavingProduct(true);
+    setProductModalError(null);
 
-      // 1. Update React Admin state
+    // 1. Validation
+    if (!productFormData.title || productFormData.title.trim().length < 2) {
+      setProductModalError({
+        title: 'Error 400 (Bad Request)',
+        message: 'Poster title must be at least 2 characters.',
+        statusCode: 400,
+      });
+      setSavingProduct(false);
+      return;
+    }
+
+    if (!productFormData.images || !productFormData.images[0] || !productFormData.images[0].trim()) {
+      setProductModalError({
+        title: 'Error 400 (Bad Request)',
+        message: 'Please provide or upload a poster artwork image.',
+        statusCode: 400,
+      });
+      setSavingProduct(false);
+      return;
+    }
+
+    // Auto-clean URL slug: alphanumeric and hyphens only
+    const safeSlug = (productFormData.slug || productFormData.title)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+
+    const payload: AdminProduct = {
+      id: editingProduct ? editingProduct.id : `prod-custom-${Date.now()}`,
+      ...productFormData,
+      slug: safeSlug,
+      price: Number(productFormData.price) || 79,
+      compareAtPrice: Number(productFormData.compareAtPrice) || null,
+      stock: Number(productFormData.stock) >= 0 ? Number(productFormData.stock) : 50,
+      tags: typeof productFormData.tags === 'string'
+        ? productFormData.tags.split(',').map((t) => t.trim()).filter(Boolean)
+        : productFormData.tags,
+      isActive: true,
+    };
+
+    try {
+      // 2. Synchronize with Prisma PostgreSQL backend API first
+      const url = editingProduct ? `/api/admin/products/${editingProduct.id}` : '/api/admin/products';
+      const method = editingProduct ? 'PUT' : 'POST';
+
+      const res = await authFetch(url, {
+        method,
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        let errData: any = {};
+        try {
+          errData = await res.json();
+        } catch {
+          errData = { error: res.statusText || 'Unknown server error' };
+        }
+
+        const statusCode = res.status || 500;
+        let errorTitle = `Error ${statusCode}`;
+        let errorMessage = errData.error || errData.message || 'Server failed to save poster.';
+
+        if (statusCode === 409) {
+          errorTitle = 'Error 409 (Slug Conflict)';
+          errorMessage = `A poster with the URL slug "${safeSlug}" already exists. Please choose a unique slug.`;
+        } else if (statusCode === 413) {
+          errorTitle = 'Error 413 (Payload Too Large)';
+          errorMessage = 'The poster image file is too large for the server. Try uploading a compressed JPG or PNG.';
+        } else if (statusCode >= 500) {
+          errorTitle = `Error ${statusCode} (Server Error)`;
+          errorMessage = errData.error || 'Internal server error while saving poster to database. Please check connection and retry.';
+        }
+
+        setProductModalError({
+          title: errorTitle,
+          message: errorMessage,
+          statusCode,
+        });
+        showToast(`${errorTitle}: ${errorMessage}`);
+        setSavingProduct(false);
+        return; // DO NOT close modal or wipe catalog!
+      }
+
+      // 3. Update React Admin state
       if (editingProduct) {
         setProducts((prev) => prev.map((p) => (p.id === editingProduct.id ? payload : p)));
-        showToast(`Poster "${payload.title}" updated! Price: Rs. ${payload.price.toFixed(2)}`);
+        showToast(`Poster "${payload.title}" updated successfully! Price: Rs. ${payload.price.toFixed(2)}`);
       } else {
         setProducts((prev) => [payload, ...prev]);
         showToast(`New Poster "${payload.title}" added to catalog!`);
       }
 
-      // 2. Persist IMMEDIATELY to shared catalog storage so storefront (product page, cart, catalog) reflects new price in real-time
+      // 4. Persist to shared catalog storage so storefront immediately updates
       saveSingleProduct({
         id: payload.id,
         slug: payload.slug,
@@ -706,30 +841,35 @@ export function AdminDashboardPage() {
 
       setIsProductModalOpen(false);
       setEditingProduct(null);
-
-      // 3. Synchronize with Prisma PostgreSQL backend API
-      const url = editingProduct ? `/api/admin/products/${editingProduct.id}` : '/api/admin/products';
-      const method = editingProduct ? 'PUT' : 'POST';
-      authFetch(url, { method, body: JSON.stringify(payload) })
-        .then(() => fetchLiveProducts())
-        .catch((err) => {
-          console.warn('[Admin] Background database sync notice:', err);
-        });
-    } catch {
-      showToast('Error saving product');
+      setProductModalError(null);
+    } catch (err: any) {
+      console.error('[Admin] Poster save exception:', err);
+      const code = err.statusCode || 500;
+      setProductModalError({
+        title: `Error ${code} (Network / Server Failure)`,
+        message: err.message || 'Could not communicate with the API server.',
+        statusCode: code,
+      });
+      showToast(`Error ${code}: ${err.message || 'Could not communicate with API server'}`);
+    } finally {
+      setSavingProduct(false);
     }
   };
 
   const handleDeleteProduct = async (productId: string) => {
     if (!window.confirm('Are you sure you want to delete this poster?')) return;
-    setProducts((prev) => prev.filter((p) => p.id !== productId));
-    deleteSingleProduct(productId);
-    showToast('Poster deleted from catalog');
     try {
-      await authFetch(`/api/admin/products/${productId}`, { method: 'DELETE' });
-      fetchLiveProducts();
-    } catch (err) {
-      console.warn('Backend delete notice:', err);
+      const res = await authFetch(`/api/admin/products/${productId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(`Error ${res.status}: ${err.error || 'Failed to delete poster from server'}`);
+        return;
+      }
+      setProducts((prev) => prev.filter((p) => p.id !== productId));
+      deleteSingleProduct(productId);
+      showToast('Poster deleted from catalog successfully');
+    } catch (err: any) {
+      showToast(`Error 500: Server error while deleting poster (${err.message})`);
     }
   };
 
@@ -745,45 +885,59 @@ export function AdminDashboardPage() {
       createdAt: new Date().toISOString(),
     };
 
-    setCoupons((prev) => [newCoupon, ...prev]);
-    showToast('Voucher created successfully!');
-    setIsCouponModalOpen(false);
-    setCouponFormData({
-      code: '',
-      description: '',
-      discountType: 'percentage',
-      discountValue: 10,
-      minSpend: 0,
-      minQty: 1,
-    });
-
     try {
-      await authFetch('/api/admin/coupons', { method: 'POST', body: JSON.stringify(newCoupon) });
-    } catch (err) {
-      console.warn('Backend coupon error:', err);
+      const res = await authFetch('/api/admin/coupons', { method: 'POST', body: JSON.stringify(newCoupon) });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(`Error ${res.status}: ${err.error || 'Failed to save coupon on server'}`);
+        return;
+      }
+      setCoupons((prev) => [newCoupon, ...prev]);
+      showToast('Voucher created successfully!');
+      setIsCouponModalOpen(false);
+      setCouponFormData({
+        code: '',
+        description: '',
+        discountType: 'percentage',
+        discountValue: 10,
+        minSpend: 0,
+        minQty: 1,
+      });
+    } catch (err: any) {
+      showToast(`Error 500: Server error creating coupon (${err.message})`);
     }
   };
 
   const handleToggleCoupon = async (couponId: string) => {
-    setCoupons((prev) =>
-      prev.map((c) => (c.id === couponId ? { ...c, isActive: !c.isActive } : c))
-    );
-    showToast('Coupon status updated');
     try {
-      await authFetch(`/api/admin/coupons/${couponId}/toggle`, { method: 'PATCH' });
-    } catch (err) {
-      console.warn('Backend toggle error:', err);
+      const res = await authFetch(`/api/admin/coupons/${couponId}/toggle`, { method: 'PATCH' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(`Error ${res.status}: ${err.error || 'Failed to toggle coupon status'}`);
+        return;
+      }
+      setCoupons((prev) =>
+        prev.map((c) => (c.id === couponId ? { ...c, isActive: !c.isActive } : c))
+      );
+      showToast('Coupon status updated');
+    } catch (err: any) {
+      showToast(`Error 500: Server error toggling coupon (${err.message})`);
     }
   };
 
   const handleDeleteCoupon = async (couponId: string) => {
     if (!window.confirm('Delete this coupon code?')) return;
-    setCoupons((prev) => prev.filter((c) => c.id !== couponId));
-    showToast('Coupon removed');
     try {
-      await authFetch(`/api/admin/coupons/${couponId}`, { method: 'DELETE' });
-    } catch (err) {
-      console.warn('Backend delete error:', err);
+      const res = await authFetch(`/api/admin/coupons/${couponId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(`Error ${res.status}: ${err.error || 'Failed to delete coupon'}`);
+        return;
+      }
+      setCoupons((prev) => prev.filter((c) => c.id !== couponId));
+      showToast('Coupon removed');
+    } catch (err: any) {
+      showToast(`Error 500: Server error deleting coupon (${err.message})`);
     }
   };
 
@@ -791,15 +945,20 @@ export function AdminDashboardPage() {
     e.preventDefault();
     setPwChangeLoading(true);
     try {
-      await authFetch('/api/admin/auth/change-password', {
+      const res = await authFetch('/api/admin/auth/change-password', {
         method: 'POST',
         body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(`Error ${res.status}: ${data.error || 'Failed to update admin password'}`);
+        return;
+      }
       showToast('Admin password changed successfully!');
       setCurrentPw('');
       setNewPw('');
-    } catch {
-      showToast('Password updated');
+    } catch (err: any) {
+      showToast(`Error 500: Server error changing password (${err.message})`);
     } finally {
       setPwChangeLoading(false);
     }
@@ -1195,6 +1354,7 @@ export function AdminDashboardPage() {
                   type="button"
                   onClick={() => {
                     setEditingProduct(null);
+                    setProductModalError(null);
                     setProductFormData({
                       title: '',
                       slug: '',
@@ -1841,6 +2001,7 @@ export function AdminDashboardPage() {
                               type="button"
                               onClick={() => {
                                 setEditingProduct(prod);
+                                setProductModalError(null);
                                 setProductFormData({
                                   title: prod.title,
                                   slug: prod.slug,
@@ -2055,17 +2216,50 @@ export function AdminDashboardPage() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div style={{ background: '#0e1424', border: '1px solid #1e2638', borderRadius: '20px', maxWidth: '540px', width: '100%', padding: '24px', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e2638', paddingBottom: '12px' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                {editingProduct ? 'Edit Poster' : 'Add New Poster'}
-              </h3>
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                  {editingProduct ? 'Edit Poster' : 'Add New Poster'}
+                </h3>
+                <p style={{ fontSize: '11px', color: '#94a3b8', margin: '2px 0 0 0' }}>
+                  {editingProduct ? 'Update poster details, pricing, and artwork' : 'Publish a new poster to the live storefront catalog'}
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={() => setIsProductModalOpen(false)}
+                onClick={() => {
+                  setIsProductModalOpen(false);
+                  setProductModalError(null);
+                }}
                 style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
               >
                 <X size={18} />
               </button>
             </div>
+
+            {/* Error Banner with HTTP status code */}
+            {productModalError && (
+              <div
+                style={{
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                }}
+              >
+                <AlertTriangle size={18} style={{ color: '#ef4444', flexShrink: 0, marginTop: '2px' }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ color: '#f87171', fontWeight: 800, fontSize: '13px' }}>
+                    {productModalError.title}
+                  </div>
+                  <div style={{ color: '#fca5a5', fontSize: '12px', marginTop: '2px', lineHeight: 1.4 }}>
+                    {productModalError.message}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleSaveProduct} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
@@ -2074,7 +2268,23 @@ export function AdminDashboardPage() {
                   type="text"
                   required
                   value={productFormData.title}
-                  onChange={(e) => setProductFormData({ ...productFormData, title: e.target.value })}
+                  onChange={(e) => {
+                    const newTitle = e.target.value;
+                    setProductFormData((prev) => {
+                      const autoSlug = newTitle
+                        .toLowerCase()
+                        .trim()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/(^-|-$)+/g, '');
+                      const isInitialSlug = !prev.slug || prev.slug === prev.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+                      return {
+                        ...prev,
+                        title: newTitle,
+                        slug: isInitialSlug ? autoSlug : prev.slug,
+                      };
+                    });
+                    if (productModalError) setProductModalError(null);
+                  }}
                   placeholder="ASTA POSTER | BLACK CLOVER"
                   className="admin-input-field"
                   style={{ height: '40px' }}
@@ -2082,12 +2292,18 @@ export function AdminDashboardPage() {
               </div>
 
               <div>
-                <label className="admin-input-label">URL Slug</label>
+                <label className="admin-input-label">URL Slug (Web-safe unique identifier)</label>
                 <input
                   type="text"
                   required
                   value={productFormData.slug}
-                  onChange={(e) => setProductFormData({ ...productFormData, slug: e.target.value })}
+                  onChange={(e) => {
+                    setProductFormData({
+                      ...productFormData,
+                      slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+                    });
+                    if (productModalError) setProductModalError(null);
+                  }}
                   placeholder="asta-black-clover-anime-poster"
                   className="admin-input-field"
                   style={{ height: '40px', fontFamily: 'monospace' }}
@@ -2138,6 +2354,7 @@ export function AdminDashboardPage() {
                   <input
                     type="number"
                     required
+                    min={1}
                     value={productFormData.price}
                     onChange={(e) => setProductFormData({ ...productFormData, price: Number(e.target.value) })}
                     className="admin-input-field"
@@ -2148,6 +2365,7 @@ export function AdminDashboardPage() {
                   <label className="admin-input-label">Compare Price (₹)</label>
                   <input
                     type="number"
+                    min={1}
                     value={productFormData.compareAtPrice}
                     onChange={(e) => setProductFormData({ ...productFormData, compareAtPrice: Number(e.target.value) })}
                     className="admin-input-field"
@@ -2158,6 +2376,7 @@ export function AdminDashboardPage() {
                   <label className="admin-input-label">Stock</label>
                   <input
                     type="number"
+                    min={0}
                     value={productFormData.stock}
                     onChange={(e) => setProductFormData({ ...productFormData, stock: Number(e.target.value) })}
                     className="admin-input-field"
@@ -2179,7 +2398,7 @@ export function AdminDashboardPage() {
                       padding: '16px',
                       textAlign: 'center',
                       background: '#090d18',
-                      cursor: 'pointer',
+                      cursor: imageCompressing ? 'wait' : 'pointer',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -2198,6 +2417,7 @@ export function AdminDashboardPage() {
                     <input
                       id="admin-poster-file-input"
                       type="file"
+                      disabled={imageCompressing}
                       accept="image/png, image/jpeg, image/jpg, image/webp"
                       style={{ display: 'none' }}
                       onChange={(e) => {
@@ -2207,10 +2427,10 @@ export function AdminDashboardPage() {
                     />
                     <Upload size={22} style={{ color: '#38bdf8' }} />
                     <div style={{ fontSize: '13px', fontWeight: 700, color: '#f1f5f9' }}>
-                      Click to Choose JPG / PNG from Computer
+                      {imageCompressing ? '⚡ Compressing & Optimizing Image...' : 'Click to Choose JPG / PNG from Computer'}
                     </div>
                     <div style={{ fontSize: '11px', color: '#64748b' }}>
-                      Supports High-Resolution JPG, PNG, WEBP (Max 15MB)
+                      {imageCompressing ? 'Resizing and preparing high-speed payload' : 'Supports High-Resolution JPG, PNG, WEBP (Auto-optimized on upload)'}
                     </div>
                   </label>
 
@@ -2224,10 +2444,10 @@ export function AdminDashboardPage() {
                       />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {productFormData.images[0].startsWith('data:') ? 'Custom Uploaded Image (Attached)' : productFormData.images[0]}
+                          {productFormData.images[0].startsWith('data:') ? 'Custom Uploaded Image (Attached & Compressed)' : productFormData.images[0]}
                         </div>
                         <div style={{ fontSize: '10px', color: '#10b981', fontWeight: 600, marginTop: '2px' }}>
-                          ✓ Image attached to poster
+                          ✓ Image ready to save
                         </div>
                       </div>
                       <button
@@ -2246,7 +2466,10 @@ export function AdminDashboardPage() {
                     <input
                       type="text"
                       value={productFormData.images[0] || ''}
-                      onChange={(e) => setProductFormData({ ...productFormData, images: [e.target.value] })}
+                      onChange={(e) => {
+                        setProductFormData({ ...productFormData, images: [e.target.value] });
+                        if (productModalError) setProductModalError(null);
+                      }}
                       placeholder="Or enter image URL (e.g. /assets/posters/poster-01.jpg)"
                       className="admin-input-field"
                       style={{ height: '36px', fontSize: '11px', fontFamily: 'monospace' }}
@@ -2277,16 +2500,22 @@ export function AdminDashboardPage() {
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #1e2638' }}>
                 <button
                   type="button"
-                  onClick={() => setIsProductModalOpen(false)}
+                  disabled={savingProduct}
+                  onClick={() => {
+                    setIsProductModalOpen(false);
+                    setProductModalError(null);
+                  }}
                   className="admin-btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  disabled={savingProduct || imageCompressing}
                   className="admin-btn-accent"
+                  style={{ opacity: savingProduct || imageCompressing ? 0.7 : 1 }}
                 >
-                  Save Poster to Catalog
+                  {savingProduct ? 'Saving Poster to Server...' : (imageCompressing ? 'Optimizing Image...' : 'Save Poster to Catalog')}
                 </button>
               </div>
             </form>

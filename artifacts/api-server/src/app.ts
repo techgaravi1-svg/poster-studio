@@ -49,9 +49,9 @@ app.use(
   })
 );
 
-// 5. Body Parsing with size limits to prevent payload exhaustion attacks
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+// 5. Body Parsing with size limits to accommodate high-res posters and custom print uploads
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // 6. Request sanitization (prevents prototype pollution)
 app.use(sanitizeInputs);
@@ -66,7 +66,8 @@ app.use('/api', router);
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
-    error: `Route not found: ${req.method} ${req.path}`,
+    statusCode: 404,
+    error: `Error 404: Route not found (${req.method} ${req.path})`,
   });
 });
 
@@ -74,10 +75,17 @@ app.use((req: Request, res: Response) => {
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   logger.error({ err }, 'Unhandled API Error');
 
-  const statusCode = err.status || err.statusCode || 500;
+  const statusCode = err.status || err.statusCode || (err.type === 'entity.too.large' ? 413 : 500);
+  const errorMessage = err.type === 'entity.too.large'
+    ? 'Error 413: Artwork upload payload too large. Please use a compressed image under 20MB.'
+    : (statusCode === 500
+        ? `Error 500: Internal Server Error. ${err.message || 'An unexpected server error occurred.'}`
+        : (err.message || `Error ${statusCode}`));
+
   res.status(statusCode).json({
     success: false,
-    error: statusCode === 500 ? 'An unexpected server error occurred.' : err.message || 'Error',
+    statusCode,
+    error: errorMessage,
   });
 });
 

@@ -140,9 +140,9 @@ export function MyntraItemCard({
 
       {/* Right Column: Item Information & Details */}
       <div className="myntra-details-col">
-        {/* Top Meta Line: Remove Button & Order Status */}
+        {/* Top Meta Line: Brand Heading + Remove Button / Order Status */}
         <div className="myntra-card-top-row">
-          <div />
+          <h4 className="myntra-brand-heading">POSTGENZ</h4>
 
           {!isOrderMode && onRemove && (
             <button
@@ -152,7 +152,7 @@ export function MyntraItemCard({
               aria-label={`Remove ${item.title} from bag`}
               title="Remove item"
             >
-              <X size={17} />
+              <X size={16} />
             </button>
           )}
 
@@ -162,9 +162,6 @@ export function MyntraItemCard({
             </span>
           )}
         </div>
-
-        {/* Brand / Kicker */}
-        <h4 className="myntra-brand-heading">POSTGENZ</h4>
 
         {/* Product Title / Description */}
         <Link
@@ -586,7 +583,7 @@ export function MyntraPriceDetails({
       )}
 
       {onProceed && (
-        <div className="w-full flex flex-col gap-2.5 mt-3">
+        <div className="w-full flex flex-col gap-2 myntra-checkout-action-wrap">
           <button
             type="button"
             disabled={disabled}
@@ -610,7 +607,7 @@ export function MyntraPriceDetails({
               cursor: disabled ? 'not-allowed' : 'pointer',
               opacity: disabled ? 0.6 : 1,
               boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
-              margin: '8px 0 0 0',
+              margin: '0',
             }}
           >
             <Lock size={15} className="shrink-0" />

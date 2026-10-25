@@ -380,7 +380,15 @@ router.post('/admin/products', requireAdminAuth, async (req: Request, res: Respo
   try {
     const parsed = ProductMutationSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ success: false, error: 'Invalid product data', details: parsed.error.format() });
+      const issueSummary = parsed.error.issues
+        .map((iss) => `${iss.path.join('.')}: ${iss.message}`)
+        .join('; ');
+      return res.status(400).json({
+        success: false,
+        statusCode: 400,
+        error: `Error 400 (Bad Request): ${issueSummary || 'Invalid product details provided.'}`,
+        details: parsed.error.format(),
+      });
     }
 
     const newProduct = await prisma.product.create({
@@ -390,9 +398,17 @@ router.post('/admin/products', requireAdminAuth, async (req: Request, res: Respo
     return res.status(201).json({ success: true, product: newProduct });
   } catch (error: any) {
     if (error.code === 'P2002') {
-      return res.status(409).json({ success: false, error: 'A product with this URL slug already exists.' });
+      return res.status(409).json({
+        success: false,
+        statusCode: 409,
+        error: `Error 409 (Conflict): A poster with the URL slug "${req.body?.slug || ''}" already exists. Please customize the slug.`,
+      });
     }
-    return res.status(500).json({ success: false, error: 'Could not create product' });
+    return res.status(500).json({
+      success: false,
+      statusCode: 500,
+      error: `Error 500 (Internal Server Error): Database failed to create poster. ${error.message || ''}`,
+    });
   }
 });
 
@@ -401,7 +417,15 @@ router.put('/admin/products/:id', requireAdminAuth, async (req: Request, res: Re
     const id = String(req.params.id);
     const parsed = ProductMutationSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ success: false, error: 'Invalid product data', details: parsed.error.format() });
+      const issueSummary = parsed.error.issues
+        .map((iss) => `${iss.path.join('.')}: ${iss.message}`)
+        .join('; ');
+      return res.status(400).json({
+        success: false,
+        statusCode: 400,
+        error: `Error 400 (Bad Request): ${issueSummary || 'Invalid product update details.'}`,
+        details: parsed.error.format(),
+      });
     }
 
     const existing = await prisma.product.findFirst({
@@ -428,8 +452,19 @@ router.put('/admin/products/:id', requireAdminAuth, async (req: Request, res: Re
 
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.json({ success: true, product: updatedProduct });
-  } catch (error) {
-    return res.status(500).json({ success: false, error: 'Could not update product' });
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        statusCode: 409,
+        error: `Error 409 (Conflict): A poster with the URL slug "${req.body?.slug || ''}" already exists.`,
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      statusCode: 500,
+      error: `Error 500 (Internal Server Error): Database failed to update poster. ${error.message || ''}`,
+    });
   }
 });
 

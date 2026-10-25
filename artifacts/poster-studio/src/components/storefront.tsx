@@ -390,6 +390,16 @@ export function Header() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const submitSearch = (event: React.FormEvent) => {
     event.preventDefault();
     if (query.trim()) {
@@ -407,7 +417,7 @@ export function Header() {
           <div className="header-left-group">
             <button
               type="button"
-              className="header-icon-btn menu-toggle"
+              className="header-icon-btn menu-toggle md:hidden"
               aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
               onClick={() => {
                 setMenuOpen((prev) => !prev);
@@ -420,7 +430,7 @@ export function Header() {
             {!menuOpen && (
               <Link href="/" className="header-brand-logo" aria-label="DUNGEONS Home">
                 <img
-                  src="/assets/dungeons-logo.png"
+                  src="/assets/dungeons-castle-nav.png"
                   alt="DUNGEONS"
                   className="postgenz-logo-img dungeons-navbar-logo"
                 />
@@ -642,22 +652,43 @@ export function Header() {
 export function Footer() {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [subscribeError, setSubscribeError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim()) {
-      try {
-        await fetch('/api/newsletter', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim() }),
-        });
-      } catch (err) {
-        // Ignore network failure and maintain positive UX
+    const cleanEmail = email.trim();
+    if (!cleanEmail) return;
+
+    setSubscribeError(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const status = res.status;
+        if (status === 409) {
+          setSubscribeError('You are already subscribed to drops & updates!');
+        } else if (status >= 500) {
+          setSubscribeError(`Error ${status}: Server temporarily unavailable. Please retry shortly.`);
+        } else {
+          setSubscribeError(`Error ${status}: ${data.error || 'Failed to subscribe'}`);
+        }
+        return;
       }
+
       setSubscribed(true);
       setEmail('');
-      window.setTimeout(() => setSubscribed(false), 3500);
+      window.setTimeout(() => setSubscribed(false), 4000);
+    } catch (err: any) {
+      setSubscribeError(`Error 500: Server connection failed (${err.message || 'Offline'})`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -669,7 +700,7 @@ export function Footer() {
           <div className="footer-block footer-brand-block">
             <Link href="/" className="footer-brand-link" aria-label="DUNGEONS Home">
               <img
-                src="/assets/dungeons-logo.png"
+                src="/assets/dungeons-castle-white.png"
                 alt="DUNGEONS"
                 className="footer-dungeons-logo"
               />
@@ -724,6 +755,11 @@ export function Footer() {
             </form>
             {subscribed && (
               <p className="newsletter-thanks">Thank you for subscribing!</p>
+            )}
+            {subscribeError && (
+              <p style={{ color: '#f87171', fontSize: '11px', marginTop: '6px', fontWeight: 600 }}>
+                {subscribeError}
+              </p>
             )}
           </div>
         </div>
