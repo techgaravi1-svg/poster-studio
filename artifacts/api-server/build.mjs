@@ -137,18 +137,43 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
   await mkdir(vercelStatic, { recursive: true });
   await mkdir(vercelFuncDir, { recursive: true });
 
-  // 2a. Bundle Express API into .vercel/output/functions/api.func/index.js
+  // 2a. Bundle Express API into .vercel/output/functions/api.func/index.js and root api/index.js
   console.log("[vercel-build] Bundling serverless function...");
-  await esbuild({
+  const rootApiDir = path.resolve(workspaceRoot, "api");
+  await mkdir(rootApiDir, { recursive: true });
+
+  const esbuildServerlessConfig = {
     entryPoints: [path.resolve(artifactDir, "src/serverless.ts")],
     platform: "node",
     target: "node20",
     bundle: true,
     format: "cjs",
-    outfile: path.resolve(vercelFuncDir, "index.js"),
     logLevel: "info",
     external: ["*.node", "@prisma/client"],
+    footer: {
+      js: "\nmodule.exports = serverless_default.default || serverless_default;\nmodule.exports.default = module.exports;\n",
+    },
+  };
+
+  // Build for Build Output API (.vercel/output/functions/api.func/index.js)
+  await esbuild({
+    ...esbuildServerlessConfig,
+    outfile: path.resolve(vercelFuncDir, "index.js"),
   });
+
+  // Build for Vercel Serverless Functions (api/index.js)
+  await esbuild({
+    ...esbuildServerlessConfig,
+    outfile: path.resolve(rootApiDir, "index.js"),
+  });
+
+  // Also create catch-all wrapper api/[...all].js
+  await writeFile(
+    path.resolve(rootApiDir, "[...all].js"),
+    "const app = require('./index.js');\nmodule.exports = app.default || app;\n",
+    "utf-8"
+  );
+  console.log("[vercel-build] Generated root api/index.js and api/[...all].js");
 
   // 2b. Write .vc-config.json — tells Vercel how to invoke the function
   await writeFile(
@@ -201,7 +226,12 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
           const dest = path.resolve(vercelFuncDir, "node_modules/.prisma");
           await mkdir(dest, { recursive: true });
           await cp(dotPrismaCandidate, dest, { recursive: true });
-          console.log("[vercel-build] Copied .prisma (with query engines) from .pnpm into function directory");
+
+          const rootDest = path.resolve(workspaceRoot, "node_modules/.prisma");
+          await mkdir(rootDest, { recursive: true });
+          await cp(dotPrismaCandidate, rootDest, { recursive: true });
+
+          console.log("[vercel-build] Copied .prisma (with query engines) from .pnpm into function and root node_modules");
           copiedGenerated = true;
         }
 
