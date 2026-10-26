@@ -1,7 +1,8 @@
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect, useState, useCallback } from 'react';
 import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { SiteShell } from '@/components/storefront';
+import { BrandIntroAnimation } from '@/components/brand-intro';
 import NotFound from '@/pages/not-found';
 import {
   AccountPage,
@@ -22,6 +23,8 @@ import {
 import { FaqPage, TermsPage, ReturnPolicyPage, PrivacyPolicyPage } from '@/pages/policy-pages';
 import { AddressesPage } from '@/pages/addresses-page';
 import { AdminDashboardPage } from '@/pages/admin-page';
+
+const INTRO_KEY = 'dungeons_intro_played';
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -82,7 +85,26 @@ function Router() {
 }
 
 function App() {
-  return <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router /></WouterRouter>;
+  // Show intro once per browser session (cleared when tab is closed)
+  const [showIntro, setShowIntro] = useState<boolean>(() => {
+    try {
+      return !sessionStorage.getItem(INTRO_KEY);
+    } catch {
+      return false;
+    }
+  });
+
+  const handleIntroComplete = useCallback(() => {
+    try { sessionStorage.setItem(INTRO_KEY, '1'); } catch { /* ignore */ }
+    setShowIntro(false);
+  }, []);
+
+  return (
+    <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+      {showIntro && <BrandIntroAnimation onComplete={handleIntroComplete} />}
+      <Router />
+    </WouterRouter>
+  );
 }
 
 export default App;

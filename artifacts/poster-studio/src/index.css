@@ -9202,3 +9202,205 @@ button {
     margin-bottom: 12px !important;
   }
 }
+
+/* ============================================================
+   DUNGEONS — Cinematic Brand Intro Animation
+   ============================================================ */
+
+/* Keyframes */
+@keyframes brand-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes brand-slide-up {
+  from { opacity: 0; transform: translateY(30px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes brand-letter-drop {
+  0%   { opacity: 0; transform: translateY(-24px) rotateX(60deg); }
+  60%  { opacity: 1; transform: translateY(4px)   rotateX(-6deg); }
+  100% { opacity: 1; transform: translateY(0)     rotateX(0); }
+}
+@keyframes brand-glow-pulse {
+  0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(1); }
+  50%       { opacity: 0.8; transform: translate(-50%, -50%) scale(1.12); }
+}
+@keyframes brand-particle-float {
+  0%   { transform: translateY(0)     scale(1);   opacity: 0; }
+  20%  { opacity: 0.8; }
+  80%  { opacity: 0.4; }
+  100% { transform: translateY(-120px) scale(0.4); opacity: 0; }
+}
+@keyframes brand-bar-in {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@keyframes brand-bar-out {
+  from { transform: scaleY(1); }
+  to   { transform: scaleY(0); }
+}
+@keyframes brand-curtain-lift {
+  0%   { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; pointer-events: none; }
+}
+
+/* === Overlay === */
+.brand-intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #0a0a0f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  animation: brand-fade-in 0.4s ease forwards;
+}
+.brand-intro-overlay.exit {
+  animation: brand-curtain-lift 1.8s ease forwards;
+}
+
+/* === Cinematic widescreen bars === */
+.brand-intro-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 10vh;
+  background: #000;
+  z-index: 2;
+  transform-origin: top center;
+}
+.brand-intro-bar--top {
+  top: 0;
+  transform-origin: top center;
+  animation: brand-bar-in 0.5s ease forwards;
+}
+.brand-intro-bar--bottom {
+  bottom: 0;
+  transform-origin: bottom center;
+  animation: brand-bar-in 0.5s ease forwards;
+}
+.brand-intro-overlay.exit .brand-intro-bar--top {
+  animation: brand-bar-out 0.8s ease forwards;
+}
+.brand-intro-overlay.exit .brand-intro-bar--bottom {
+  animation: brand-bar-out 0.8s ease forwards;
+}
+
+/* === Glow ring === */
+.brand-intro-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 380px;
+  height: 380px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    rgba(139, 92, 246, 0.25) 0%,
+    rgba(99,  102, 241, 0.15) 40%,
+    transparent 70%
+  );
+  transform: translate(-50%, -50%) scale(0.9);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  z-index: 1;
+}
+.brand-intro-ring.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  animation: brand-glow-pulse 2.4s ease-in-out infinite;
+}
+
+/* === Floating particles === */
+.brand-intro-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.brand-intro-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(167, 139, 250, 0.7);
+  bottom: 35%;
+  left: calc(15% + var(--i, 0) * 3.7%);
+  animation: brand-particle-float
+    calc(3s + var(--i, 0) * 0.18s)
+    calc(var(--i, 0) * 0.22s)
+    infinite ease-in;
+}
+
+/* === Central content === */
+.brand-intro-center {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+/* === Castle logo === */
+.brand-intro-logo {
+  opacity: 0;
+  transform: translateY(20px) scale(0.85);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.brand-intro-logo.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.brand-intro-castle {
+  width: 110px;
+  height: auto;
+  filter:
+    drop-shadow(0 0 18px rgba(167, 139, 250, 0.7))
+    drop-shadow(0 0 40px rgba(139, 92, 246, 0.4));
+}
+
+/* === Brand name === */
+.brand-intro-name {
+  display: flex;
+  gap: 4px;
+  perspective: 800px;
+}
+.brand-intro-letter {
+  display: inline-block;
+  font-family: 'Cinzel Decorative', 'Playfair Display', Georgia, serif;
+  font-size: clamp(2.4rem, 7vw, 5.5rem);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #fff;
+  text-shadow:
+    0 0 12px rgba(167, 139, 250, 0.9),
+    0 0 30px rgba(139, 92, 246, 0.6),
+    0 0 60px rgba(99, 102, 241, 0.3);
+  opacity: 0;
+  transform: translateY(-24px) rotateX(60deg);
+  transition: none;
+}
+.brand-intro-name.visible .brand-intro-letter {
+  animation: brand-letter-drop 0.6s cubic-bezier(0.34, 1.28, 0.64, 1) forwards;
+  animation-delay: calc(0.6s + var(--d, 0ms));
+}
+
+/* === Tagline === */
+.brand-intro-tagline {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: clamp(0.7rem, 2vw, 1rem);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(167, 139, 250, 0.85);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.8s ease 0.2s, transform 0.8s ease 0.2s;
+}
+.brand-intro-tagline.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
