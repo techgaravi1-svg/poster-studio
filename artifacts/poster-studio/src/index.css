@@ -308,7 +308,7 @@ button {
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 1200;
   background-color: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(2px);
   display: flex;
@@ -2311,41 +2311,152 @@ button {
   color: #0284c7;
 }
 
-/* SIZE SELECTOR */
+/* ============================================================
+   PRODUCT PAGE SIZE SELECTOR (MYNTRA / FLIPKART STYLE)
+   ============================================================ */
 .product-size-section {
   margin-bottom: 22px;
 }
 
-.size-label-heading {
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: #374151;
-  margin-bottom: 10px;
-}
-
-.size-pills-row {
+.product-size-header-row {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
-.size-select-pill {
-  flex: 1;
-  padding: 12px;
-  border-radius: 9999px;
-  border: 1px solid #d1d5db;
-  background-color: #ffffff;
+.size-label-heading-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.size-label-heading {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   color: #111827;
-  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.size-selected-subtext {
+  font-size: 12.5px;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.view-size-chart-link-ecommerce {
+  background: transparent;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
   font-weight: 700;
-  text-align: center;
+  color: #2563eb;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
   transition: all 0.15s ease;
 }
 
-.size-select-pill.size-active {
-  background-color: #000000;
-  border-color: #000000;
+.view-size-chart-link-ecommerce:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.size-pills-row-ecommerce {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.ecommerce-size-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #111827;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.ecommerce-size-tile:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.ecommerce-size-tile.active-size {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+  color: #1e3a8a;
+  box-shadow: 0 0 0 1.5px #2563eb, 0 4px 12px rgba(37, 99, 235, 0.12);
+}
+
+.size-popular-pill {
+  position: absolute;
+  top: -8px;
+  right: 8px;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
   color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.35);
+}
+
+.size-tile-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.size-tile-dims {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.ecommerce-size-tile.active-size .size-tile-dims {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.size-tile-check-indicator {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+}
+
+.size-paper-note-strip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background-color: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: #166534;
 }
 
 /* QUANTITY STEPPER & ADD TO CART ROW */
@@ -5319,13 +5430,6 @@ button {
   display: block;
 }
 
-.menu-logo-img {
-  height: 34px;
-  max-width: 150px;
-  width: auto;
-  object-fit: contain;
-  display: block;
-}
 
 .footer-brand-header {
   margin-bottom: 24px;
@@ -8560,28 +8664,413 @@ button {
   position: relative;
 }
 
-.myntra-size-select-wrap {
+/* ============================================================
+   MYNTRA / FLIPKART ECOMMERCE SIZE PICKER MODAL (BAG/CART)
+   ============================================================ */
+.myntra-size-trigger-btn {
+  background-color: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e293b;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.myntra-size-select-wrap:hover {
+.myntra-size-trigger-btn:hover {
   background-color: #f1f5f9;
   border-color: #cbd5e1;
 }
 
-.myntra-size-select-native {
-  position: absolute;
-  top: 0;
-  left: 0;
+.ecommerce-size-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeInModal 0.2s ease forwards;
+}
+
+@media (min-width: 641px) {
+  .ecommerce-size-modal-backdrop {
+    align-items: center;
+    padding: 20px;
+  }
+}
+
+.ecommerce-size-modal-sheet {
+  background: #ffffff;
   width: 100%;
-  height: 100%;
-  opacity: 0;
+  max-width: 480px;
+  border-radius: 24px 24px 0 0;
+  padding: 16px 20px 24px;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUpModal 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (min-width: 641px) {
+  .ecommerce-size-modal-sheet {
+    border-radius: 20px;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.3);
+    animation: zoomInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+@keyframes slideUpModal {
+  from {
+    transform: translateY(100%);
+    opacity: 0.8;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes zoomInModal {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ecommerce-size-drag-bar {
+  width: 44px;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 9999px;
+  margin: 0 auto 12px;
+}
+
+@media (min-width: 641px) {
+  .ecommerce-size-drag-bar {
+    display: none;
+  }
+}
+
+.ecommerce-size-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ecommerce-size-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.ecommerce-size-subtitle {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.ecommerce-size-close-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
   cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
-  font-size: 16px; /* Prevents auto-zoom on iOS Safari */
-  z-index: 10;
+  transition: all 0.15s ease;
+}
+
+.ecommerce-size-close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.ecommerce-size-product-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 14px 0;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.ecommerce-size-product-thumb {
+  width: 48px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.ecommerce-size-product-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.ecommerce-size-brand-tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.ecommerce-size-product-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 2px 0 4px;
+}
+
+.ecommerce-size-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.ecommerce-size-current-price {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ecommerce-size-mrp-price {
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+.ecommerce-size-discount-tag {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #15803d;
+}
+
+.ecommerce-size-options-container {
+  margin-bottom: 14px;
+}
+
+.ecommerce-size-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+
+.ecommerce-size-guide-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ecommerce-size-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.ecommerce-size-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.ecommerce-size-card:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+}
+
+.ecommerce-size-card.active-card {
+  border-color: #2563eb;
+  background: #f0f7ff;
+  box-shadow: 0 0 0 1.5px #2563eb;
+}
+
+.ecommerce-size-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ecommerce-size-letter-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.ecommerce-size-letter-badge.active-badge {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+
+.ecommerce-size-card-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.ecommerce-size-card-name {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ecommerce-size-badge-pill {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: #fef3c7;
+  color: #b45309;
+  letter-spacing: 0.02em;
+}
+
+.ecommerce-size-card-dims {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  margin-top: 1px;
+}
+
+.ecommerce-size-card-desc {
+  font-size: 10.5px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.ecommerce-size-card.active-card .ecommerce-size-card-desc {
+  color: #2563eb;
+  font-weight: 500;
+}
+
+.ecommerce-size-radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.ecommerce-size-radio.checked {
+  border-color: #2563eb;
+  background: #2563eb;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+}
+
+.ecommerce-size-features-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.ecommerce-size-features-strip .feature-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #166534;
+}
+
+.ecommerce-size-modal-footer {
+  margin-top: auto;
+}
+
+.ecommerce-size-done-btn {
+  width: 100%;
+  height: 48px;
+  background: #0e2245;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(14, 34, 69, 0.25);
+}
+
+.ecommerce-size-done-btn:hover {
+  background: #17366e;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(14, 34, 69, 0.35);
+}
+
+.ecommerce-size-done-btn:active {
+  transform: translateY(0);
 }
 
 .myntra-qty-stepper-pill {

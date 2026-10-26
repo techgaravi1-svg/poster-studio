@@ -233,8 +233,12 @@ function MenuDrawer({
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="menu-drawer-top">
-          <Link href="/" onClick={onClose} className="drawer-logo-link" aria-label="DUNGEONS Home">
-            <img src="/images/header-logo.png" alt="DUNGEONS" className="menu-logo-img" />
+          <Link href="/" onClick={onClose} className="header-brand-logo" aria-label="DUNGEONS Home">
+            <img
+              src="/images/header-logo.png"
+              alt="DUNGEONS"
+              className="postgenz-logo-img dungeons-navbar-logo"
+            />
           </Link>
           <button
             type="button"

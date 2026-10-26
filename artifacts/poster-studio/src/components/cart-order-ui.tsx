@@ -13,9 +13,43 @@ import {
   Bookmark,
   ShoppingBag,
   Lock,
+  Ruler,
 } from 'lucide-react';
-import { formatPrice, products, type PosterSize } from '@/lib/catalog';
+import { formatPrice, getProductSizePrice, getProductSizeComparePrice, products, type PosterSize } from '@/lib/catalog';
 import { store, useStore, type CartItem } from '@/lib/store';
+
+export const sizeInfoMap: Record<string, { name: string; dims: string; badge?: string; recommendation: string }> = {
+  A5: {
+    name: 'A5 Size',
+    dims: '14.8 × 21.0 cm (5.8 × 8.3 in)',
+    badge: 'Compact',
+    recommendation: 'Perfect for study tables, pinboards & desk setups',
+  },
+  A4: {
+    name: 'A4 Size',
+    dims: '21.0 × 29.7 cm (8.3 × 11.7 in)',
+    badge: 'Most Popular ⚡',
+    recommendation: 'Standard poster size, ideal for room walls & doors',
+  },
+  A3: {
+    name: 'A3 Size',
+    dims: '29.7 × 42.0 cm (11.7 × 16.5 in)',
+    badge: 'Large View 🔥',
+    recommendation: 'Maximum visual impact, perfect for bedroom & living space',
+  },
+  '50×70': {
+    name: '50 × 70 cm',
+    dims: '50.0 × 70.0 cm (19.7 × 27.6 in)',
+    badge: 'Gallery Size',
+    recommendation: 'Oversized statement art for wide accent walls',
+  },
+  '70×100': {
+    name: '70 × 100 cm',
+    dims: '70.0 × 100.0 cm (27.6 × 39.4 in)',
+    badge: 'Extra Large',
+    recommendation: 'Grand collector scale poster',
+  },
+};
 
 export const availableVouchers = [
   {
@@ -115,6 +149,13 @@ export function MyntraItemCard({
     }
   }, [item.key, item.quantity, maxStock, isOrderMode, item.customUpload]);
 
+  const [isSizeSheetOpen, setIsSizeSheetOpen] = useState(false);
+  const [selectedTempSize, setSelectedTempSize] = useState<PosterSize>(item.size);
+
+  useEffect(() => {
+    setSelectedTempSize(item.size);
+  }, [item.size]);
+
   return (
     <div className="myntra-item-card" data-testid={`cart-item-${item.key}`}>
       {/* Left Column: Product Thumbnail with Pink Checkmark Badge */}
@@ -173,26 +214,21 @@ export function MyntraItemCard({
 
         {/* Selectors Row: Size & Qty Pills + Stock alert */}
         <div className="myntra-selectors-row">
-          {/* Size Pill with Working Dropdown */}
+          {/* Size Pill with Myntra/Flipkart Modal Trigger */}
           {!isOrderMode ? (
-            <div className="myntra-pill-btn myntra-size-select-wrap" title="Change size">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedTempSize(item.size);
+                setIsSizeSheetOpen(true);
+              }}
+              className="myntra-pill-btn myntra-size-trigger-btn"
+              title="Click to select size"
+              aria-label={`Select size for ${item.title}`}
+            >
               <span>Size: <strong>{item.size}</strong></span>
-              <ChevronDown size={13} className="text-neutral-500 pointer-events-none" />
-              <select
-                value={item.size}
-                onChange={(e) => {
-                  store.updateItemSize(item.key, e.target.value as PosterSize);
-                }}
-                className="myntra-size-select-native"
-                aria-label={`Change size for ${item.title}`}
-              >
-                {availableSizes.map((sz) => (
-                  <option key={sz} value={sz}>
-                    Size: {sz}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <ChevronDown size={13} className="text-neutral-500" />
+            </button>
           ) : (
             <div className="myntra-pill-btn">
               <span>Size: <strong>{item.size}</strong></span>
@@ -276,6 +312,146 @@ export function MyntraItemCard({
           </div>
         )}
       </div>
+
+      {/* MYNTRA / FLIPKART ECOMMERCE SIZE SELECTION BOTTOM SHEET MODAL */}
+      {isSizeSheetOpen && (
+        <div
+          className="ecommerce-size-modal-backdrop"
+          role="presentation"
+          onClick={() => setIsSizeSheetOpen(false)}
+        >
+          <div
+            className="ecommerce-size-modal-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Select Size"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Mobile Drag Pill */}
+            <div className="ecommerce-size-drag-bar" aria-hidden="true" />
+
+            {/* Modal Header */}
+            <div className="ecommerce-size-modal-header">
+              <div>
+                <h3 className="ecommerce-size-title">Select Size</h3>
+                <p className="ecommerce-size-subtitle">Premium Archival Prints</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSizeSheetOpen(false)}
+                className="ecommerce-size-close-btn"
+                aria-label="Close size selector"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Product Quick Header Strip */}
+            <div className="ecommerce-size-product-summary">
+              <img
+                src={imageSrc}
+                alt={item.title}
+                className="ecommerce-size-product-thumb"
+              />
+              <div className="ecommerce-size-product-meta">
+                <span className="ecommerce-size-brand-tag">POSTGENZ</span>
+                <h4 className="ecommerce-size-product-title">{item.title}</h4>
+                <div className="ecommerce-size-price-row">
+                  <span className="ecommerce-size-current-price">{formatPrice(item.price)}</span>
+                  {itemMrp > item.price && (
+                    <>
+                      <del className="ecommerce-size-mrp-price">{formatPrice(itemMrp)}</del>
+                      <span className="ecommerce-size-discount-tag">{discountPct}% OFF</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Size Options Grid */}
+            <div className="ecommerce-size-options-container">
+              <div className="ecommerce-size-section-heading">
+                <span>CHOOSE POSTER SIZE</span>
+                <span className="ecommerce-size-guide-pill">
+                  <Ruler size={12} /> Standard Dimensions
+                </span>
+              </div>
+
+              <div className="ecommerce-size-cards-grid">
+                {availableSizes.map((sz) => {
+                  const isSelected = selectedTempSize === sz;
+                  const cardPrice = matchProduct ? getProductSizePrice(matchProduct, sz) : item.price;
+                  const info = sizeInfoMap[sz] || {
+                    name: `Size ${sz}`,
+                    dims: 'Standard Dimensions',
+                    badge: '',
+                    recommendation: 'Archival Print',
+                  };
+
+                  return (
+                    <div
+                      key={sz}
+                      onClick={() => setSelectedTempSize(sz)}
+                      className={`ecommerce-size-card ${isSelected ? 'active-card' : ''}`}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedTempSize(sz);
+                        }
+                      }}
+                    >
+                      <div className="ecommerce-size-card-left">
+                        <div className={`ecommerce-size-letter-badge ${isSelected ? 'active-badge' : ''}`}>
+                          {sz}
+                        </div>
+                        <div className="ecommerce-size-card-info">
+                          <div className="flex items-center gap-2">
+                            <span className="ecommerce-size-card-name">{info.name}</span>
+                            {info.badge && (
+                              <span className="ecommerce-size-badge-pill">{info.badge}</span>
+                            )}
+                          </div>
+                          <span className="ecommerce-size-card-dims">{info.dims}</span>
+                          <span className="ecommerce-size-card-desc">{info.recommendation}</span>
+                        </div>
+                      </div>
+
+                      <div className="ecommerce-size-card-right">
+                        <span className="text-xs font-black text-neutral-900 mr-2">
+                          {formatPrice(cardPrice)}
+                        </span>
+                        <div className={`ecommerce-size-radio ${isSelected ? 'checked' : ''}`}>
+                          {isSelected && <Check size={12} strokeWidth={3} className="text-white" />}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+
+            {/* Footer with DONE button */}
+            <div className="ecommerce-size-modal-footer">
+              <button
+                type="button"
+                onClick={() => {
+                  const newPrice = matchProduct ? getProductSizePrice(matchProduct, selectedTempSize) : item.price;
+                  if (selectedTempSize !== item.size || item.price !== newPrice) {
+                    store.updateItemSize(item.key, selectedTempSize, newPrice);
+                  }
+                  setIsSizeSheetOpen(false);
+                }}
+                className="ecommerce-size-done-btn"
+              >
+                <span>CONFIRM SIZE ({selectedTempSize} • {formatPrice(matchProduct ? getProductSizePrice(matchProduct, selectedTempSize) : item.price)})</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

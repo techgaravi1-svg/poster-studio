@@ -44,7 +44,7 @@ import {
   Download,
   FileText,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, getProductStock, products, searchProducts, storeCategories, useLiveProducts, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, products, searchProducts, storeCategories, useLiveProducts, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, Toast } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
@@ -985,11 +985,13 @@ export function ProductPage() {
 
     const addQty = Math.min(quantity, availableStock - currentQty);
 
+    const currentSizePrice = getProductSizePrice(product, selectedSize);
+
     store.addToCart({
       productId: product.id,
       slug: product.slug,
       title: product.title,
-      price: product.price,
+      price: currentSizePrice,
       size: selectedSize,
       quantity: addQty,
       orientation: product.orientation,
@@ -998,12 +1000,18 @@ export function ProductPage() {
     if (buyNow) {
       navigate('/checkout');
     } else {
-      setToast(`${product.title} added to bag!`);
+      setToast(`${product.title} (${selectedSize}) added to bag!`);
       window.setTimeout(() => setToast(''), 3800);
     }
   };
 
   const heroImageSrc = product.images?.[0] || '/assets/spiderman-product-hero.jpg';
+  const currentSizePrice = getProductSizePrice(product, selectedSize);
+  const currentSizeCompare = getProductSizeComparePrice(product, selectedSize);
+  const currentSavings = Math.max(0, currentSizeCompare - currentSizePrice);
+  const discountPct = currentSizeCompare > currentSizePrice
+    ? Math.round(((currentSizeCompare - currentSizePrice) / currentSizeCompare) * 100)
+    : 0;
 
   return (
     <main className="postgenz-product-page">
@@ -1037,34 +1045,74 @@ export function ProductPage() {
         </div>
 
         <div className="product-price-display-row">
-          <span className="price-bold">{formatPrice(product.price)}</span>
-          <del className="price-strike">{formatPrice(product.compareAtPrice)}</del>
+          <span className="price-bold">{formatPrice(currentSizePrice)}</span>
+          {currentSizeCompare > currentSizePrice && (
+            <del className="price-strike">{formatPrice(currentSizeCompare)}</del>
+          )}
+          {discountPct > 0 && (
+            <span className="product-discount-pill">{discountPct}% OFF</span>
+          )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', margin: '4px 0 12px' }}>
-          <button
-            type="button"
-            className="view-size-chart-link"
-            onClick={() => setSizeChartOpen(true)}
-          >
-            View Size Chart →
-          </button>
-        </div>
+        {/* OPTIONAL ARTWORK DESCRIPTION FROM ADMIN */}
+        {product.description && product.description.trim().length > 0 && (
+          <div className="product-custom-description-card">
+            <div className="product-custom-description-heading">
+              <span>ARTWORK DESCRIPTION</span>
+            </div>
+            <p className="product-custom-description-body">{product.description}</p>
+          </div>
+        )}
 
-        {/* 3. SIZE SELECTOR */}
+        {/* 3. SIZE SELECTOR (MYNTRA / FLIPKART ECOMMERCE STYLE) */}
         <div className="product-size-section">
-          <div className="size-label-heading">SIZE</div>
-          <div className="size-pills-row">
-            {(['A5', 'A4', 'A3'] as PosterSize[]).map((sz) => (
-              <button
-                type="button"
-                key={sz}
-                className={`size-select-pill ${selectedSize === sz ? 'size-active' : ''}`}
-                onClick={() => setSelectedSize(sz)}
-              >
-                {sz}
-              </button>
-            ))}
+          <div className="product-size-header-row">
+            <div className="size-label-heading-group">
+              <span className="size-label-heading">SELECT SIZE</span>
+              <span className="size-selected-subtext">
+                ({selectedSize === 'A5' ? '14.8 × 21 cm • Small' : selectedSize === 'A4' ? '21 × 29.7 cm • Standard' : '29.7 × 42 cm • Large'})
+              </span>
+            </div>
+            <button
+              type="button"
+              className="view-size-chart-link-ecommerce"
+              onClick={() => setSizeChartOpen(true)}
+            >
+              <Ruler size={13} />
+              <span>Size Guide</span>
+            </button>
+          </div>
+
+          <div className="size-pills-row-ecommerce">
+            {([
+              { id: 'A5', label: 'A5', dims: '14.8 × 21 cm', tag: 'Desk Size', isPopular: false },
+              { id: 'A4', label: 'A4', dims: '21 × 29.7 cm', tag: 'Popular', isPopular: true },
+              { id: 'A3', label: 'A3', dims: '29.7 × 42 cm', tag: 'Large Wall', isPopular: false },
+            ] as const).map((s) => {
+              const isSelected = selectedSize === s.id;
+              const tilePrice = getProductSizePrice(product, s.id as PosterSize);
+              return (
+                <button
+                  type="button"
+                  key={s.id}
+                  className={`ecommerce-size-tile ${isSelected ? 'active-size' : ''}`}
+                  onClick={() => setSelectedSize(s.id as PosterSize)}
+                >
+                  {s.isPopular && <span className="size-popular-pill">POPULAR</span>}
+                  <span className="size-tile-title">{s.label}</span>
+                  <span className="size-tile-dims">{s.dims}</span>
+                  <span className="size-tile-price-tag">{formatPrice(tilePrice)}</span>
+                  <div className="size-tile-check-indicator">
+                    {isSelected && <Check size={11} strokeWidth={3} />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="size-paper-note-strip">
+            <Check size={13} className="text-emerald-600" />
+            <span>Printed on <strong>300 GSM Archival Matte Paper</strong> • Borderless Ultra-HD Print</span>
           </div>
         </div>
 
@@ -1155,6 +1203,12 @@ export function ProductPage() {
             </button>
             {openAccordion === 'features' && (
               <div className="accordion-inner-content">
+                {product.description && product.description.trim().length > 0 && (
+                  <div className="feature-item">
+                    <strong>Artwork Details &amp; Story</strong>
+                    <p>{product.description}</p>
+                  </div>
+                )}
                 <div className="feature-item">
                   <strong>Premium Matte Finish</strong>
                   <p>Sharp, vibrant, and stunning under any light, perfect for showcasing every detail.</p>
@@ -1227,42 +1281,7 @@ export function ProductPage() {
             )}
           </div>
 
-          {/* ACCORDION 4: CUSTOMER FAQs & RETURNS */}
-          <div className="accordion-block">
-            <button
-              type="button"
-              className="accordion-toggle-btn"
-              onClick={() => toggleAccordion('faqs')}
-            >
-              <span>CUSTOMER FAQs &amp; POLICIES</span>
-              <span className="accordion-indicator">{openAccordion === 'faqs' ? '−' : '+'}</span>
-            </button>
-            {openAccordion === 'faqs' && (
-              <div className="accordion-inner-content">
-                <div className="feature-item">
-                  <strong>Materials &amp; Print</strong>
-                  <p>Printed on premium 250–300 GSM matte paper with durable, edge-to-edge printing (no white borders).</p>
-                </div>
-                <div className="feature-item">
-                  <strong>Return &amp; Replacement Policy</strong>
-                  <p>We do not offer returns on poster orders. Replacements are provided if damaged, defective, or incorrect. Must submit a clear unboxing video within 48 hours of delivery to dungeons.support@gmail.com.</p>
-                </div>
-                <div className="feature-item">
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '6px' }}>
-                    <Link href="/faqs" style={{ color: '#2563eb', fontWeight: 700, fontSize: '13px', textDecoration: 'underline' }}>
-                      Read All 10 Customer FAQs →
-                    </Link>
-                    <Link href="/returns" style={{ color: '#2563eb', fontWeight: 700, fontSize: '13px', textDecoration: 'underline' }}>
-                      Return &amp; Refund Policy →
-                    </Link>
-                    <Link href="/terms" style={{ color: '#2563eb', fontWeight: 700, fontSize: '13px', textDecoration: 'underline' }}>
-                      Website Terms →
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+
         </div>
 
         {/* 8. TRUST HIGHLIGHTS */}

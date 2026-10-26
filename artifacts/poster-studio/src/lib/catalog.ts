@@ -16,6 +16,8 @@ export type Product = {
   compareAtPrice: number;
   discount: number;
   sizes: PosterSize[];
+  sizePrices?: Partial<Record<PosterSize, number>>;
+  sizeComparePrices?: Partial<Record<PosterSize, number>>;
   orientation: Orientation;
   stock: number;
   featured: boolean;
@@ -832,8 +834,44 @@ export const collections = [
 ];
 
 export function transformDbProductToFrontend(p: any): Product {
-  const compareAt = p.compareAtPrice ?? (p.price * 2 - 1);
+  const compareAt = p.compareAtPrice ?? (p.price ? Math.round(Number(p.price) * 1.8) : 159);
   const discount = compareAt > p.price ? Math.round(((compareAt - p.price) / compareAt) * 100) : 0;
+
+  // Extract sizePrices if present or parse from tags (e.g. sizeprice:A5:79)
+  const sizePrices: Partial<Record<PosterSize, number>> = { ...(p.sizePrices || {}) };
+  const sizeComparePrices: Partial<Record<PosterSize, number>> = { ...(p.sizeComparePrices || {}) };
+
+  if (Array.isArray(p.tags)) {
+    for (const tag of p.tags) {
+      if (typeof tag === 'string' && tag.startsWith('sizeprice:')) {
+        const parts = tag.split(':');
+        if (parts.length >= 3) {
+          const sz = parts[1] as PosterSize;
+          const val = Number(parts[2]);
+          if (!isNaN(val) && val > 0) sizePrices[sz] = val;
+        }
+      }
+      if (typeof tag === 'string' && tag.startsWith('sizecompare:')) {
+        const parts = tag.split(':');
+        if (parts.length >= 3) {
+          const sz = parts[1] as PosterSize;
+          const val = Number(parts[2]);
+          if (!isNaN(val) && val > 0) sizeComparePrices[sz] = val;
+        }
+      }
+    }
+  }
+
+  const basePrice = Number(p.price) || 79;
+  if (!sizePrices.A5) sizePrices.A5 = basePrice;
+  if (!sizePrices.A4) sizePrices.A4 = Math.round(basePrice * 1.5);
+  if (!sizePrices.A3) sizePrices.A3 = Math.round(basePrice * 2.2);
+
+  const baseCompare = Number(compareAt) || Math.round(basePrice * 2);
+  if (!sizeComparePrices.A5) sizeComparePrices.A5 = baseCompare;
+  if (!sizeComparePrices.A4) sizeComparePrices.A4 = Math.round(baseCompare * 1.5);
+  if (!sizeComparePrices.A3) sizeComparePrices.A3 = Math.round(baseCompare * 2.2);
+
   return {
     id: p.id,
     slug: p.slug,
@@ -845,10 +883,12 @@ export function transformDbProductToFrontend(p: any): Product {
       ? p.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0)
       : ['/assets/posters/poster-01.jpg'],
     artTreatment: 'art-signal',
-    price: Number(p.price),
-    compareAtPrice: Number(compareAt),
+    price: sizePrices.A5 || basePrice,
+    compareAtPrice: sizeComparePrices.A5 || baseCompare,
     discount,
     sizes: ['A5', 'A4', 'A3', '50×70', '70×100'],
+    sizePrices,
+    sizeComparePrices,
     orientation: (p.orientation as Orientation) || 'portrait',
     stock: p.stock ?? 50,
     featured: Boolean(p.isStaffPick || p.isBestSeller),
@@ -863,7 +903,67 @@ export function transformDbProductToFrontend(p: any): Product {
   };
 }
 
+export function getProductSizePrice(product: Product, size: PosterSize = 'A5'): number {
+  if (product.sizePrices && typeof product.sizePrices[size] === 'number' && product.sizePrices[size]! > 0) {
+    return product.sizePrices[size]!;
+  }
+  const base = product.price || 79;
+  if (size === 'A5') return base;
+  if (size === 'A4') return Math.round(base * 1.5);
+  if (size === 'A3') return Math.round(base * 2.2);
+  return base;
+}
+
+export function getProductSizeComparePrice(product: Product, size: PosterSize = 'A5'): number {
+  if (product.sizeComparePrices && typeof product.sizeComparePrices[size] === 'number' && product.sizeComparePrices[size]! > 0) {
+    return product.sizeComparePrices[size]!;
+  }
+  const baseCompare = product.compareAtPrice || Math.round((product.price || 79) * 2);
+  if (size === 'A5') return baseCompare;
+  if (size === 'A4') return Math.round(baseCompare * 1.5);
+  if (size === 'A3') return Math.round(baseCompare * 2.2);
+  return baseCompare;
+}
+
 const STORAGE_KEY = 'dungeons_catalog_products';
+const IDB_NAME = 'dungeons_store_db';
+const IDB_STORE = 'catalog_products';
+
+function openCatalogDB(): Promise<IDBDatabase | null> {
+  if (typeof window === 'undefined' || !window.indexedDB) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    try {
+      const request = indexedDB.open(IDB_NAME, 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) {
+          db.createObjectStore(IDB_STORE, { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+export function saveCatalogToIndexedDB(list: Product[]) {
+  if (typeof window === 'undefined') return;
+  openCatalogDB().then((db) => {
+    if (!db) return;
+    try {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      const store = tx.objectStore(IDB_STORE);
+      store.clear();
+      for (const item of list) {
+        store.put(item);
+      }
+    } catch (e) {
+      console.warn('[Catalog] IndexedDB sync notice:', e);
+    }
+  }).catch(() => {});
+}
 
 export function loadCatalogFromStorage(): Product[] {
   if (typeof window === 'undefined') return defaultCatalogProducts;
@@ -904,6 +1004,25 @@ export const products: Product[] = typeof window !== 'undefined'
   ? loadCatalogFromStorage()
   : [...defaultCatalogProducts];
 
+// Auto-restore from IndexedDB if localStorage was wiped or truncated
+if (typeof window !== 'undefined') {
+  openCatalogDB().then((db) => {
+    if (!db) return;
+    try {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const store = tx.objectStore(IDB_STORE);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        if (Array.isArray(req.result) && req.result.length > products.length) {
+          products.length = 0;
+          products.push(...req.result);
+          window.dispatchEvent(new CustomEvent('dungeons:products-updated', { detail: req.result }));
+        }
+      };
+    } catch {}
+  }).catch(() => {});
+}
+
 export function saveCatalogToStorage(newList: Product[]) {
   if (typeof window === 'undefined') return;
 
@@ -912,26 +1031,29 @@ export function saveCatalogToStorage(newList: Product[]) {
   products.push(...newList);
   window.dispatchEvent(new CustomEvent('dungeons:products-updated', { detail: newList }));
 
-  // 2. Persist to localStorage safely handling quota limits
+  // 2. Persist to IndexedDB (virtually unlimited quota for high-res images)
+  saveCatalogToIndexedDB(newList);
+
+  // 3. Persist to localStorage safely handling quota limits
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
   } catch (e: any) {
     console.warn('[Catalog] localStorage quota exceeded, trimming payload safely:', e);
     try {
-      // If quota exceeded, sanitize images: keep first 500 characters of data URLs or replace with placeholder
+      // If quota exceeded, keep first 250000 characters of data URLs or replace with placeholder
       const sanitized = newList.map((item) => {
-        const hasHeavyImages = item.images?.some((img) => img.startsWith('data:') && img.length > 250000);
+        const hasHeavyImages = item.images?.some((img) => img.startsWith('data:') && img.length > 150000);
         if (hasHeavyImages) {
           return {
             ...item,
-            images: item.images.map((img) => (img.startsWith('data:') && img.length > 250000 ? '/assets/posters/poster-01.jpg' : img)),
+            images: item.images.map((img) => (img.startsWith('data:') && img.length > 150000 ? '/assets/posters/poster-01.jpg' : img)),
           };
         }
         return item;
       });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
     } catch {
-      // Memory state is maintained even if localStorage is completely full
+      // Memory state and IndexedDB maintain all custom posters safely
     }
   }
 }
@@ -939,16 +1061,39 @@ export function saveCatalogToStorage(newList: Product[]) {
 export function saveSingleProduct(productData: Partial<Product> & { id: string }): Product[] {
   const current = loadCatalogFromStorage();
 
-  // Ensure slug is clean and present
-  const safeSlug = (productData.slug || productData.title || productData.id || `poster-${Date.now()}`)
+  const isExisting = current.some((p) => p.id === productData.id);
+  const productId = productData.id || `prod-custom-${Date.now()}`;
+
+  let safeSlug = (productData.slug || productData.title || productId)
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
 
-  const index = current.findIndex(
-    (p) => p.id === productData.id || (productData.slug && p.slug === productData.slug) || p.slug === safeSlug
-  );
+  if (!isExisting) {
+    // If slug is taken by another product, ensure uniqueness so it NEVER overwrites existing posters!
+    const slugTaken = current.some((p) => p.slug === safeSlug);
+    if (slugTaken) {
+      safeSlug = `${safeSlug}-${Date.now().toString().slice(-4)}`;
+    }
+  }
+
+  // Ensure size prices are stored in tags too for backend compatibility
+  const sizePrices = productData.sizePrices || {};
+  const sizeComparePrices = productData.sizeComparePrices || {};
+  const cleanTags = (Array.isArray(productData.tags) ? productData.tags : [])
+    .filter((t) => !t.startsWith('sizeprice:') && !t.startsWith('sizecompare:'));
+
+  if (sizePrices.A5) cleanTags.push(`sizeprice:A5:${sizePrices.A5}`);
+  if (sizePrices.A4) cleanTags.push(`sizeprice:A4:${sizePrices.A4}`);
+  if (sizePrices.A3) cleanTags.push(`sizeprice:A3:${sizePrices.A3}`);
+  if (sizeComparePrices.A5) cleanTags.push(`sizecompare:A5:${sizeComparePrices.A5}`);
+  if (sizeComparePrices.A4) cleanTags.push(`sizecompare:A4:${sizeComparePrices.A4}`);
+  if (sizeComparePrices.A3) cleanTags.push(`sizecompare:A3:${sizeComparePrices.A3}`);
+
+  const index = isExisting
+    ? current.findIndex((p) => p.id === productId)
+    : -1;
 
   let updatedList: Product[];
   if (index >= 0) {
@@ -966,23 +1111,33 @@ export function saveSingleProduct(productData: Partial<Product> & { id: string }
     const updated: Product = {
       ...existing,
       ...productData,
+      id: productId,
       slug: safeSlug,
+      description: productData.description !== undefined ? productData.description : existing.description,
       price,
       compareAtPrice: compareAt,
       discount,
+      sizePrices: { ...existing.sizePrices, ...sizePrices },
+      sizeComparePrices: { ...existing.sizeComparePrices, ...sizeComparePrices },
       stock: productData.stock !== undefined ? Number(productData.stock) : existing.stock,
       images: Array.isArray(productData.images) && productData.images.length > 0
         ? productData.images
         : existing.images,
-      tags: Array.isArray(productData.tags) ? productData.tags : existing.tags,
+      tags: cleanTags,
     };
     updatedList = [...current];
     updatedList[index] = updated;
   } else {
     const newProd = transformDbProductToFrontend({
       ...productData,
+      id: productId,
       slug: safeSlug,
-      price: Number(productData.price || 79),
+      description: productData.description || '',
+      price: Number(productData.price || sizePrices.A5 || 79),
+      compareAtPrice: Number(productData.compareAtPrice || sizeComparePrices.A5 || 159),
+      sizePrices,
+      sizeComparePrices,
+      tags: cleanTags,
     });
     updatedList = [newProd, ...current];
   }

@@ -204,9 +204,12 @@ export const store = {
       cart: state.cart.map((item) => (item.key === key ? { ...item, quantity: clampedQty } : item)),
     });
   },
-  updateItemSize(key: string, newSize: PosterSize) {
+  updateItemSize(key: string, newSize: PosterSize, newPrice?: number) {
     const item = state.cart.find((i) => i.key === key);
-    if (!item || item.size === newSize) return;
+    if (!item) return;
+    const priceToSet = typeof newPrice === 'number' && newPrice > 0 ? newPrice : item.price;
+    if (item.size === newSize && item.price === priceToSet) return;
+
     const newKey = item.customUpload ? key : `${item.productId}-${newSize}`;
     const existing = state.cart.find((i) => i.key === newKey && i.key !== key);
     if (existing) {
@@ -214,12 +217,12 @@ export const store = {
         ...state,
         cart: state.cart
           .filter((i) => i.key !== key)
-          .map((i) => (i.key === newKey ? { ...i, quantity: i.quantity + item.quantity } : i)),
+          .map((i) => (i.key === newKey ? { ...i, quantity: i.quantity + item.quantity, price: priceToSet } : i)),
       });
     } else {
       commit({
         ...state,
-        cart: state.cart.map((i) => (i.key === key ? { ...i, size: newSize, key: newKey } : i)),
+        cart: state.cart.map((i) => (i.key === key ? { ...i, size: newSize, key: newKey, price: priceToSet } : i)),
       });
     }
   },
