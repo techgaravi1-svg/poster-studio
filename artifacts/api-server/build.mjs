@@ -118,6 +118,28 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+
+  // Build Vercel Serverless Function entrypoint
+  const rootApiDir = path.resolve(artifactDir, "../../api");
+  await esbuild({
+    entryPoints: [path.resolve(artifactDir, "src/serverless.ts")],
+    platform: "node",
+    bundle: true,
+    format: "cjs",
+    outfile: path.resolve(rootApiDir, "index.js"),
+    logLevel: "info",
+    external: [
+      "*.node",
+      "@prisma/client",
+    ],
+  });
+
+  const { writeFile } = await import("node:fs/promises");
+  await writeFile(
+    path.resolve(rootApiDir, "[...all].js"),
+    "const serverless = require('./index.js');\nmodule.exports = serverless.default || serverless;\n",
+    "utf-8"
+  );
 }
 
 buildAll().catch((err) => {
