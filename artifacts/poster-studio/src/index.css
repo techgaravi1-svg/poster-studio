@@ -71,7 +71,13 @@ button {
 .main-content-flow {
   flex: 1;
   width: 100%;
-  padding-top: 62px;
+  padding-top: 64px;
+}
+
+@media (min-width: 768px) {
+  .main-content-flow {
+    padding-top: 72px;
+  }
 }
 
 /* 1. HEADER (POSTGENZ) - FIXED TRANSPARENT FROSTED GLASS */
@@ -107,11 +113,18 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 62px;
-  padding: 0 20px;
-  max-width: 1240px;
+  height: 64px;
+  padding: 0 16px;
+  max-width: 1280px;
   margin: 0 auto;
   width: 100%;
+}
+
+@media (min-width: 768px) {
+  .header-inner {
+    height: 72px;
+    padding: 0 24px;
+  }
 }
 
 .header-left-group {
@@ -137,21 +150,28 @@ button {
 }
 
 .header-brand-logo {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  height: 40px;
+  justify-content: flex-start;
+  text-decoration: none;
+  line-height: 1;
 }
 
-.postgenz-logo-img {
-  height: 40px;
+.postgenz-logo-img,
+.dungeons-navbar-logo {
+  height: 36px;
+  width: auto;
   max-width: 160px;
   object-fit: contain;
+  display: block;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  image-rendering: -webkit-optimize-contrast;
 }
 
-.dungeons-navbar-logo {
-  height: 40px;
-  width: auto;
+.header-brand-logo:hover .dungeons-navbar-logo,
+.header-brand-logo:hover .postgenz-logo-img {
+  opacity: 0.92;
+  transform: scale(1.02);
 }
 
 /* DESKTOP NAVIGATION LINKS (FOR LAPTOP) */
@@ -169,14 +189,24 @@ button {
     display: none !important;
   }
 
-  .dungeons-navbar-logo {
-    height: 46px;
+  .dungeons-navbar-logo,
+  .postgenz-logo-img {
+    height: 48px;
+    max-width: 210px;
   }
 
   .desktop-nav-links {
     display: flex;
     align-items: center;
     gap: 28px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dungeons-navbar-logo,
+  .postgenz-logo-img {
+    height: 52px;
+    max-width: 240px;
   }
 }
 
@@ -297,7 +327,7 @@ button {
   background-color: #ffffff;
   display: flex;
   flex-direction: column;
-  padding-top: 62px;
+  padding-top: 0;
   animation: slideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 8px 0 25px rgba(0, 0, 0, 0.15);
 }
@@ -311,13 +341,17 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px;
+  padding: 14px 18px;
   border-bottom: 1px solid #f3f4f6;
+  background-color: #ffffff;
 }
 
 .menu-logo-img {
-  height: 32px;
+  height: 36px;
+  width: auto;
+  max-width: 155px;
   object-fit: contain;
+  display: block;
 }
 
 .menu-close-btn {
@@ -694,7 +728,7 @@ button {
 .home-categories-row-section {
   padding: 0 16px;
   max-width: 1240px;
-  margin: 18px auto 26px;
+  margin: 14px auto 8px;
 }
 
 .categories-scroll-track {
@@ -703,7 +737,7 @@ button {
   gap: 14px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 6px 4px 10px;
+  padding: 4px 4px 2px;
   scroll-snap-type: x proximity;
   /* Hide scrollbar completely to remove grey divider line */
   scrollbar-width: none !important;
@@ -903,18 +937,18 @@ button {
 
 /* SECTION HEADINGS (STENCIL / BLOCK DISPLAY FONT) - REDUCED GAP */
 .home-poster-section {
-  padding: 4px 16px 20px;
+  padding: 0 16px 20px;
 }
 
 @media (min-width: 768px) {
   .home-poster-section {
-    padding: 10px 24px 30px;
+    padding: 4px 24px 30px;
   }
 }
 
 .poster-section-header {
   text-align: center;
-  margin-top: 2px;
+  margin-top: 0;
   margin-bottom: 8px;
 }
 
@@ -1453,17 +1487,33 @@ button {
 }
 
 .footer-dungeons-logo {
-  height: 52px;
+  height: 78px;
   width: auto;
-  max-width: 185px;
+  max-width: 170px;
   object-fit: contain;
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+.footer-dungeons-logo:hover {
+  transform: translateY(-2px);
+  opacity: 0.95;
 }
 
 @media (min-width: 768px) {
   .footer-dungeons-logo {
-    height: 60px;
+    height: 94px;
+    max-width: 200px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .footer-dungeons-logo {
+    height: 106px;
+    max-width: 230px;
   }
 }
 
@@ -4822,7 +4872,7 @@ button {
   width: 100%;
   border-radius: 12px;
   overflow: hidden;
-  background-color: #7f1d1d;
+  background-color: #1e1338;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 

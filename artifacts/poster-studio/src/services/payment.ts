@@ -36,8 +36,9 @@ export const paymentService = {
   getRazorpayKey(): string {
     return (
       (import.meta as any).env?.VITE_RAZORPAY_KEY_ID ||
+      (import.meta as any).env?.RAZORPAY_KEY_ID ||
       (typeof window !== 'undefined' && (window as any).__RAZORPAY_KEY_ID__) ||
-      ''
+      'rzp_test_TsSW6nXs2DbghB'
     );
   },
 
@@ -51,16 +52,20 @@ export const paymentService = {
           key,
           amount: Math.round(request.amount * 100), // in paise
           currency: 'INR',
-          name: 'Dungeons Posters',
+          name: 'DUNGEONS',
           description: request.orderDescription || 'Custom Wall Art & Posters',
-          image: '/assets/dungeons-logo.png',
+          image: '/images/header-logo.png',
           prefill: {
             name: request.customerName,
             email: request.customerEmail,
             contact: request.customerPhone,
           },
+          notes: {
+            order_type: 'Dungeons Poster & Wall Art',
+            customer_contact: request.customerPhone,
+          },
           theme: {
-            color: '#09090b',
+            color: '#0f172a',
           },
           handler: (response: RazorpayPaymentSuccessResponse) => {
             resolve({

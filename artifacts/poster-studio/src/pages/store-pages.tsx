@@ -67,55 +67,47 @@ function PaymentTrustBadges() {
   );
 }
 
-// Size Chart Modal Component
+// Size Chart Modal Component (For all normal posters on ProductPage)
 function SizeChartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   if (!isOpen) return null;
   return (
-    <div className="drawer-backdrop" onClick={onClose}>
-      <div className="size-chart-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Poster Size Guide</h3>
-          <button type="button" className="icon-button" onClick={onClose}>
+    <div className="size-guide-modal-backdrop" onClick={onClose}>
+      <div className="size-guide-modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="size-guide-modal-header">
+          <div className="size-guide-modal-title">
+            <Ruler size={18} className="text-purple-400" />
+            <span>DUNGEONS • POSTERS SIZE GUIDE</span>
+          </div>
+          <button
+            type="button"
+            className="btn-close-modal"
+            onClick={onClose}
+            aria-label="Close size guide"
+          >
             <X size={20} />
           </button>
         </div>
-        <div className="size-chart-content">
-          <p className="size-chart-desc">
-            All POSTGENZ posters are printed with sharp high-resolution pigment on 350 GSM luxury matte stock.
-          </p>
-          <div className="size-table-wrap">
-            <table className="size-table">
-              <thead>
-                <tr>
-                  <th>Size</th>
-                  <th>Centimeters</th>
-                  <th>Inches</th>
-                  <th>Best For</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="highlighted-size-row">
-                  <td><strong>A5</strong></td>
-                  <td>14.8 × 21.0 cm</td>
-                  <td>5.8 × 8.3 in</td>
-                  <td>Desk decor, mini gallery walls</td>
-                </tr>
-                <tr>
-                  <td><strong>A4</strong></td>
-                  <td>21.0 × 29.7 cm</td>
-                  <td>8.3 × 11.7 in</td>
-                  <td>Standard frame, bedrooms & study</td>
-                </tr>
-                <tr>
-                  <td><strong>A3</strong></td>
-                  <td>29.7 × 42.0 cm</td>
-                  <td>11.7 × 16.5 in</td>
-                  <td>Statement wall art, living spaces</td>
-                </tr>
-              </tbody>
-            </table>
+
+        <div className="size-guide-modal-body">
+          <div className="size-guide-image-wrap">
+            <img
+              src="/assets/dungeons-poster-size-guide.png?v=2"
+              alt="DUNGEONS Posters Size Guide - A3, A4, A5 Dimensions"
+              className="size-guide-graphic-img"
+            />
           </div>
-          <button type="button" className="button postgenz-btn button-wide" onClick={onClose}>
+
+          <p className="text-xs text-neutral-300 text-center leading-relaxed px-2">
+            All DUNGEONS posters are archival printed on <strong>350 GSM luxury matte stock</strong> with vivid HD inks. Choose the perfect size based on the space you want to decorate.
+          </p>
+        </div>
+
+        <div className="size-guide-modal-footer">
+          <button
+            type="button"
+            className="btn-size-guide-done"
+            onClick={onClose}
+          >
             Got It
           </button>
         </div>
@@ -138,14 +130,14 @@ export function HomePage() {
       id: 'photo-strip',
       title: 'Custom Photobooth Strip',
       subtitle: 'Turn your camera roll into aesthetic 3-strip & 4-strip prints',
-      image: '/assets/custom-photobooth.jpg',
+      image: '/images/custom-photobooth-strip.jpeg',
       link: '/custom?type=strip',
     },
     {
       id: 'mini-pocket',
       title: 'Mini Pocket Photos (Mini Prints)',
       subtitle: 'Cute pocket-sized instant polaroid style keepsake memories',
-      image: '/assets/custom-mini-pocket.jpg',
+      image: '/images/minipocket.jpeg',
       link: '/custom?type=pocket',
     },
     {
@@ -1608,7 +1600,7 @@ export function CustomPage() {
       artTreatment: 'art-aurora',
       customUpload: {
         name: `Photobooth_${stripPhotos.length}_${Date.now()}`,
-        preview: stripPhotos[0]?.url || '/assets/custom-photobooth.jpg',
+        preview: stripPhotos[0]?.url || '/images/custom-photobooth-strip.jpeg',
         photos: stripPhotos.map((p) => p.url),
         borderStyle: stripFrameStyle,
         customType: 'Photobooth Strip',
@@ -1641,7 +1633,7 @@ export function CustomPage() {
       artTreatment: 'art-pulse',
       customUpload: {
         name: `MiniPocket_${pocketPhotos.length}_${Date.now()}`,
-        preview: pocketPhotos[0]?.url || '/assets/custom-mini-pocket.jpg',
+        preview: pocketPhotos[0]?.url || '/images/minipocket.jpeg',
         photos: pocketPhotos.map((p) => p.url),
         borderStyle: pocketFrameStyle,
         customType: 'Mini Pocket Photos',
@@ -1700,7 +1692,7 @@ export function CustomPage() {
         artTreatment: 'art-aurora',
         customUpload: {
           name: `Photobooth_${stripPhotos.length}_${Date.now()}`,
-          preview: stripPhotos[0]?.url || '/assets/custom-photobooth.jpg',
+          preview: stripPhotos[0]?.url || '/images/custom-photobooth-strip.jpeg',
           photos: stripPhotos.map((p) => p.url),
           borderStyle: stripFrameStyle,
           customType: 'Photobooth Strip',
@@ -1734,7 +1726,7 @@ export function CustomPage() {
         artTreatment: 'art-pulse',
         customUpload: {
           name: `MiniPocket_${pocketPhotos.length}_${Date.now()}`,
-          preview: pocketPhotos[0]?.url || '/assets/custom-mini-pocket.jpg',
+          preview: pocketPhotos[0]?.url || '/images/minipocket.jpeg',
           photos: pocketPhotos.map((p) => p.url),
           borderStyle: pocketFrameStyle,
           customType: 'Mini Pocket Photos',
@@ -1797,7 +1789,7 @@ export function CustomPage() {
           {/* Box 1: Custom Photobooth Strip */}
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
-              <img src="/assets/custom-photobooth.jpg" alt="Custom Photobooth Strip" className="box-thumb-img" />
+              <img src="/images/custom-photobooth-strip.jpeg" alt="Custom Photobooth Strip" className="box-thumb-img" />
               <span className="box-tag-pill">HOT FAVORITE</span>
             </div>
             <div className="box-body-wrap">
@@ -1821,7 +1813,7 @@ export function CustomPage() {
           {/* Box 2: Mini Pocket Photos (Mini Prints) */}
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
-              <img src="/assets/custom-mini-pocket.jpg" alt="Mini Pocket Photos" className="box-thumb-img" />
+              <img src="/images/minipocket.jpeg" alt="Mini Pocket Photos" className="box-thumb-img" />
               <span className="box-tag-pill">POCKET MEMORIES</span>
             </div>
             <div className="box-body-wrap">
@@ -1924,7 +1916,7 @@ export function CustomPage() {
                   </div>
                 ))}
               </div>
-              <div className="strip-footer-branding">postgenz</div>
+              <div className="strip-footer-branding">DUNGEONS</div>
             </div>
           </div>
 
@@ -2079,7 +2071,7 @@ export function CustomPage() {
                       </button>
                     )}
                   </div>
-                  <div className="mini-card-bottom-bar">postgenz</div>
+                  <div className="mini-card-bottom-bar">DUNGEONS</div>
                 </div>
               ))}
             </div>
@@ -2355,8 +2347,8 @@ export function CustomPage() {
           <div className="size-guide-modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="size-guide-modal-header">
               <div className="size-guide-modal-title">
-                <Ruler size={18} className="text-red-500" />
-                <span>POSTERS SIZE GUIDE</span>
+                <Ruler size={18} className="text-amber-400" />
+                <span>CUSTOM POSTERS • SIZE GUIDE</span>
               </div>
               <button
                 type="button"
@@ -2369,10 +2361,10 @@ export function CustomPage() {
             </div>
 
             <div className="size-guide-modal-body">
-              <div className="size-guide-image-wrap">
+              <div className="size-guide-image-wrap" style={{ backgroundColor: '#fcfaf6' }}>
                 <img
-                  src="/assets/poster-size-guide.svg"
-                  alt="Posters Size Guide - A3, A4, A5 Dimensions"
+                  src="/assets/custom-poster-size-guide.png?v=2"
+                  alt="Custom Posters Size Guide - A3, A4, A5 Dimensions"
                   className="size-guide-graphic-img"
                 />
               </div>
@@ -2678,6 +2670,12 @@ export function CartPage() {
                 totalSavings={totalSavings}
                 onProceed={() => navigate('/checkout')}
                 proceedLabel={`PLACE ORDER • ${formatPrice(totals.total)}`}
+                subtext={
+                  <p className="text-[11px] text-neutral-400 text-center flex items-center justify-center gap-1.5 mt-1 font-medium tracking-wide">
+                    <Lock size={12} className="text-neutral-400" />
+                    <span>Secure payment with Razorpay</span>
+                  </p>
+                }
               />
             </div>
           </div>
@@ -2715,14 +2713,16 @@ export function CheckoutPage() {
 
   useEffect(() => {
     if (activeAddress) {
+      const cleanPhone = activeAddress.phone ? activeAddress.phone.replace(/[^0-9]/g, '') : '';
       setForm((prev) => ({
         ...prev,
-        name: activeAddress.name,
-        phone: activeAddress.phone,
+        name: activeAddress.name || prev.name,
+        phone: activeAddress.phone || prev.phone,
+        email: prev.email || (cleanPhone ? `${cleanPhone}@dungeons.in` : 'customer@dungeons.in'),
         address: [activeAddress.flat, activeAddress.locality, activeAddress.landmark].filter(Boolean).join(', '),
-        city: activeAddress.city,
-        state: activeAddress.state,
-        pincode: activeAddress.pincode,
+        city: activeAddress.city || prev.city,
+        state: activeAddress.state || prev.state,
+        pincode: activeAddress.pincode || prev.pincode,
       }));
     }
   }, [activeAddress?.id]);
@@ -2828,12 +2828,21 @@ export function CheckoutPage() {
   };
 
   const validate = () => {
+    // If user already has an active selected address, it is valid!
+    if (activeAddress) {
+      if (!activeAddress.name?.trim() || !activeAddress.phone?.trim()) {
+        return false;
+      }
+      return true;
+    }
+
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = 'Full name is required';
     if (!form.phone.trim()) errs.phone = 'Phone number is required';
     else if (!/^\+?[0-9\s-]{10,14}$/.test(form.phone.trim())) errs.phone = 'Enter a valid 10-digit mobile number';
-    if (!form.email.trim()) errs.email = 'Email address is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errs.email = 'Enter a valid email address';
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      errs.email = 'Enter a valid email address';
+    }
     if (!form.address.trim()) errs.address = 'Street address is required';
     if (!form.city.trim()) errs.city = 'City is required';
     if (!form.state.trim()) errs.state = 'State is required';
@@ -2853,10 +2862,31 @@ export function CheckoutPage() {
       return;
     }
 
-    if (!validate()) {
+    // If user has NO address at all, redirect to addresses page to add one
+    if (!activeAddress && !validate()) {
       navigate('/addresses');
-      setError('Please fill in your delivery address correctly.');
+      setError('Please add or select a delivery address to place your order.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    // Safely normalize customer & shipping address from activeAddress or form
+    const customerName = (activeAddress?.name || form.name || 'Valued Customer').trim();
+    const customerPhone = (activeAddress?.phone || form.phone || '').trim();
+    const customerAddress = (
+      activeAddress
+        ? [activeAddress.flat, activeAddress.locality, activeAddress.landmark].filter(Boolean).join(', ')
+        : form.address
+    ).trim();
+    const customerCity = (activeAddress?.city || form.city || 'City').trim();
+    const customerState = (activeAddress?.state || form.state || 'State').trim();
+    const customerPincode = (activeAddress?.pincode || form.pincode || '000000').trim();
+    const cleanPhone = customerPhone.replace(/[^0-9]/g, '');
+    const customerEmail = form.email?.trim() || (cleanPhone ? `${cleanPhone}@dungeons.in` : 'customer@dungeons.in');
+
+    if (!customerAddress || !customerPhone) {
+      navigate('/addresses');
+      setError('Please select a valid delivery address with contact phone number.');
       return;
     }
 
@@ -2865,26 +2895,28 @@ export function CheckoutPage() {
     try {
       const paymentResult = await paymentService.openRazorpayCheckout({
         amount: totals.total,
-        customerName: form.name,
-        customerEmail: form.email,
-        customerPhone: form.phone,
-        orderDescription: `Dungeons Order of ${totals.totalItemCount} items`,
+        customerName,
+        customerEmail,
+        customerPhone,
+        orderDescription: `DUNGEONS Order of ${totals.totalItemCount} item(s)`,
       });
 
       if (paymentResult.status === 'success') {
         const order = makeOrder({
-          customer: { name: form.name, email: form.email, phone: form.phone },
+          customer: { name: customerName, email: customerEmail, phone: customerPhone },
           address: {
-            address: form.address,
-            city: form.city,
-            state: form.state,
-            pincode: form.pincode,
-            country: form.country,
+            address: customerAddress,
+            city: customerCity,
+            state: customerState,
+            pincode: customerPincode,
+            country: form.country || 'India',
           },
           products: cart,
           customUploads: [],
           ...totals,
           paymentStatus: 'paid',
+          paymentId: paymentResult.paymentId,
+          paymentMethod: 'razorpay',
           fulfillmentStatus: 'processing',
         });
 
@@ -2894,17 +2926,17 @@ export function CheckoutPage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              customerName: form.name,
-              customerEmail: form.email || `${form.phone}@dungeons.in`,
-              customerPhone: form.phone,
+              customerName,
+              customerEmail,
+              customerPhone,
               shippingAddress: {
-                name: activeAddress?.name || form.name,
-                phone: activeAddress?.phone || form.phone,
-                pincode: activeAddress?.pincode || form.pincode,
-                city: activeAddress?.city || form.city,
-                state: activeAddress?.state || form.state,
-                locality: activeAddress?.locality || form.address,
-                flat: activeAddress?.flat || form.address,
+                name: activeAddress?.name || customerName,
+                phone: activeAddress?.phone || customerPhone,
+                pincode: activeAddress?.pincode || customerPincode,
+                city: activeAddress?.city || customerCity,
+                state: activeAddress?.state || customerState,
+                locality: activeAddress?.locality || customerAddress,
+                flat: activeAddress?.flat || customerAddress,
                 landmark: activeAddress?.landmark || '',
                 type: activeAddress?.type || 'home',
               },
@@ -2919,6 +2951,9 @@ export function CheckoutPage() {
                 customUpload: item.customUpload,
               })),
               couponCode: coupon || undefined,
+              paymentId: paymentResult.paymentId,
+              paymentStatus: 'PAID',
+              paymentMethod: 'razorpay',
             }),
           });
 
@@ -3111,6 +3146,12 @@ export function CheckoutPage() {
               onProceed={() => handlePlaceOrder()}
               disabled={isProcessing || cart.length === 0}
               proceedLabel={isProcessing ? 'PROCESSING...' : `PLACE ORDER • ${formatPrice(totals.total)}`}
+              subtext={
+                <p className="text-[11px] text-neutral-400 text-center flex items-center justify-center gap-1.5 mt-1 font-medium tracking-wide">
+                  <Lock size={12} className="text-neutral-400" />
+                  <span>Secure payment with Razorpay</span>
+                </p>
+              }
             />
           </div>
         </form>

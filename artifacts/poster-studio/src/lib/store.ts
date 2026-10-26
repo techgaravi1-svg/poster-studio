@@ -32,6 +32,8 @@ export type DemoOrder = {
   discount: number;
   total: number;
   paymentStatus: 'pending' | 'paid';
+  paymentId?: string;
+  paymentMethod?: string;
   fulfillmentStatus: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   createdAt: string;
 }

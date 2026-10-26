@@ -36,6 +36,9 @@ const CreateOrderSchema = z.object({
   items: z.array(OrderItemInputSchema).min(1, 'Cart cannot be empty'),
   couponCode: z.string().optional(),
   notes: z.string().max(500).optional(),
+  paymentId: z.string().optional(),
+  paymentStatus: z.enum(['PENDING', 'PAID', 'FAILED']).optional(),
+  paymentMethod: z.string().optional(),
 });
 
 // Helper to generate human-readable order number e.g. DNG-8492
@@ -62,7 +65,7 @@ router.post(
         });
       }
 
-      const { customerName, customerEmail, customerPhone, shippingAddress, items, couponCode, notes } = parsed.data;
+      const { customerName, customerEmail, customerPhone, shippingAddress, items, couponCode, notes, paymentId, paymentStatus, paymentMethod } = parsed.data;
 
       // Calculate subtotal securely on server
       const calculatedSubtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -128,9 +131,10 @@ router.post(
             shippingFee,
             discount: calculatedDiscount,
             total: finalTotal,
-            paymentStatus: 'PENDING',
-            paymentMethod: 'razorpay',
-            fulfillmentStatus: 'PENDING',
+            paymentStatus: paymentStatus || (paymentId ? 'PAID' : 'PENDING'),
+            paymentId: paymentId || undefined,
+            paymentMethod: paymentMethod || 'razorpay',
+            fulfillmentStatus: (paymentStatus === 'PAID' || paymentId) ? 'PROCESSING' : 'PENDING',
             notes,
             items: {
               create: items.map((item) => ({

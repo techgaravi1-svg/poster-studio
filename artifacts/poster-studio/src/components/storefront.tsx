@@ -232,6 +232,19 @@ function MenuDrawer({
         aria-modal="true"
         onMouseDown={(e) => e.stopPropagation()}
       >
+        <div className="menu-drawer-top">
+          <Link href="/" onClick={onClose} className="drawer-logo-link" aria-label="DUNGEONS Home">
+            <img src="/images/header-logo.png" alt="DUNGEONS" className="menu-logo-img" />
+          </Link>
+          <button
+            type="button"
+            onClick={onClose}
+            className="header-icon-btn"
+            aria-label="Close navigation menu"
+          >
+            <X size={22} />
+          </button>
+        </div>
         <div className="menu-drawer-content">
           <div className="menu-section">
             <div className="menu-section-heading">SHOP</div>
@@ -430,7 +443,7 @@ export function Header() {
             {!menuOpen && (
               <Link href="/" className="header-brand-logo" aria-label="DUNGEONS Home">
                 <img
-                  src="/assets/dungeons-castle-nav.png"
+                  src="/images/header-logo.png"
                   alt="DUNGEONS"
                   className="postgenz-logo-img dungeons-navbar-logo"
                 />
@@ -700,7 +713,7 @@ export function Footer() {
           <div className="footer-block footer-brand-block">
             <Link href="/" className="footer-brand-link" aria-label="DUNGEONS Home">
               <img
-                src="/assets/dungeons-castle-white.png"
+                src="/images/footer-logo.png"
                 alt="DUNGEONS"
                 className="footer-dungeons-logo"
               />
