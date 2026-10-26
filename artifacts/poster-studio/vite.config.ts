@@ -19,22 +19,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    {
-      name: 'api-express-middleware',
-      configureServer(server) {
-        server.middlewares.use(async (req, res, next) => {
-          if (req.url && req.url.startsWith('/api')) {
-            try {
-              const { default: app } = await import('../api-server/src/app');
-              return app(req, res, next);
-            } catch (err) {
-              console.error('[Vite Dev API Server Error]:', err);
-            }
-          }
-          next();
-        });
-      },
-    },
+    runtimeErrorOverlay(),
     ...(process.env.NODE_ENV !== 'production' &&
     process.env.REPL_ID !== undefined
       ? [
