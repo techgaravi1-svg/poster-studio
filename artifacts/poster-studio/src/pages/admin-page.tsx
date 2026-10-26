@@ -815,46 +815,27 @@ export function AdminDashboardPage() {
       });
 
       if (!res.ok) {
-        if (res.status === 405 || res.status === 503) {
-          // Gracefully save locally so poster artwork and pricing are preserved
-          saveSingleProduct({
-            id: payload.id,
-            slug: payload.slug,
-            title: payload.title,
-            description: payload.description || '',
-            category: payload.category.toUpperCase(),
-            collection: payload.category.toLowerCase(),
-            images: payload.images,
-            price: payload.price,
-            compareAtPrice: payload.compareAtPrice || (payload.price * 2 - 1),
-            sizePrices: payload.sizePrices,
-            sizeComparePrices: payload.sizeComparePrices,
-            stock: payload.stock,
-            orientation: (payload.orientation as any) || 'portrait',
-            tags: payload.tags,
-            bestseller: payload.isBestSeller,
-            newArrival: payload.isNewRelease,
-          });
-
-          if (editingProduct) {
-            setProducts((prev) => prev.map((p) => (p.id === editingProduct.id ? payload : p)));
-            showToast(`Poster "${payload.title}" updated! (Local cache saved, syncing...)`);
-          } else {
-            setProducts((prev) => [payload, ...prev]);
-            showToast(`New poster "${payload.title}" added to catalog!`);
-          }
-
-          setIsProductModalOpen(false);
-          setEditingProduct(null);
-          setProductModalError(null);
-          setProductFormData(defaultProductFormData);
-          return;
+        let errData: any = {};
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          errData = await res.json().catch(() => ({}));
         }
 
-        const errData = await res.json().catch(() => ({}));
+        const statusMessages: Record<number, string> = {
+          405: 'The API endpoint is not available. The serverless function may not be deployed correctly. Please contact support.',
+          503: 'The database server is temporarily unavailable. Please wait a moment and try again.',
+          401: 'Admin authentication failed. Please sign in again.',
+          403: 'Admin access denied. Your session may have expired.',
+          400: errData.error || 'Invalid poster data. Please check all required fields.',
+        };
+
+        const userMessage = statusMessages[res.status] ||
+          errData.error ||
+          `Server returned HTTP ${res.status}. The poster was NOT saved to the database.`;
+
         setProductModalError({
-          title: `Database Error ${res.status}`,
-          message: errData.error || 'Failed to save poster to database.',
+          title: `Save Failed — HTTP ${res.status}`,
+          message: userMessage,
           statusCode: res.status,
         });
         setSavingProduct(false);

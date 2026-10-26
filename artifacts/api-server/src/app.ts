@@ -59,6 +59,17 @@ app.use(sanitizeInputs);
 // 7. Global rate limiting
 app.use('/api', rateLimiter({ windowMs: 60 * 1000, maxRequests: 120 }));
 
+// 7b. Normalize URL if Vercel serverless rewrite collapsed req.url to /api
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  if (req.url === '/api' || req.url === '/api/' || req.url === '/' || req.url === '') {
+    const rawUrl = req.originalUrl || (req.headers['x-matched-path'] as string) || (req.headers['x-now-route-matches'] as string);
+    if (typeof rawUrl === 'string' && rawUrl.startsWith('/api/') && rawUrl !== req.url) {
+      req.url = rawUrl;
+    }
+  }
+  next();
+});
+
 // 8. Register API Router (support both /api and direct paths for Vercel/proxies)
 app.use('/api', router);
 app.use('/', router);
