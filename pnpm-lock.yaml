@@ -155,9 +155,30 @@ importers:
 
   .:
     dependencies:
+      '@prisma/client':
+        specifier: 6.4.1
+        version: 6.4.1(prisma@6.4.1(typescript@5.9.3))(typescript@5.9.3)
       '@replit/connectors-sdk':
         specifier: ^0.4.3
         version: 0.4.3
+      cors:
+        specifier: ^2.8.5
+        version: 2.8.6
+      dotenv:
+        specifier: ^18.0.8
+        version: 18.0.8
+      express:
+        specifier: ^5.2.1
+        version: 5.2.1
+      pino:
+        specifier: ^9.14.0
+        version: 9.14.0
+      pino-http:
+        specifier: ^10.5.0
+        version: 10.5.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
     devDependencies:
       '@esbuild/win32-x64':
         specifier: ^0.28.2
