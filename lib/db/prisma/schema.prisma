@@ -9,7 +9,8 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
 // ------------------------------------------------------------------------------
@@ -103,6 +104,8 @@ model Product {
   compareAtPrice Float?
   images         String[]
   tags           String[]    @default([])
+  sizePrices     Json?
+  sizeComparePrices Json?
   isBestSeller   Boolean     @default(false)
   isNewRelease   Boolean     @default(false)
   isStaffPick    Boolean     @default(false)

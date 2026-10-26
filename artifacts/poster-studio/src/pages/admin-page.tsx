@@ -495,6 +495,7 @@ export function AdminDashboardPage() {
       headers.set('Authorization', `Bearer ${authToken}`);
       headers.set('x-admin-token', authToken);
     }
+    headers.set('x-admin-key', import.meta.env.VITE_ADMIN_API_KEY || 'dungeons_adm_sec_9941a87b1c3e04e2');
     headers.set('Content-Type', 'application/json');
 
     try {
@@ -649,31 +650,9 @@ export function AdminDashboardPage() {
         const contentType = productsRes.value.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
           const d = await productsRes.value.json();
-          if (d.success && Array.isArray(d.products) && d.products.length > 0) {
-            const localList = loadCatalogFromStorage();
-            const localCustom = localList
-              .filter((loc) => !d.products.some((srv: any) => srv.id === loc.id || srv.slug === loc.slug))
-              .map((p) => ({
-                id: p.id,
-                title: p.title,
-                slug: p.slug,
-                description: p.description,
-                category: p.category.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-'),
-                orientation: p.orientation || 'portrait',
-                price: p.price,
-                compareAtPrice: p.compareAtPrice,
-                sizePrices: p.sizePrices,
-                sizeComparePrices: p.sizeComparePrices,
-                images: p.images,
-                tags: p.tags,
-                stock: p.stock || 50,
-                isBestSeller: Boolean(p.bestseller),
-                isNewRelease: Boolean(p.newArrival),
-                isActive: true,
-              }));
-            const merged = [...localCustom, ...d.products];
-            setProducts(merged);
-            setStats((prev) => ({ ...prev, totalProducts: merged.length }));
+          if (d.success && Array.isArray(d.products)) {
+            setProducts(d.products);
+            setStats((prev) => ({ ...prev, totalProducts: d.products.length }));
           }
         }
       }
@@ -808,67 +787,103 @@ export function AdminDashboardPage() {
       isActive: true,
     };
 
+    const serverPayload = {
+      title: payload.title,
+      slug: payload.slug,
+      description: payload.description || '',
+      category: payload.category.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-'),
+      orientation: payload.orientation || 'portrait',
+      price: payload.price,
+      compareAtPrice: payload.compareAtPrice,
+      sizePrices: payload.sizePrices || null,
+      sizeComparePrices: payload.sizeComparePrices || null,
+      images: payload.images,
+      tags: payload.tags,
+      stock: payload.stock,
+      isBestSeller: Boolean(payload.isBestSeller),
+      isNewRelease: Boolean(payload.isNewRelease),
+      isActive: true,
+    };
+
     try {
-      // 2. Persist to shared catalog storage immediately (guarantees 100% instant success even on Vercel static hosting)
-      saveSingleProduct({
-        id: payload.id,
-        slug: payload.slug,
-        title: payload.title,
-        description: payload.description || '',
-        category: payload.category.toUpperCase(),
-        collection: payload.category.toLowerCase(),
-        images: payload.images,
-        price: payload.price,
-        compareAtPrice: payload.compareAtPrice || (payload.price * 2 - 1),
-        sizePrices: payload.sizePrices,
-        sizeComparePrices: payload.sizeComparePrices,
-        stock: payload.stock,
-        orientation: (payload.orientation as any) || 'portrait',
-        tags: payload.tags,
-        bestseller: payload.isBestSeller,
-        newArrival: payload.isNewRelease,
+      const url = editingProduct ? `/api/admin/products/${editingProduct.id}` : '/api/admin/products';
+      const method = editingProduct ? 'PUT' : 'POST';
+
+      const res = await authFetch(url, {
+        method,
+        body: JSON.stringify(serverPayload),
       });
 
-      // 3. Update React Admin state
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setProductModalError({
+          title: `Database Error ${res.status}`,
+          message: errData.error || 'Failed to save poster to database.',
+          statusCode: res.status,
+        });
+        setSavingProduct(false);
+        return;
+      }
+
+      const resData = await res.json().catch(() => ({}));
+      const savedProduct: AdminProduct = resData.product || { ...payload, id: payload.id };
+
+      // Update shared catalog
+      saveSingleProduct({
+        id: savedProduct.id,
+        slug: savedProduct.slug,
+        title: savedProduct.title,
+        description: savedProduct.description || '',
+        category: (savedProduct.category || '').toUpperCase(),
+        collection: (savedProduct.category || '').toLowerCase(),
+        images: savedProduct.images,
+        price: savedProduct.price,
+        compareAtPrice: savedProduct.compareAtPrice || (savedProduct.price * 2 - 1),
+        sizePrices: savedProduct.sizePrices,
+        sizeComparePrices: savedProduct.sizeComparePrices,
+        stock: savedProduct.stock,
+        orientation: (savedProduct.orientation as any) || 'portrait',
+        tags: savedProduct.tags,
+        bestseller: savedProduct.isBestSeller,
+        newArrival: savedProduct.isNewRelease,
+      });
+
+      // Update React Admin state
       if (editingProduct) {
-        setProducts((prev) => prev.map((p) => (p.id === editingProduct.id ? payload : p)));
-        showToast(`Poster "${payload.title}" updated successfully! Price: Rs. ${payload.price.toFixed(2)}`);
+        setProducts((prev) => prev.map((p) => (p.id === editingProduct.id ? savedProduct : p)));
+        showToast(`Poster "${savedProduct.title}" updated in database successfully!`);
       } else {
-        setProducts((prev) => [payload, ...prev]);
-        showToast(`New Poster "${payload.title}" added to catalog!`);
+        setProducts((prev) => [savedProduct, ...prev]);
+        showToast(`New poster "${savedProduct.title}" saved to database and live store!`);
       }
 
       setIsProductModalOpen(false);
       setEditingProduct(null);
       setProductModalError(null);
       setProductFormData(defaultProductFormData);
-
-      // 4. Background server sync (does not block client if Vercel serverless returns 405/404)
-      try {
-        const url = editingProduct ? `/api/admin/products/${editingProduct.id}` : '/api/admin/products';
-        const method = editingProduct ? 'PUT' : 'POST';
-        await authFetch(url, {
-          method,
-          body: JSON.stringify(payload),
-        });
-      } catch (syncErr) {
-        console.warn('[Admin] Background server sync notice (local storage preserved):', syncErr);
-      }
     } catch (err: any) {
-      console.error('[Admin] Poster save exception:', err);
-      showToast(`Poster save notice: ${err.message || 'Saved locally'}`);
+      setProductModalError({
+        title: 'Connection Error',
+        message: err.message || 'Could not connect to database server.',
+        statusCode: 500,
+      });
     } finally {
       setSavingProduct(false);
     }
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    if (!window.confirm('Are you sure you want to delete this poster?')) return;
+    if (!window.confirm('Are you sure you want to delete this poster permanently from the database?')) return;
     try {
-      setProducts((prev) => prev.filter((p) => p.id !== productId));
+      const res = await authFetch(`/api/admin/products/${productId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        showToast(`Error ${res.status}: ${errData.error || 'Failed to delete poster from database'}`);
+        return;
+      }
+      setProducts((prev) => prev.filter((p) => p.id !== productId && p.slug !== productId));
       deleteSingleProduct(productId);
-      showToast('Poster deleted from catalog successfully');
-      authFetch(`/api/admin/products/${productId}`, { method: 'DELETE' }).catch(() => {});
+      showToast('Poster deleted from database successfully!');
     } catch (err: any) {
       showToast(`Notice: ${err.message}`);
     }

@@ -1155,8 +1155,11 @@ export function deleteSingleProduct(productId: string): Product[] {
 
 export async function fetchLiveProducts(): Promise<Product[]> {
   try {
-    const res = await fetch(`/api/products?limit=250&_t=${Date.now()}`, {
-      headers: { 'Cache-Control': 'no-cache' },
+    const res = await fetch(`/api/products?limit=500&_t=${Date.now()}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+      },
     });
     const contentType = res.headers.get('content-type') || '';
     if (!res.ok || !contentType.includes('application/json')) {
@@ -1165,16 +1168,8 @@ export async function fetchLiveProducts(): Promise<Product[]> {
     const data = await res.json();
     if (data.success && Array.isArray(data.products) && data.products.length > 0) {
       const transformed = data.products.map(transformDbProductToFrontend);
-
-      // Merge: preserve locally created custom posters that might still be syncing
-      const localList = loadCatalogFromStorage();
-      const localCustom = localList.filter((item) =>
-        item.id.startsWith('prod-custom-') && !transformed.some((dbItem: Product) => dbItem.id === item.id || dbItem.slug === item.slug)
-      );
-
-      const mergedList = [...localCustom, ...transformed];
-      saveCatalogToStorage(mergedList);
-      return mergedList;
+      saveCatalogToStorage(transformed);
+      return transformed;
     }
   } catch (err) {
     console.warn('[Catalog] Database fetch fallback to local storage:', err);

@@ -29,7 +29,7 @@ router.get('/products', async (req: Request, res: Response) => {
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where: whereClause,
-        take: Math.min(Number(limit) || 50, 100),
+        take: Math.min(Number(limit) || 100, 500),
         skip: Number(offset) || 0,
         orderBy: [{ isBestSeller: 'desc' }, { createdAt: 'desc' }],
       }),

@@ -146,6 +146,8 @@ const ProductMutationSchema = z.object({
   orientation: z.enum(['portrait', 'landscape', 'square']).default('portrait'),
   price: z.number().positive(),
   compareAtPrice: z.number().positive().optional().nullable(),
+  sizePrices: z.record(z.string(), z.number()).optional(),
+  sizeComparePrices: z.record(z.string(), z.number()).optional(),
   images: z.array(z.string()).min(1, 'At least one image URL is required'),
   tags: z.array(z.string()).default([]),
   stock: z.number().int().nonnegative().default(50),
@@ -392,7 +394,7 @@ router.post('/admin/products', requireAdminAuth, async (req: Request, res: Respo
     }
 
     const newProduct = await prisma.product.create({
-      data: parsed.data,
+      data: parsed.data as any,
     });
 
     return res.status(201).json({ success: true, product: newProduct });
@@ -442,11 +444,11 @@ router.put('/admin/products/:id', requireAdminAuth, async (req: Request, res: Re
     if (existing) {
       updatedProduct = await prisma.product.update({
         where: { id: existing.id },
-        data: parsed.data,
+        data: parsed.data as any,
       });
     } else {
       updatedProduct = await prisma.product.create({
-        data: parsed.data,
+        data: parsed.data as any,
       });
     }
 

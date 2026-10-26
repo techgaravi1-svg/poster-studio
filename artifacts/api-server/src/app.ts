@@ -59,8 +59,9 @@ app.use(sanitizeInputs);
 // 7. Global rate limiting
 app.use('/api', rateLimiter({ windowMs: 60 * 1000, maxRequests: 120 }));
 
-// 8. Register API Router
+// 8. Register API Router (support both /api and direct paths for Vercel/proxies)
 app.use('/api', router);
+app.use('/', router);
 
 // 9. 404 Catch-All Handler
 app.use((req: Request, res: Response) => {
