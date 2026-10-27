@@ -971,7 +971,7 @@ export function loadCatalogFromStorage(): Product[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed.map((item: any, idx: number) => {
           const fallback = defaultCatalogProducts.find(
             (d) => d.id === item.id || (item.slug && d.slug === item.slug)
@@ -1166,7 +1166,9 @@ export async function fetchLiveProducts(): Promise<Product[]> {
       return loadCatalogFromStorage();
     }
     const data = await res.json();
-    if (data.success && Array.isArray(data.products) && data.products.length > 0) {
+    // A successful empty response is meaningful: the database is the source
+    // of truth, including when the admin has removed the last active product.
+    if (data.success && Array.isArray(data.products)) {
       const transformed = data.products.map(transformDbProductToFrontend);
       saveCatalogToStorage(transformed);
       return transformed;
@@ -1193,7 +1195,7 @@ export function useLiveProducts(): Product[] {
 
     // Try fetching live from Prisma PostgreSQL
     fetchLiveProducts().then((dbList) => {
-      if (isMounted && dbList && dbList.length > 0) {
+      if (isMounted) {
         setList([...dbList]);
       }
     });

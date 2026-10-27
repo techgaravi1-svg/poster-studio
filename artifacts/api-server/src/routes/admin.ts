@@ -13,9 +13,9 @@ interface FailedAttemptRecord {
 const loginAttemptStore = new Map<string, FailedAttemptRecord>();
 
 // Configurable credentials
-let currentAdminPassword = process.env.ADMIN_PASSWORD || 'Admin@Poster2026!';
+let currentAdminPassword = process.env.ADMIN_PASSWORD || '';
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@posterstudio.com').toLowerCase();
-const MASTER_KEY = process.env.ADMIN_API_KEY || 'dungeons_adm_sec_9941a87b1c3e04e2';
+const MASTER_KEY = process.env.ADMIN_API_KEY || '';
 
 // Clean up stale login attempts every 15 minutes
 setInterval(() => {
@@ -51,7 +51,7 @@ router.post('/admin/auth/login', rateLimiter({ windowMs: 60 * 1000, maxRequests:
     const { email, password, adminKey } = req.body;
 
     // Direct Master Key login
-    if (adminKey && adminKey === MASTER_KEY) {
+    if (MASTER_KEY && adminKey && adminKey === MASTER_KEY) {
       loginAttemptStore.delete(ip);
       const token = createAdminToken('master@dungeons.com', 'ROOT_ADMIN', 'Master Admin');
       return res.json({
@@ -67,7 +67,7 @@ router.post('/admin/auth/login', rateLimiter({ windowMs: 60 * 1000, maxRequests:
 
     // Email + Password login
     const normalizedEmail = (email || '').trim().toLowerCase();
-    const isValidUser = normalizedEmail === ADMIN_EMAIL && password === currentAdminPassword;
+    const isValidUser = Boolean(currentAdminPassword) && normalizedEmail === ADMIN_EMAIL && password === currentAdminPassword;
 
     if (!isValidUser) {
       attemptRecord.attempts += 1;
@@ -430,27 +430,20 @@ router.put('/admin/products/:id', requireAdminAuth, async (req: Request, res: Re
       });
     }
 
+    // Updates must target the existing database record. Creating here when an
+    // id is stale can silently turn an edit into a duplicate product.
     const existing = await prisma.product.findFirst({
-      where: {
-        OR: [
-          { id },
-          { slug: id },
-          ...(parsed.data.slug ? [{ slug: parsed.data.slug }] : []),
-        ],
-      },
+      where: { OR: [{ id }, { slug: id }] },
+      select: { id: true },
     });
-
-    let updatedProduct;
-    if (existing) {
-      updatedProduct = await prisma.product.update({
-        where: { id: existing.id },
-        data: parsed.data as any,
-      });
-    } else {
-      updatedProduct = await prisma.product.create({
-        data: parsed.data as any,
-      });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Product not found' });
     }
+
+    const updatedProduct = await prisma.product.update({
+      where: { id: existing.id },
+      data: parsed.data as any,
+    });
 
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     return res.json({ success: true, product: updatedProduct });

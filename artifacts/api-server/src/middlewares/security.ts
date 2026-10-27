@@ -121,8 +121,8 @@ export function sanitizeInputs(req: Request, _res: Response, next: NextFunction)
 
 import crypto from 'node:crypto';
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || 'dungeons_super_secret_master_key_2026_x89a';
-const MASTER_API_KEY = process.env.ADMIN_API_KEY || 'dungeons_adm_sec_9941a87b1c3e04e2';
+const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || '';
+const MASTER_API_KEY = process.env.ADMIN_API_KEY || '';
 
 export interface AdminSessionPayload {
   email: string;
@@ -136,6 +136,7 @@ export interface AdminSessionPayload {
  * Creates a tamper-proof signed admin token valid for 24 hours
  */
 export function createAdminToken(email: string, role = 'SUPER_ADMIN', name = 'Super Admin'): string {
+  if (!ADMIN_SECRET) throw new Error('ADMIN_SECRET_KEY is not configured');
   const payload: AdminSessionPayload = {
     email,
     role,
@@ -153,6 +154,7 @@ export function createAdminToken(email: string, role = 'SUPER_ADMIN', name = 'Su
  */
 export function verifyAdminToken(token: string): AdminSessionPayload | null {
   try {
+    if (!ADMIN_SECRET) return null;
     const parts = token.split('.');
     if (parts.length !== 3 || parts[0] !== 'dg_adm') return null;
 
@@ -191,7 +193,7 @@ export function requireAdminAuth(req: Request, res: Response, next: NextFunction
 
   // 1. Check Bearer / Token Authentication
   if (token) {
-    if (token === MASTER_API_KEY || token.startsWith('dungeons_adm_live_')) {
+    if ((MASTER_API_KEY && token === MASTER_API_KEY)) {
       (req as any).adminUser = { email: 'admin@posterstudio.com', role: 'SUPER_ADMIN', name: 'Super Admin' };
       return next();
     }
@@ -203,7 +205,7 @@ export function requireAdminAuth(req: Request, res: Response, next: NextFunction
   }
 
   // 2. Check Master API Key Fallback
-  if (adminKeyHeader && (adminKeyHeader === MASTER_API_KEY || adminKeyHeader.startsWith('dungeons_adm_sec_'))) {
+  if (MASTER_API_KEY && adminKeyHeader === MASTER_API_KEY) {
     (req as any).adminUser = { email: 'master@dungeons.com', role: 'ROOT_ADMIN', name: 'Master Admin' };
     return next();
   }

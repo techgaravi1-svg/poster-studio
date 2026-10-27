@@ -32766,9 +32766,10 @@ function sanitizeInputs(req, _res, next) {
   }
   next();
 }
-var ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || "dungeons_super_secret_master_key_2026_x89a";
-var MASTER_API_KEY = process.env.ADMIN_API_KEY || "dungeons_adm_sec_9941a87b1c3e04e2";
+var ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || "";
+var MASTER_API_KEY = process.env.ADMIN_API_KEY || "";
 function createAdminToken(email, role = "SUPER_ADMIN", name = "Super Admin") {
+  if (!ADMIN_SECRET) throw new Error("ADMIN_SECRET_KEY is not configured");
   const payload = {
     email,
     role,
@@ -32783,6 +32784,7 @@ function createAdminToken(email, role = "SUPER_ADMIN", name = "Super Admin") {
 }
 function verifyAdminToken(token) {
   try {
+    if (!ADMIN_SECRET) return null;
     const parts = token.split(".");
     if (parts.length !== 3 || parts[0] !== "dg_adm") return null;
     const [, payloadB64, signature] = parts;
@@ -32808,7 +32810,7 @@ function requireAdminAuth(req, res, next) {
     token = authHeader.substring(7).trim();
   }
   if (token) {
-    if (token === MASTER_API_KEY || token.startsWith("dungeons_adm_live_")) {
+    if (MASTER_API_KEY && token === MASTER_API_KEY) {
       req.adminUser = { email: "admin@posterstudio.com", role: "SUPER_ADMIN", name: "Super Admin" };
       return next();
     }
@@ -32818,7 +32820,7 @@ function requireAdminAuth(req, res, next) {
       return next();
     }
   }
-  if (adminKeyHeader && (adminKeyHeader === MASTER_API_KEY || adminKeyHeader.startsWith("dungeons_adm_sec_"))) {
+  if (MASTER_API_KEY && adminKeyHeader === MASTER_API_KEY) {
     req.adminUser = { email: "master@dungeons.com", role: "ROOT_ADMIN", name: "Master Admin" };
     return next();
   }
@@ -33371,9 +33373,9 @@ var products_default = router6;
 var import_express7 = __toESM(require_express2(), 1);
 var router7 = (0, import_express7.Router)();
 var loginAttemptStore = /* @__PURE__ */ new Map();
-var currentAdminPassword = process.env.ADMIN_PASSWORD || "Admin@Poster2026!";
+var currentAdminPassword = process.env.ADMIN_PASSWORD || "";
 var ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "admin@posterstudio.com").toLowerCase();
-var MASTER_KEY = process.env.ADMIN_API_KEY || "dungeons_adm_sec_9941a87b1c3e04e2";
+var MASTER_KEY = process.env.ADMIN_API_KEY || "";
 setInterval(() => {
   const now = Date.now();
   for (const [key, record] of loginAttemptStore.entries()) {
@@ -33394,7 +33396,7 @@ router7.post("/admin/auth/login", rateLimiter({ windowMs: 60 * 1e3, maxRequests:
       });
     }
     const { email, password, adminKey } = req.body;
-    if (adminKey && adminKey === MASTER_KEY) {
+    if (MASTER_KEY && adminKey && adminKey === MASTER_KEY) {
       loginAttemptStore.delete(ip);
       const token2 = createAdminToken("master@dungeons.com", "ROOT_ADMIN", "Master Admin");
       return res.json({
@@ -33408,7 +33410,7 @@ router7.post("/admin/auth/login", rateLimiter({ windowMs: 60 * 1e3, maxRequests:
       });
     }
     const normalizedEmail = (email || "").trim().toLowerCase();
-    const isValidUser = normalizedEmail === ADMIN_EMAIL && password === currentAdminPassword;
+    const isValidUser = Boolean(currentAdminPassword) && normalizedEmail === ADMIN_EMAIL && password === currentAdminPassword;
     if (!isValidUser) {
       attemptRecord.attempts += 1;
       if (attemptRecord.attempts >= 5) {
@@ -33704,25 +33706,16 @@ router7.put("/admin/products/:id", requireAdminAuth, async (req, res) => {
       });
     }
     const existing = await prisma.product.findFirst({
-      where: {
-        OR: [
-          { id },
-          { slug: id },
-          ...parsed.data.slug ? [{ slug: parsed.data.slug }] : []
-        ]
-      }
+      where: { OR: [{ id }, { slug: id }] },
+      select: { id: true }
     });
-    let updatedProduct;
-    if (existing) {
-      updatedProduct = await prisma.product.update({
-        where: { id: existing.id },
-        data: parsed.data
-      });
-    } else {
-      updatedProduct = await prisma.product.create({
-        data: parsed.data
-      });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "Product not found" });
     }
+    const updatedProduct = await prisma.product.update({
+      where: { id: existing.id },
+      data: parsed.data
+    });
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     return res.json({ success: true, product: updatedProduct });
   } catch (error) {
