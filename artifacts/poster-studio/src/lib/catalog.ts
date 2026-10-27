@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export type PosterSize = 'A5' | 'A4' | 'A3' | '50×70' | '70×100';
+export type PosterSize = 'A5' | 'A4' | 'A3';
 export type Orientation = 'portrait' | 'landscape' | 'square';
 
 export type Product = {
@@ -33,7 +33,7 @@ export type Product = {
 
 const defaultFeatures = [
   { title: 'Premium Matte Finish', desc: 'Sharp, vibrant, and stunning under any light, perfect for showcasing every detail.' },
-  { title: '350 GSM Paper', desc: 'Extra-thick, durable, and premium-grade for a high-quality, luxury feel.' },
+  { title: 'Archival Matte Paper', desc: 'Extra-thick, durable, and premium-grade for a high-quality, luxury feel.' },
   { title: 'Vivid Colors', desc: 'High-quality printing ensures rich tones, crisp details, and long-lasting vibrancy.' },
   { title: 'Made to Last', desc: 'Designed for luxury, style, and durability so your poster stays looking new for years.' },
   { title: 'Ready for Framing', desc: 'Sized to fit standard frames perfectly, giving you a clean, professional display.' },
@@ -54,7 +54,7 @@ export const defaultCatalogProducts: Product[] = [
     id: 'prod-asta-black-clover',
     slug: 'asta-black-clover-anime-poster',
     title: 'ASTA POSTER | BLACK CLOVER ANIME POSTER',
-    description: 'Fierce, vibrant yellow background Asta artwork from Black Clover, printed on 350 GSM premium archival matte paper.',
+    description: 'Fierce, vibrant yellow background Asta artwork from Black Clover, printed on premium archival matte paper.',
     category: 'ANIME',
     collection: 'anime',
     images: ['/assets/posters/poster-01.jpg'],
@@ -126,7 +126,7 @@ export const defaultCatalogProducts: Product[] = [
     id: 'prod-miles-morales',
     slug: 'miles-morales-leap-of-faith-poster',
     title: 'MILES MORALES LEAP OF FAITH POSTER | SPIDER-VERSE',
-    description: 'Breathtaking upside-down skyline dive from Spider-Man: Into the Spider-Verse on 350 GSM matte finish archival paper.',
+    description: 'Breathtaking upside-down skyline dive from Spider-Man: Into the Spider-Verse on matte finish archival paper.',
     category: 'MARVEL & DC',
     collection: 'marvel-dc',
     images: ['/assets/posters/poster-04.jpg'],
@@ -654,7 +654,7 @@ export const defaultCatalogProducts: Product[] = [
     id: 'prod-pain-naruto',
     slug: 'pain-akatsuki-naruto-wanted-poster',
     title: 'PAIN AKATSUKI WANTED POSTER | NARUTO SHIPPUDEN',
-    description: 'Devastating Rinnegan leader Pain (Nagato) of Akatsuki wanted dead or alive poster on 350 GSM archival paper.',
+    description: 'Devastating Rinnegan leader Pain (Nagato) of Akatsuki wanted dead or alive poster on archival matte paper.',
     category: 'ANIME',
     collection: 'anime',
     images: ['/assets/posters/poster-26.jpg'],
@@ -794,7 +794,7 @@ export const comingSoonCategories = [
 ];
 
 export const storeCategories: StoreCategory[] = [
-  { id: 'cat-posters', name: 'Posters', slug: 'posters', available: true, image: '/assets/posters/poster-01.jpg', description: 'Museum-grade archival 350 GSM matte posters.' },
+  { id: 'cat-posters', name: 'Posters', slug: 'posters', available: true, image: '/assets/posters/poster-01.jpg', description: 'Museum-grade archival matte posters.' },
   ...comingSoonCategories.map((c) => ({ ...c, available: false })),
 ];
 
@@ -814,7 +814,7 @@ export const posterCategories = [
 ];
 
 export const collections = [
-  { slug: 'all', title: 'ALL POSTERS', description: 'Complete collection of 350 GSM premium archival matte posters.', treatment: 'art-aurora' },
+  { slug: 'all', title: 'ALL POSTERS', description: 'Complete collection of premium archival matte posters.', treatment: 'art-aurora' },
   { slug: 'marvel-dc', title: 'MARVEL & DC', description: 'Cinematic superheroes, comic art, and collector editions.', treatment: 'art-signal' },
   { slug: 'anime', title: 'ANIME', description: 'Legendary anime heroes, wanted bounty posters, and epic fights.', treatment: 'art-signal' },
   { slug: 'diva', title: 'DIVA', description: 'Aesthetic icons, pop idols, and trendsetting style portraits.', treatment: 'art-aurora' },
@@ -886,7 +886,7 @@ export function transformDbProductToFrontend(p: any): Product {
     price: sizePrices.A5 || basePrice,
     compareAtPrice: sizeComparePrices.A5 || baseCompare,
     discount,
-    sizes: ['A5', 'A4', 'A3', '50×70', '70×100'],
+    sizes: ['A5', 'A4', 'A3'],
     sizePrices,
     sizeComparePrices,
     orientation: (p.orientation as Orientation) || 'portrait',
@@ -896,7 +896,7 @@ export function transformDbProductToFrontend(p: any): Product {
     newArrival: Boolean(p.isNewRelease),
     tags: Array.isArray(p.tags) ? p.tags : [],
     rating: 4.9,
-    subtitle: `${(p.category || 'PREMIUM').toUpperCase()} 350 GSM ARCHIVAL POSTER`,
+    subtitle: `${(p.category || 'PREMIUM').toUpperCase()} ARCHIVAL POSTER`,
     features: defaultFeatures,
     notes: defaultNotes,
     shipping: defaultShipping,

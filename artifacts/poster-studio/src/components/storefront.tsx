@@ -199,7 +199,6 @@ function CartDrawer({ onClose }: { onClose: () => void }) {
                 <span>Subtotal</span>
                 <strong>{formatPrice(totals.subtotal)}</strong>
               </div>
-              <p className="shipping-notice-free">🎉 Free shipping on prepaid orders!</p>
               <Link className="button postgenz-btn button-wide" href="/checkout" onClick={onClose}>
                 Proceed to Checkout <ArrowRight size={14} />
               </Link>

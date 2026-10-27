@@ -2931,7 +2931,7 @@ export function AdminDashboardPage() {
               </div>
               <div>
                 <span style={{ color: '#64748b' }}>Print Size:</span>
-                <div style={{ color: '#38bdf8', fontWeight: 800 }}>{selectedCustomArtwork.size} (350 GSM Matte)</div>
+                <div style={{ color: '#38bdf8', fontWeight: 800 }}>{selectedCustomArtwork.size} (Archival Matte)</div>
               </div>
               <div>
                 <span style={{ color: '#64748b' }}>Custom Type:</span>

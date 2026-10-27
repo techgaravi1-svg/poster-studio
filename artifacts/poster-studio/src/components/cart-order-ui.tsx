@@ -37,18 +37,6 @@ export const sizeInfoMap: Record<string, { name: string; dims: string; badge?: s
     badge: 'Large View 🔥',
     recommendation: 'Maximum visual impact, perfect for bedroom & living space',
   },
-  '50×70': {
-    name: '50 × 70 cm',
-    dims: '50.0 × 70.0 cm (19.7 × 27.6 in)',
-    badge: 'Gallery Size',
-    recommendation: 'Oversized statement art for wide accent walls',
-  },
-  '70×100': {
-    name: '70 × 100 cm',
-    dims: '70.0 × 100.0 cm (27.6 × 39.4 in)',
-    badge: 'Extra Large',
-    recommendation: 'Grand collector scale poster',
-  },
 };
 
 export const availableVouchers = [
@@ -132,9 +120,7 @@ export function MyntraItemCard({
     year: 'numeric',
   });
 
-  const availableSizes: PosterSize[] = matchProduct?.sizes && matchProduct.sizes.length > 0
-    ? matchProduct.sizes
-    : ['A5', 'A4', 'A3'];
+  const availableSizes: PosterSize[] = ['A5', 'A4', 'A3'];
 
   const maxStock = item.customUpload
     ? 999
@@ -150,10 +136,11 @@ export function MyntraItemCard({
   }, [item.key, item.quantity, maxStock, isOrderMode, item.customUpload]);
 
   const [isSizeSheetOpen, setIsSizeSheetOpen] = useState(false);
-  const [selectedTempSize, setSelectedTempSize] = useState<PosterSize>(item.size);
+  const normalizedSize: PosterSize = item.size === 'A3' || item.size === 'A4' || item.size === 'A5' ? item.size : 'A5';
+  const [selectedTempSize, setSelectedTempSize] = useState<PosterSize>(normalizedSize);
 
   useEffect(() => {
-    setSelectedTempSize(item.size);
+    setSelectedTempSize(item.size === 'A3' || item.size === 'A4' || item.size === 'A5' ? item.size : 'A5');
   }, [item.size]);
 
   return (

@@ -55,7 +55,7 @@ import { paymentService } from '@/services/payment';
 function PaymentTrustBadges() {
   return (
     <div className="payment-trust-section">
-      <div className="payment-trust-label">Secure Checkout With</div>
+      <div className="payment-trust-label">100% Safe Payments</div>
       <div className="payment-badges-row">
         <span className="badge-payment upi-badge">UPI</span>
         <span className="badge-payment gpay-badge">G Pay</span>
@@ -98,7 +98,7 @@ function SizeChartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           </div>
 
           <p className="text-xs text-neutral-300 text-center leading-relaxed px-2">
-            All DUNGEONS posters are archival printed on <strong>350 GSM luxury matte stock</strong> with vivid HD inks. Choose the perfect size based on the space you want to decorate.
+            All DUNGEONS posters are archival printed on <strong>premium luxury matte stock</strong> with vivid HD inks. Choose the perfect size based on the space you want to decorate.
           </p>
         </div>
 
@@ -143,7 +143,7 @@ export function HomePage() {
     {
       id: 'custom-posters',
       title: 'Custom Wall Posters',
-      subtitle: 'Ultra-HD 350 GSM custom archival gallery prints of your own art',
+      subtitle: 'Ultra-HD custom archival gallery prints of your own art',
       image: '/assets/custom-posters.jpg',
       link: '/custom?type=poster',
     },
@@ -213,7 +213,7 @@ export function HomePage() {
     {
       kicker: 'EXCLUSIVE DROP',
       title: 'POSTER EDITIONS',
-      tagline: 'Curated 350 GSM Archival Prints',
+      tagline: 'Curated Archival Matte Prints',
       discount: 'UP TO 60% OFF',
       buttonText: 'EXPLORE NOW →',
       link: '/collections/devotional',
@@ -1064,56 +1064,23 @@ export function ProductPage() {
           </div>
         )}
 
-        {/* 3. SIZE SELECTOR (MYNTRA / FLIPKART ECOMMERCE STYLE) */}
-        <div className="product-size-section">
-          <div className="product-size-header-row">
-            <div className="size-label-heading-group">
-              <span className="size-label-heading">SELECT SIZE</span>
-              <span className="size-selected-subtext">
-                ({selectedSize === 'A5' ? '14.8 × 21 cm • Small' : selectedSize === 'A4' ? '21 × 29.7 cm • Standard' : '29.7 × 42 cm • Large'})
-              </span>
-            </div>
-            <button
-              type="button"
-              className="view-size-chart-link-ecommerce"
-              onClick={() => setSizeChartOpen(true)}
+        {/* 3. COMPACT SIZE SELECTOR (MATCHING BAG / CHECKOUT ROUTE) */}
+        <div className="product-compact-size-row">
+          <label htmlFor="product-size-select" className="myntra-pill-btn myntra-size-trigger-btn product-size-pill-btn" title="Click to select size">
+            <span>Size: <strong>{selectedSize}</strong></span>
+            <ChevronDown size={13} className="text-neutral-500 shrink-0 pointer-events-none" />
+            <select
+              id="product-size-select"
+              value={selectedSize}
+              onChange={(e) => setSelectedSize(e.target.value as PosterSize)}
+              className="product-size-select-overlay"
+              aria-label="Select size"
             >
-              <Ruler size={13} />
-              <span>Size Guide</span>
-            </button>
-          </div>
-
-          <div className="size-pills-row-ecommerce">
-            {([
-              { id: 'A5', label: 'A5', dims: '14.8 × 21 cm', tag: 'Desk Size', isPopular: false },
-              { id: 'A4', label: 'A4', dims: '21 × 29.7 cm', tag: 'Popular', isPopular: true },
-              { id: 'A3', label: 'A3', dims: '29.7 × 42 cm', tag: 'Large Wall', isPopular: false },
-            ] as const).map((s) => {
-              const isSelected = selectedSize === s.id;
-              const tilePrice = getProductSizePrice(product, s.id as PosterSize);
-              return (
-                <button
-                  type="button"
-                  key={s.id}
-                  className={`ecommerce-size-tile ${isSelected ? 'active-size' : ''}`}
-                  onClick={() => setSelectedSize(s.id as PosterSize)}
-                >
-                  {s.isPopular && <span className="size-popular-pill">POPULAR</span>}
-                  <span className="size-tile-title">{s.label}</span>
-                  <span className="size-tile-dims">{s.dims}</span>
-                  <span className="size-tile-price-tag">{formatPrice(tilePrice)}</span>
-                  <div className="size-tile-check-indicator">
-                    {isSelected && <Check size={11} strokeWidth={3} />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="size-paper-note-strip">
-            <Check size={13} className="text-emerald-600" />
-            <span>Printed on <strong>300 GSM Archival Matte Paper</strong> • Borderless Ultra-HD Print</span>
-          </div>
+              <option value="A5">A5</option>
+              <option value="A4">A4</option>
+              <option value="A3">A3</option>
+            </select>
+          </label>
         </div>
 
         {/* 4. QUANTITY STEPPER & ADD TO CART & WISHLIST */}
@@ -1186,7 +1153,7 @@ export function ProductPage() {
           <span>{isOutOfStock ? 'OUT OF STOCK' : 'BUY NOW • FAST CHECKOUT'}</span>
         </button>
 
-        {/* 6. SECURE CHECKOUT WITH BADGES */}
+        {/* 6. PAYMENT TRUST BADGES */}
         <PaymentTrustBadges />
 
         {/* 7. ACCORDIONS (PRODUCT FEATURES, IMPORTANT NOTES, SHIPPING) */}
@@ -1214,7 +1181,7 @@ export function ProductPage() {
                   <p>Sharp, vibrant, and stunning under any light, perfect for showcasing every detail.</p>
                 </div>
                 <div className="feature-item">
-                  <strong>350 GSM Paper</strong>
+                  <strong>Archival Matte Paper</strong>
                   <p>Extra-thick, durable, and premium-grade for a high-quality, luxury feel.</p>
                 </div>
                 <div className="feature-item">
@@ -1284,21 +1251,7 @@ export function ProductPage() {
 
         </div>
 
-        {/* 8. TRUST HIGHLIGHTS */}
-        <div className="trust-highlights-list">
-          <div className="trust-highlight-row">
-            <Truck size={20} className="trust-icon" />
-            <span>Free Shipping on Prepaid Orders</span>
-          </div>
-          <div className="trust-highlight-row">
-            <ShieldCheck size={20} className="trust-icon" />
-            <span>Free Damage Replacement</span>
-          </div>
-          <div className="trust-highlight-row">
-            <Lock size={20} className="trust-icon" />
-            <span>Secure Checkout</span>
-          </div>
-        </div>
+
 
         {/* 9. NOTICE HIGHLIGHT BOX */}
         <div className="notice-highlight-card">
@@ -1857,7 +1810,7 @@ export function CustomPage() {
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
               <img src="/assets/custom-posters.jpg" alt="Custom Wall Posters" className="box-thumb-img" />
-              <span className="box-tag-pill">350 GSM ARCHIVAL</span>
+              <span className="box-tag-pill">ARCHIVAL MATTE</span>
             </div>
             <div className="box-body-wrap">
               <h2 className="box-title">Custom Wall Posters</h2>
@@ -2388,41 +2341,6 @@ export function CustomPage() {
                 />
               </div>
 
-              <div className="size-guide-quick-pills">
-                <button
-                  type="button"
-                  className={`guide-pick-btn ${posterSize === 'A5' ? 'picked' : ''}`}
-                  onClick={() => {
-                    setPosterSize('A5');
-                    setSizeChartOpen(false);
-                  }}
-                >
-                  <strong>A5 Desk Print</strong>
-                  <span>14.8 × 21 cm • Rs. 129</span>
-                </button>
-                <button
-                  type="button"
-                  className={`guide-pick-btn ${posterSize === 'A4' ? 'picked' : ''}`}
-                  onClick={() => {
-                    setPosterSize('A4');
-                    setSizeChartOpen(false);
-                  }}
-                >
-                  <strong>A4 Standard ★</strong>
-                  <span>21 × 29.7 cm • Rs. 199</span>
-                </button>
-                <button
-                  type="button"
-                  className={`guide-pick-btn ${posterSize === 'A3' ? 'picked' : ''}`}
-                  onClick={() => {
-                    setPosterSize('A3');
-                    setSizeChartOpen(false);
-                  }}
-                >
-                  <strong>A3 Statement</strong>
-                  <span>29.7 × 42 cm • Rs. 299</span>
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -3022,7 +2940,7 @@ export function CheckoutPage() {
           <div className="flex items-center gap-2">
             <span className="checkout-trust-badge-pill">
               <ShieldCheck size={14} />
-              <span>100% SECURE CHECKOUT</span>
+              <span>100% VERIFIED & SAFE</span>
             </span>
           </div>
         </div>

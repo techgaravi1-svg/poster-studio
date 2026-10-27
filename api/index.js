@@ -33313,7 +33313,7 @@ router6.post("/products/seed", requireAdminAuth, async (_req, res) => {
       {
         slug: "asta-black-clover-anime-poster",
         title: "ASTA POSTER | BLACK CLOVER ANIME POSTER",
-        description: "Fierce, vibrant yellow background Asta artwork from Black Clover, printed on 350 GSM premium archival matte paper.",
+        description: "Fierce, vibrant yellow background Asta artwork from Black Clover, printed on premium archival matte paper.",
         category: "anime",
         price: 79,
         compareAtPrice: 159,
