@@ -130,21 +130,21 @@ export function HomePage() {
       id: 'photo-strip',
       title: 'Custom Photobooth Strip',
       subtitle: 'Turn your camera roll into aesthetic 3-strip & 4-strip prints',
-      image: '/images/custom-photobooth-strip.jpeg',
+      image: '/assets/new-assets/photobooth.jpeg',
       link: '/custom?type=strip',
     },
     {
       id: 'mini-pocket',
       title: 'Mini Pocket Photos (Mini Prints)',
       subtitle: 'Cute pocket-sized instant polaroid style keepsake memories',
-      image: '/images/minipocket.jpeg',
+      image: '/assets/new-assets/minipocket.jpeg',
       link: '/custom?type=pocket',
     },
     {
       id: 'custom-posters',
       title: 'Custom Wall Posters',
       subtitle: 'Ultra-HD custom archival gallery prints of your own art',
-      image: '/assets/custom-posters.jpg',
+      image: '/assets/new-assets/custom-poster.jpeg',
       link: '/custom?type=poster',
     },
   ];
@@ -1064,23 +1064,23 @@ export function ProductPage() {
           </div>
         )}
 
-        {/* 3. COMPACT SIZE SELECTOR (MATCHING BAG / CHECKOUT ROUTE) */}
-        <div className="product-compact-size-row">
-          <label htmlFor="product-size-select" className="myntra-pill-btn myntra-size-trigger-btn product-size-pill-btn" title="Click to select size">
-            <span>Size: <strong>{selectedSize}</strong></span>
-            <ChevronDown size={13} className="text-neutral-500 shrink-0 pointer-events-none" />
-            <select
-              id="product-size-select"
-              value={selectedSize}
-              onChange={(e) => setSelectedSize(e.target.value as PosterSize)}
-              className="product-size-select-overlay"
-              aria-label="Select size"
-            >
-              <option value="A5">A5</option>
-              <option value="A4">A4</option>
-              <option value="A3">A3</option>
-            </select>
-          </label>
+        {/* 3. SIZE SELECTOR BOXES (A3, A4, A5 - ONLY SIZE TEXT) */}
+        <div className="product-size-boxes-row" role="radiogroup" aria-label="Select poster size">
+          {(['A3', 'A4', 'A5'] as PosterSize[]).map((sz) => {
+            const isSelected = selectedSize === sz;
+            return (
+              <button
+                type="button"
+                key={sz}
+                role="radio"
+                aria-checked={isSelected}
+                className={`product-size-box-btn ${isSelected ? 'active-size-box' : ''}`}
+                onClick={() => setSelectedSize(sz)}
+              >
+                {sz}
+              </button>
+            );
+          })}
         </div>
 
         {/* 4. QUANTITY STEPPER & ADD TO CART & WISHLIST */}
@@ -1572,7 +1572,7 @@ export function CustomPage() {
       artTreatment: 'art-aurora',
       customUpload: {
         name: `Photobooth_${stripPhotos.length}_${Date.now()}`,
-        preview: stripPhotos[0]?.url || '/images/custom-photobooth-strip.jpeg',
+        preview: stripPhotos[0]?.url || '/assets/new-assets/photobooth.jpeg',
         photos: stripPhotos.map((p) => p.url),
         borderStyle: stripFrameStyle,
         customType: 'Photobooth Strip',
@@ -1605,7 +1605,7 @@ export function CustomPage() {
       artTreatment: 'art-pulse',
       customUpload: {
         name: `MiniPocket_${pocketPhotos.length}_${Date.now()}`,
-        preview: pocketPhotos[0]?.url || '/images/minipocket.jpeg',
+        preview: pocketPhotos[0]?.url || '/assets/new-assets/minipocket.jpeg',
         photos: pocketPhotos.map((p) => p.url),
         borderStyle: pocketFrameStyle,
         customType: 'Mini Pocket Photos',
@@ -1664,7 +1664,7 @@ export function CustomPage() {
         artTreatment: 'art-aurora',
         customUpload: {
           name: `Photobooth_${stripPhotos.length}_${Date.now()}`,
-          preview: stripPhotos[0]?.url || '/images/custom-photobooth-strip.jpeg',
+          preview: stripPhotos[0]?.url || '/assets/new-assets/photobooth.jpeg',
           photos: stripPhotos.map((p) => p.url),
           borderStyle: stripFrameStyle,
           customType: 'Photobooth Strip',
@@ -1698,7 +1698,7 @@ export function CustomPage() {
         artTreatment: 'art-pulse',
         customUpload: {
           name: `MiniPocket_${pocketPhotos.length}_${Date.now()}`,
-          preview: pocketPhotos[0]?.url || '/images/minipocket.jpeg',
+          preview: pocketPhotos[0]?.url || '/assets/new-assets/minipocket.jpeg',
           photos: pocketPhotos.map((p) => p.url),
           borderStyle: pocketFrameStyle,
           customType: 'Mini Pocket Photos',
@@ -1761,7 +1761,7 @@ export function CustomPage() {
           {/* Box 1: Custom Photobooth Strip */}
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
-              <img src="/images/custom-photobooth-strip.jpeg" alt="Custom Photobooth Strip" className="box-thumb-img" />
+              <img src="/assets/new-assets/photobooth.jpeg" alt="Custom Photobooth Strip" className="box-thumb-img" />
               <span className="box-tag-pill">HOT FAVORITE</span>
             </div>
             <div className="box-body-wrap">
@@ -1785,7 +1785,7 @@ export function CustomPage() {
           {/* Box 2: Mini Pocket Photos (Mini Prints) */}
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
-              <img src="/images/minipocket.jpeg" alt="Mini Pocket Photos" className="box-thumb-img" />
+              <img src="/assets/new-assets/minipocket.jpeg" alt="Mini Pocket Photos" className="box-thumb-img" />
               <span className="box-tag-pill">POCKET MEMORIES</span>
             </div>
             <div className="box-body-wrap">
@@ -1809,7 +1809,7 @@ export function CustomPage() {
           {/* Box 3: Custom Wall Posters / Wallpaper */}
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
-              <img src="/assets/custom-posters.jpg" alt="Custom Wall Posters" className="box-thumb-img" />
+              <img src="/assets/new-assets/custom-poster.jpeg" alt="Custom Wall Posters" className="box-thumb-img" />
               <span className="box-tag-pill">ARCHIVAL MATTE</span>
             </div>
             <div className="box-body-wrap">

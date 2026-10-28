@@ -394,14 +394,7 @@ export function MyntraItemCard({
                           {sz}
                         </div>
                         <div className="ecommerce-size-card-info">
-                          <div className="flex items-center gap-2">
-                            <span className="ecommerce-size-card-name">{info.name}</span>
-                            {info.badge && (
-                              <span className="ecommerce-size-badge-pill">{info.badge}</span>
-                            )}
-                          </div>
-                          <span className="ecommerce-size-card-dims">{info.dims}</span>
-                          <span className="ecommerce-size-card-desc">{info.recommendation}</span>
+                          <span className="ecommerce-size-card-name">{sz} Size</span>
                         </div>
                       </div>
 

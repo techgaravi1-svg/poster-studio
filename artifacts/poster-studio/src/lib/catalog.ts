@@ -783,18 +783,18 @@ export type StoreCategory = {
 
 // 8 Official Coming Soon Categories
 export const comingSoonCategories = [
-  { id: 'cat-flags', name: 'Flags', slug: 'flags', image: '/assets/cat-flags.jpg', description: 'Vintage pop-culture, motorsport, and aesthetic wall tapestry flags.' },
-  { id: 'cat-wallart', name: 'Wall Art', slug: 'wall-art', image: '/assets/cat-paintings.jpg', description: 'Handcrafted gallery canvas art and modern wall decor.' },
-  { id: 'cat-wallmounts', name: 'Wall Mounts', slug: 'wall-mounts', image: '/assets/cat-wallmounts.jpg', description: 'Floating oak shelves, display brackets, and gallery mounts.' },
-  { id: 'cat-beanbags', name: 'Bean Bags', slug: 'bean-bags', image: '/assets/cat-beanbags.jpg', description: 'Ultra-comfortable luxury corduroy and velvet lounger bean bags.' },
-  { id: 'cat-mirrors', name: 'Mirrors', slug: 'mirrors', image: '/assets/cat-mirror.jpg', description: 'Chic wavy and arched statement aesthetic vanity wall mirrors.' },
-  { id: 'cat-tables', name: 'Tables', slug: 'tables', image: '/assets/cat-tables.jpg', description: 'Minimalist designer side tables and accent coffee tables.' },
-  { id: 'cat-rugs', name: 'Rugs & Carpets', slug: 'rugs-carpets', image: '/assets/cat-rugs.jpg', description: 'Hand-tufted Berber wool area rugs and modern floor tapestries.' },
-  { id: 'cat-curtains', name: 'Curtains', slug: 'curtains', image: '/assets/cat-curtains.jpg', description: 'Sun-drenched natural linen and sheer drapery for modern rooms.' },
+  { id: 'cat-wallart', name: 'Wall Art', slug: 'wall-art', image: '/assets/new-assets/circle-2.jpeg', description: 'Handcrafted gallery canvas art and modern wall decor.' },
+  { id: 'cat-wallmounts', name: 'Wall Mounts', slug: 'wall-mounts', image: '/assets/new-assets/circle-3.jpeg', description: 'Floating oak shelves, display brackets, and gallery mounts.' },
+  { id: 'cat-beanbags', name: 'Bean Bags', slug: 'bean-bags', image: '/assets/new-assets/circle-4.jpeg', description: 'Ultra-comfortable luxury corduroy and velvet lounger bean bags.' },
+  { id: 'cat-flags', name: 'Flags', slug: 'flags', image: '/assets/new-assets/circle-5.jpeg', description: 'Vintage pop-culture, motorsport, and aesthetic wall tapestry flags.' },
+  { id: 'cat-mirrors', name: 'Mirrors', slug: 'mirrors', image: '/assets/new-assets/circle-6.jpeg', description: 'Chic wavy and arched statement aesthetic vanity wall mirrors.' },
+  { id: 'cat-curtains', name: 'Curtains', slug: 'curtains', image: '/assets/new-assets/circle-7.jpeg', description: 'Sun-drenched natural linen and sheer drapery for modern rooms.' },
+  { id: 'cat-tables', name: 'Tables', slug: 'tables', image: '/assets/new-assets/circle-8.jpeg', description: 'Minimalist designer side tables and accent coffee tables.' },
+  { id: 'cat-rugs', name: 'Rugs & Carpets', slug: 'rugs-carpets', image: '/assets/new-assets/circle-9.jpeg', description: 'Hand-tufted Berber wool area rugs and modern floor tapestries.' },
 ];
 
 export const storeCategories: StoreCategory[] = [
-  { id: 'cat-posters', name: 'Posters', slug: 'posters', available: true, image: '/assets/posters/poster-01.jpg', description: 'Museum-grade archival matte posters.' },
+  { id: 'cat-posters', name: 'Posters', slug: 'posters', available: true, image: '/assets/new-assets/circle-1.jpeg', description: 'Museum-grade archival matte posters.' },
   ...comingSoonCategories.map((c) => ({ ...c, available: false })),
 ];
 
