@@ -18983,14 +18983,14 @@ var require_etag = __commonJS({
   "../../node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports2, module2) {
     "use strict";
     module2.exports = etag;
-    var crypto2 = require("crypto");
+    var crypto3 = require("crypto");
     var Stats = require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash = crypto2.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash = crypto3.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash + '"';
     }
@@ -22401,17 +22401,17 @@ var require_content_disposition = __commonJS({
 // ../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js"(exports2) {
-    var crypto2 = require("crypto");
+    var crypto3 = require("crypto");
     exports2.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
-      return val + "." + crypto2.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto3.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports2.unsign = function(input, secret) {
       if ("string" != typeof input) throw new TypeError("Signed cookie string must be provided.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
       var tentativeValue = input.slice(0, input.lastIndexOf(".")), expectedInput = exports2.sign(tentativeValue, secret), expectedBuffer = Buffer.from(expectedInput), inputBuffer = Buffer.from(input);
-      return expectedBuffer.length === inputBuffer.length && crypto2.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
+      return expectedBuffer.length === inputBuffer.length && crypto3.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
     };
   }
 });
@@ -33371,6 +33371,87 @@ var products_default = router6;
 
 // src/routes/admin.ts
 var import_express7 = __toESM(require_express2(), 1);
+
+// src/lib/cloudinary.ts
+var import_node_https = __toESM(require("node:https"), 1);
+var import_node_crypto2 = __toESM(require("node:crypto"), 1);
+var CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "pyjyrmry";
+var API_KEY = process.env.CLOUDINARY_API_KEY || "848535755562423";
+var API_SECRET = process.env.CLOUDINARY_API_SECRET || "a7Z4E8P9dCbr0EuyIXpQEdMliZs";
+async function uploadBase64ToCloudinary(fileData, publicIdPrefix = "poster") {
+  if (!fileData || typeof fileData !== "string" || !fileData.startsWith("data:image")) {
+    return fileData;
+  }
+  return new Promise((resolve) => {
+    try {
+      const timestamp = Math.floor(Date.now() / 1e3);
+      const cleanPublicId = `${publicIdPrefix}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+      const params = {
+        folder: "dungeons_posters",
+        public_id: cleanPublicId,
+        timestamp
+      };
+      const toSign = Object.keys(params).sort().map((k) => `${k}=${params[k]}`).join("&") + API_SECRET;
+      const signature = import_node_crypto2.default.createHash("sha1").update(toSign).digest("hex");
+      const boundary = "----WebKitFormBoundary" + Math.random().toString(36).substring(2);
+      let payload = "";
+      const addField = (name, val) => {
+        payload += `--${boundary}\r
+Content-Disposition: form-data; name="${name}"\r
+\r
+${val}\r
+`;
+      };
+      addField("file", fileData);
+      addField("api_key", API_KEY);
+      addField("timestamp", timestamp);
+      addField("folder", "dungeons_posters");
+      addField("public_id", cleanPublicId);
+      addField("signature", signature);
+      payload += `--${boundary}--\r
+`;
+      const req = import_node_https.default.request(
+        {
+          hostname: "api.cloudinary.com",
+          path: `/v1_1/${CLOUD_NAME}/image/upload`,
+          method: "POST",
+          headers: {
+            "Content-Type": `multipart/form-data; boundary=${boundary}`,
+            "Content-Length": Buffer.byteLength(payload)
+          }
+        },
+        (res) => {
+          let body = "";
+          res.on("data", (chunk) => body += chunk);
+          res.on("end", () => {
+            try {
+              const json = JSON.parse(body);
+              if (json.secure_url) {
+                resolve(json.secure_url);
+              } else {
+                console.error("[Cloudinary] Upload failed with body:", body);
+                resolve(fileData);
+              }
+            } catch {
+              resolve(fileData);
+            }
+          });
+        }
+      );
+      req.on("error", (err) => {
+        console.error("[Cloudinary] Network error:", err);
+        resolve(fileData);
+      });
+      req.write(payload);
+      req.end();
+    } catch (err) {
+      console.error("[Cloudinary] Unexpected error:", err);
+      resolve(fileData);
+    }
+  });
+}
+
+// src/routes/admin.ts
 var router7 = (0, import_express7.Router)();
 var loginAttemptStore = /* @__PURE__ */ new Map();
 var currentAdminPassword = process.env.ADMIN_PASSWORD || "";
@@ -33661,6 +33742,18 @@ router7.get("/admin/products", requireAdminAuth, async (req, res) => {
     return res.status(500).json({ success: false, error: "Failed to retrieve products" });
   }
 });
+router7.post("/admin/upload-image", requireAdminAuth, async (req, res) => {
+  try {
+    const { image, name } = req.body;
+    if (!image) {
+      return res.status(400).json({ success: false, error: "No image provided" });
+    }
+    const cdnUrl = await uploadBase64ToCloudinary(image, name || "poster");
+    return res.json({ success: true, url: cdnUrl });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message || "Upload failed" });
+  }
+});
 router7.post("/admin/products", requireAdminAuth, async (req, res) => {
   try {
     const parsed = ProductMutationSchema.safeParse(req.body);
@@ -33673,8 +33766,16 @@ router7.post("/admin/products", requireAdminAuth, async (req, res) => {
         details: parsed.error.format()
       });
     }
+    const productData = { ...parsed.data };
+    if (Array.isArray(productData.images) && productData.images.length > 0) {
+      productData.images = await Promise.all(
+        productData.images.map(
+          (img, idx) => uploadBase64ToCloudinary(img, `${productData.slug || "product"}_${idx}`)
+        )
+      );
+    }
     const newProduct = await prisma.product.create({
-      data: parsed.data
+      data: productData
     });
     return res.status(201).json({ success: true, product: newProduct });
   } catch (error) {
@@ -33712,9 +33813,17 @@ router7.put("/admin/products/:id", requireAdminAuth, async (req, res) => {
     if (!existing) {
       return res.status(404).json({ success: false, error: "Product not found" });
     }
+    const productData = { ...parsed.data };
+    if (Array.isArray(productData.images) && productData.images.length > 0) {
+      productData.images = await Promise.all(
+        productData.images.map(
+          (img, idx) => uploadBase64ToCloudinary(img, `${productData.slug || "product"}_${idx}`)
+        )
+      );
+    }
     const updatedProduct = await prisma.product.update({
       where: { id: existing.id },
-      data: parsed.data
+      data: productData
     });
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     return res.json({ success: true, product: updatedProduct });

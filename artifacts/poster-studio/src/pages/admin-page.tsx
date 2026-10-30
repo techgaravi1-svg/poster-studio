@@ -227,7 +227,7 @@ export function AdminDashboardPage() {
                 ? o.products.map((p: any) => ({
                     id: p.productId || p.key || 'item',
                     productTitle: p.title || 'Poster',
-                    productImage: p.customUpload?.preview || '/assets/posters/poster-01.jpg',
+                    productImage: p.customUpload?.preview || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg',
                     size: p.size || 'A4',
                     quantity: Number(p.quantity) || 1,
                     price: Number(p.price) || 0,
@@ -258,8 +258,8 @@ export function AdminDashboardPage() {
         fulfillmentStatus: 'PENDING',
         trackingNumber: 'DELHIVERY-9921',
         items: [
-          { id: 'item-1', productTitle: 'ASTA POSTER | BLACK CLOVER', productImage: '/assets/posters/poster-01.jpg', size: 'A4', quantity: 2, price: 119 },
-          { id: 'item-2', productTitle: 'GOJO SATORU | JUJUTSU KAISEN', productImage: '/assets/posters/poster-02.jpg', size: 'A3', quantity: 1, price: 159 },
+          { id: 'item-1', productTitle: 'ASTA POSTER | BLACK CLOVER', productImage: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg', size: 'A4', quantity: 2, price: 119 },
+          { id: 'item-2', productTitle: 'GOJO SATORU | JUJUTSU KAISEN', productImage: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-02_2a2855.jpg', size: 'A3', quantity: 1, price: 159 },
         ],
         createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
       },
@@ -279,7 +279,7 @@ export function AdminDashboardPage() {
         fulfillmentStatus: 'PROCESSING',
         trackingNumber: 'BLUEDART-8812',
         items: [
-          { id: 'item-3', productTitle: 'MILES MORALES SPIDER-MAN', productImage: '/assets/posters/poster-03.jpg', size: 'A3', quantity: 3, price: 159 },
+          { id: 'item-3', productTitle: 'MILES MORALES SPIDER-MAN', productImage: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349699/dungeons_store_assets/poster-03_a9d962.jpg', size: 'A3', quantity: 3, price: 159 },
         ],
         createdAt: new Date(Date.now() - 3600000 * 20).toISOString(),
       },
@@ -299,7 +299,7 @@ export function AdminDashboardPage() {
         fulfillmentStatus: 'SHIPPED',
         trackingNumber: 'EKART-4421',
         items: [
-          { id: 'item-4', productTitle: 'VINTAGE PORSCHE 911 TURBO', productImage: '/assets/posters/poster-04.jpg', size: 'A4', quantity: 2, price: 119 },
+          { id: 'item-4', productTitle: 'VINTAGE PORSCHE 911 TURBO', productImage: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349699/dungeons_store_assets/poster-04_289e1c.jpg', size: 'A4', quantity: 2, price: 119 },
         ],
         createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
       },
@@ -380,7 +380,7 @@ export function AdminDashboardPage() {
       A4: 239,
       A3: 359,
     } as Record<string, number>,
-    images: ['/assets/posters/poster-01.jpg'],
+    images: ['https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg'],
     tags: 'anime, poster, art',
     stock: 50,
     isBestSeller: true,
@@ -609,7 +609,7 @@ export function AdminDashboardPage() {
                 id: i.id || i.productId || 'item',
                 productTitle: i.title || i.productTitle || 'Poster',
                 title: i.title || i.productTitle || 'Poster',
-                productImage: i.customUpload?.preview || i.productImage || '/assets/posters/poster-01.jpg',
+                productImage: i.customUpload?.preview || i.productImage || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg',
                 size: i.size || 'A4',
                 quantity: Number(i.quantity) || 1,
                 price: Number(i.price) || 0,
@@ -1015,7 +1015,7 @@ export function AdminDashboardPage() {
           <div className="admin-brand-header">
             <Link href="/">
               <img
-                src="/assets/dungeons-logo.png"
+                src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349678/dungeons_store_assets/dungeons-logo_a828e3.png"
                 alt="DUNGEONS"
                 className="admin-brand-logo"
               />
@@ -1187,7 +1187,7 @@ export function AdminDashboardPage() {
           {/* Brand Header */}
           <div className="admin-sidebar-header">
             <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-              <img src="/assets/dungeons-logo.png" alt="DUNGEONS" style={{ height: '26px', width: 'auto' }} />
+              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349678/dungeons_store_assets/dungeons-logo_a828e3.png" alt="DUNGEONS" style={{ height: '26px', width: 'auto' }} />
               <span style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
                 PORTAL v2.4
               </span>
@@ -1744,7 +1744,7 @@ export function AdminDashboardPage() {
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 {order.items && order.items.length > 0 ? (
                                   order.items.map((item, idx) => {
-                                    const imgSrc = item.customUpload?.preview || item.productImage || '/assets/posters/poster-01.jpg';
+                                    const imgSrc = item.customUpload?.preview || item.productImage || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg';
                                     return (
                                       <div
                                         key={idx}
@@ -1957,7 +1957,7 @@ export function AdminDashboardPage() {
                     <div key={prod.id} className="admin-poster-card">
                       <div className="admin-poster-thumb">
                         <img
-                          src={prod.images[0] || '/assets/posters/poster-01.jpg'}
+                          src={prod.images[0] || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg'}
                           alt={prod.title}
                         />
                         <span style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.8)', color: '#ffffff', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase' }}>
@@ -2615,7 +2615,7 @@ export function AdminDashboardPage() {
                         setProductFormData({ ...productFormData, images: [e.target.value] });
                         if (productModalError) setProductModalError(null);
                       }}
-                      placeholder="Or enter image URL (e.g. /assets/posters/poster-01.jpg)"
+                      placeholder="Or enter image URL (e.g. https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg)"
                       className="admin-input-field"
                       style={{ height: '36px', fontSize: '11px', fontFamily: 'monospace' }}
                     />
@@ -2760,7 +2760,7 @@ export function AdminDashboardPage() {
           <div id="admin-tax-invoice-printable" style={{ background: '#ffffff', color: '#111827', borderRadius: '20px', maxWidth: '640px', width: '100%', padding: '32px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e5e7eb', paddingBottom: '20px' }}>
               <div>
-                <img src="/assets/dungeons-logo.png" alt="DUNGEONS" style={{ height: '32px', width: 'auto', marginBottom: '4px' }} />
+                <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349678/dungeons_store_assets/dungeons-logo_a828e3.png" alt="DUNGEONS" style={{ height: '32px', width: 'auto', marginBottom: '4px' }} />
                 <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>Premium Archival Poster Prints</p>
                 <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0 0' }}>support@dungeons.com</p>
               </div>

@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import { prisma } from '@workspace/db';
 import { z } from 'zod';
 import { rateLimiter, requireAdminAuth, createAdminToken } from '../middlewares/security';
+import { uploadBase64ToCloudinary } from '../lib/cloudinary';
 
 const router: Router = Router();
 
@@ -378,6 +379,19 @@ router.get('/admin/products', requireAdminAuth, async (req: Request, res: Respon
   }
 });
 
+router.post('/admin/upload-image', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { image, name } = req.body;
+    if (!image) {
+      return res.status(400).json({ success: false, error: 'No image provided' });
+    }
+    const cdnUrl = await uploadBase64ToCloudinary(image, name || 'poster');
+    return res.json({ success: true, url: cdnUrl });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err.message || 'Upload failed' });
+  }
+});
+
 router.post('/admin/products', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const parsed = ProductMutationSchema.safeParse(req.body);
@@ -393,8 +407,19 @@ router.post('/admin/products', requireAdminAuth, async (req: Request, res: Respo
       });
     }
 
+    const productData = { ...parsed.data } as any;
+
+    // Automatically convert any base64 images to Cloudinary CDN URLs before DB save
+    if (Array.isArray(productData.images) && productData.images.length > 0) {
+      productData.images = await Promise.all(
+        productData.images.map((img: string, idx: number) =>
+          uploadBase64ToCloudinary(img, `${productData.slug || 'product'}_${idx}`)
+        )
+      );
+    }
+
     const newProduct = await prisma.product.create({
-      data: parsed.data as any,
+      data: productData,
     });
 
     return res.status(201).json({ success: true, product: newProduct });
@@ -440,9 +465,20 @@ router.put('/admin/products/:id', requireAdminAuth, async (req: Request, res: Re
       return res.status(404).json({ success: false, error: 'Product not found' });
     }
 
+    const productData = { ...parsed.data } as any;
+
+    // Automatically convert any base64 images to Cloudinary CDN URLs before DB update
+    if (Array.isArray(productData.images) && productData.images.length > 0) {
+      productData.images = await Promise.all(
+        productData.images.map((img: string, idx: number) =>
+          uploadBase64ToCloudinary(img, `${productData.slug || 'product'}_${idx}`)
+        )
+      );
+    }
+
     const updatedProduct = await prisma.product.update({
       where: { id: existing.id },
-      data: parsed.data as any,
+      data: productData,
     });
 
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');

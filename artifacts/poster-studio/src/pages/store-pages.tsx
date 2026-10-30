@@ -91,7 +91,7 @@ function SizeChartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         <div className="size-guide-modal-body">
           <div className="size-guide-image-wrap">
             <img
-              src="/assets/dungeons-poster-size-guide.png?v=2"
+              src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349678/dungeons_store_assets/dungeons-poster-size-guide_285311.png?v=2"
               alt="DUNGEONS Posters Size Guide - A3, A4, A5 Dimensions"
               className="size-guide-graphic-img"
             />
@@ -130,21 +130,21 @@ export function HomePage() {
       id: 'photo-strip',
       title: 'Custom Photobooth Strip',
       subtitle: 'Turn your camera roll into aesthetic 3-strip & 4-strip prints',
-      image: '/assets/new-assets/photobooth.jpeg',
+      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349696/dungeons_store_assets/photobooth_7e67e9.jpg',
       link: '/custom?type=strip',
     },
     {
       id: 'mini-pocket',
       title: 'Mini Pocket Photos (Mini Prints)',
       subtitle: 'Cute pocket-sized instant polaroid style keepsake memories',
-      image: '/assets/new-assets/minipocket.jpeg',
+      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/minipocket_1d50a9.jpg',
       link: '/custom?type=pocket',
     },
     {
       id: 'custom-posters',
       title: 'Custom Wall Posters',
       subtitle: 'Ultra-HD custom archival gallery prints of your own art',
-      image: '/assets/new-assets/custom-poster.jpeg',
+      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/custom-poster_1640a9.jpg',
       link: '/custom?type=poster',
     },
   ];
@@ -208,7 +208,7 @@ export function HomePage() {
       discount: 'UP TO 60% OFF',
       buttonText: 'SHOP NOW →',
       link: '/collections',
-      bg: '/assets/hd-hero-bg.jpg',
+      bg: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349684/dungeons_store_assets/hd-hero-bg_1bf598.jpg',
     },
     {
       kicker: 'EXCLUSIVE DROP',
@@ -217,7 +217,7 @@ export function HomePage() {
       discount: 'UP TO 60% OFF',
       buttonText: 'EXPLORE NOW →',
       link: '/collections/devotional',
-      bg: '/assets/hd-hero-bg.jpg',
+      bg: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349684/dungeons_store_assets/hd-hero-bg_1bf598.jpg',
     },
     {
       kicker: 'PREMIUM CUSTOM',
@@ -226,7 +226,7 @@ export function HomePage() {
       discount: 'FLAT 60% OFF',
       buttonText: 'DESIGN NOW →',
       link: '/custom',
-      bg: '/assets/hd-hero-bg.jpg',
+      bg: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349684/dungeons_store_assets/hd-hero-bg_1bf598.jpg',
     },
   ];
 
@@ -1005,7 +1005,7 @@ export function ProductPage() {
     }
   };
 
-  const heroImageSrc = product.images?.[0] || '/assets/spiderman-product-hero.jpg';
+  const heroImageSrc = product.images?.[0] || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349713/dungeons_store_assets/spiderman-product-hero_bafa79.jpg';
   const currentSizePrice = getProductSizePrice(product, selectedSize);
   const currentSizeCompare = getProductSizeComparePrice(product, selectedSize);
   const currentSavings = Math.max(0, currentSizeCompare - currentSizePrice);
@@ -1030,7 +1030,7 @@ export function ProductPage() {
           onError={(e) => {
             const target = e.currentTarget as HTMLImageElement;
             if (!target.src.includes('poster-01.jpg')) {
-              target.src = '/assets/posters/poster-01.jpg';
+              target.src = 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg';
             }
           }}
         />
@@ -1572,7 +1572,7 @@ export function CustomPage() {
       artTreatment: 'art-aurora',
       customUpload: {
         name: `Photobooth_${stripPhotos.length}_${Date.now()}`,
-        preview: stripPhotos[0]?.url || '/assets/new-assets/photobooth.jpeg',
+        preview: stripPhotos[0]?.url || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349696/dungeons_store_assets/photobooth_7e67e9.jpg',
         photos: stripPhotos.map((p) => p.url),
         borderStyle: stripFrameStyle,
         customType: 'Photobooth Strip',
@@ -1605,7 +1605,7 @@ export function CustomPage() {
       artTreatment: 'art-pulse',
       customUpload: {
         name: `MiniPocket_${pocketPhotos.length}_${Date.now()}`,
-        preview: pocketPhotos[0]?.url || '/assets/new-assets/minipocket.jpeg',
+        preview: pocketPhotos[0]?.url || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/minipocket_1d50a9.jpg',
         photos: pocketPhotos.map((p) => p.url),
         borderStyle: pocketFrameStyle,
         customType: 'Mini Pocket Photos',
@@ -1664,7 +1664,7 @@ export function CustomPage() {
         artTreatment: 'art-aurora',
         customUpload: {
           name: `Photobooth_${stripPhotos.length}_${Date.now()}`,
-          preview: stripPhotos[0]?.url || '/assets/new-assets/photobooth.jpeg',
+          preview: stripPhotos[0]?.url || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349696/dungeons_store_assets/photobooth_7e67e9.jpg',
           photos: stripPhotos.map((p) => p.url),
           borderStyle: stripFrameStyle,
           customType: 'Photobooth Strip',
@@ -1698,7 +1698,7 @@ export function CustomPage() {
         artTreatment: 'art-pulse',
         customUpload: {
           name: `MiniPocket_${pocketPhotos.length}_${Date.now()}`,
-          preview: pocketPhotos[0]?.url || '/assets/new-assets/minipocket.jpeg',
+          preview: pocketPhotos[0]?.url || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/minipocket_1d50a9.jpg',
           photos: pocketPhotos.map((p) => p.url),
           borderStyle: pocketFrameStyle,
           customType: 'Mini Pocket Photos',
@@ -1761,7 +1761,7 @@ export function CustomPage() {
           {/* Box 1: Custom Photobooth Strip */}
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
-              <img src="/assets/new-assets/photobooth.jpeg" alt="Custom Photobooth Strip" className="box-thumb-img" />
+              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349696/dungeons_store_assets/photobooth_7e67e9.jpg" alt="Custom Photobooth Strip" className="box-thumb-img" />
               <span className="box-tag-pill">HOT FAVORITE</span>
             </div>
             <div className="box-body-wrap">
@@ -1785,7 +1785,7 @@ export function CustomPage() {
           {/* Box 2: Mini Pocket Photos (Mini Prints) */}
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
-              <img src="/assets/new-assets/minipocket.jpeg" alt="Mini Pocket Photos" className="box-thumb-img" />
+              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/minipocket_1d50a9.jpg" alt="Mini Pocket Photos" className="box-thumb-img" />
               <span className="box-tag-pill">POCKET MEMORIES</span>
             </div>
             <div className="box-body-wrap">
@@ -1809,7 +1809,7 @@ export function CustomPage() {
           {/* Box 3: Custom Wall Posters / Wallpaper */}
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
-              <img src="/assets/new-assets/custom-poster.jpeg" alt="Custom Wall Posters" className="box-thumb-img" />
+              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/custom-poster_1640a9.jpg" alt="Custom Wall Posters" className="box-thumb-img" />
               <span className="box-tag-pill">ARCHIVAL MATTE</span>
             </div>
             <div className="box-body-wrap">
@@ -2335,7 +2335,7 @@ export function CustomPage() {
             <div className="size-guide-modal-body">
               <div className="size-guide-image-wrap" style={{ backgroundColor: '#fcfaf6' }}>
                 <img
-                  src="/assets/custom-poster-size-guide.png?v=2"
+                  src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349669/dungeons_store_assets/custom-poster-size-guide_184f53.png?v=2"
                   alt="Custom Posters Size Guide - A3, A4, A5 Dimensions"
                   className="size-guide-graphic-img"
                 />

@@ -109,7 +109,7 @@ export function MyntraItemCard({
     : Math.round(item.price * 1.5);
   const discountPct = Math.max(10, Math.round(((itemMrp - item.price) / itemMrp) * 100));
 
-  const imageSrc = item.customUpload?.preview || matchProduct?.images?.[0] || '/assets/posters/poster-03.jpg';
+  const imageSrc = item.customUpload?.preview || matchProduct?.images?.[0] || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349699/dungeons_store_assets/poster-03_a9d962.jpg';
 
   // Calculate estimated delivery date: 4 days from today
   const estDate = new Date();
@@ -155,7 +155,7 @@ export function MyntraItemCard({
             onError={(e) => {
               const target = e.currentTarget as HTMLImageElement;
               if (!target.src.includes('poster-01.jpg')) {
-                target.src = '/assets/posters/poster-01.jpg';
+                target.src = 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg';
               }
             }}
           />

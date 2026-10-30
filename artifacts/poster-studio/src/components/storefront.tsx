@@ -35,7 +35,7 @@ export function PosterArt({
   title: string;
   compact?: boolean;
 }) {
-  const displaySrc = src && src.trim().length > 0 ? src : '/assets/posters/poster-01.jpg';
+  const displaySrc = src && src.trim().length > 0 ? src : 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg';
 
   return (
     <div className={`poster-art-img-wrapper ${compact ? 'poster-art-compact' : ''}`}>
@@ -47,7 +47,7 @@ export function PosterArt({
         onError={(e) => {
           const target = e.currentTarget as HTMLImageElement;
           if (!target.src.includes('poster-01.jpg')) {
-            target.src = '/assets/posters/poster-01.jpg';
+            target.src = 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg';
           }
         }}
       />
@@ -71,7 +71,7 @@ export function ProductCard({
     store.toggleWishlist(product.slug);
   };
 
-  const imageSrc = product.images?.[0] || '/assets/posters/poster-01.jpg';
+  const imageSrc = product.images?.[0] || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg';
 
   return (
     <article className="postgenz-product-card" data-testid={`card-product-${product.id}`}>
@@ -234,7 +234,7 @@ function MenuDrawer({
         <div className="menu-drawer-top">
           <Link href="/" onClick={onClose} className="header-brand-logo" aria-label="DUNGEONS Home">
             <img
-              src="/images/header-logo.png"
+              src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349716/dungeons_store_assets/header-logo_b11022.png"
               alt="DUNGEONS"
               className="postgenz-logo-img dungeons-navbar-logo"
             />
@@ -446,7 +446,7 @@ export function Header() {
             {!menuOpen && (
               <Link href="/" className="header-brand-logo" aria-label="DUNGEONS Home">
                 <img
-                  src="/images/header-logo.png"
+                  src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349716/dungeons_store_assets/header-logo_b11022.png"
                   alt="DUNGEONS"
                   className="postgenz-logo-img dungeons-navbar-logo"
                 />
@@ -716,7 +716,7 @@ export function Footer() {
           <div className="footer-block footer-brand-block">
             <Link href="/" className="footer-brand-link" aria-label="DUNGEONS Home">
               <img
-                src="/images/footer-logo.png"
+                src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349716/dungeons_store_assets/footer-logo_53c8ed.png"
                 alt="DUNGEONS"
                 className="footer-dungeons-logo"
               />
