@@ -30,3 +30,4 @@ targetFiles.forEach(file => {
   fs.writeFileSync(file, content, 'utf8');
   console.log(`Updated ${path.basename(file)}: replaced ${count} asset references with Cloudinary URLs.`);
 });
+

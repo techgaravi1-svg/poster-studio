@@ -130,7 +130,7 @@ export function HomePage() {
       id: 'photo-strip',
       title: 'Custom Photobooth Strip',
       subtitle: 'Turn your camera roll into aesthetic 3-strip & 4-strip prints',
-      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349696/dungeons_store_assets/photobooth_7e67e9.jpg',
+      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793352215/dungeons_hero_assets/photobooth_strip_new.jpg',
       link: '/custom?type=strip',
     },
     {
@@ -202,83 +202,88 @@ export function HomePage() {
 
   const heroSlides = [
     {
-      kicker: 'END OF',
-      title: 'SEASON SALE',
-      tagline: 'Luxury Decor At Better Prices',
-      discount: 'UP TO 60% OFF',
-      buttonText: 'SHOP NOW →',
+      id: 'hero-1',
+      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793352224/dungeons_hero_assets/hero_slide_1.jpg',
       link: '/collections',
-      bg: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349684/dungeons_store_assets/hd-hero-bg_1bf598.jpg',
+      title: 'Dungeons Posters Hero 1',
     },
     {
-      kicker: 'EXCLUSIVE DROP',
-      title: 'POSTER EDITIONS',
-      tagline: 'Curated Archival Matte Prints',
-      discount: 'UP TO 60% OFF',
-      buttonText: 'EXPLORE NOW →',
-      link: '/collections/devotional',
-      bg: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349684/dungeons_store_assets/hd-hero-bg_1bf598.jpg',
+      id: 'hero-2',
+      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793352231/dungeons_hero_assets/hero_slide_2.jpg',
+      link: '/collections',
+      title: 'Dungeons Posters Hero 2',
     },
     {
-      kicker: 'PREMIUM CUSTOM',
-      title: 'PHOTOBOOTH STRIPS',
-      tagline: 'Turn Your Memories Into Art',
-      discount: 'FLAT 60% OFF',
-      buttonText: 'DESIGN NOW →',
+      id: 'hero-3',
+      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793352239/dungeons_hero_assets/hero_slide_3.jpg',
       link: '/custom',
-      bg: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349684/dungeons_store_assets/hd-hero-bg_1bf598.jpg',
+      title: 'Dungeons Posters Hero 3',
     },
   ];
 
   useEffect(() => {
     const timer = setInterval(() => {
       setBannerSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 3800);
+    }, 4500);
     return () => clearInterval(timer);
   }, [heroSlides.length]);
 
   return (
     <main className="postgenz-home-page">
-      {/* 1. HD HERO BANNER SLIDER OF 60% (PAGE 1) */}
+      {/* 1. HD HERO BANNER SLIDER OF HERO 1, 2, 3 WITH SMOOTH SLIDING ANIMATION */}
       <section className="home-hero-banner-section">
-        <div className="hd-banner-slider-container">
+        <div
+          className="hd-hero-slider-wrapper"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           <div
-            className="hd-banner-slide"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
+            className="hd-hero-slides-track"
+            style={{ transform: `translateX(-${bannerSlide * 100}%)` }}
           >
-            <img
-              src={heroSlides[bannerSlide].bg}
-              alt="Luxury Decor Background"
-              className="hd-banner-bg-img"
-            />
-            <div className="hd-banner-overlay-content">
-              <span className="hd-kicker">{heroSlides[bannerSlide].kicker}</span>
-              <h2 className="hd-title">{heroSlides[bannerSlide].title}</h2>
-              <p className="hd-tagline">{heroSlides[bannerSlide].tagline}</p>
-
-              <div className="hd-discount-badge-frame">
-                <span className="hd-badge-label">UP TO</span>
-                <span className="hd-badge-percent">60% OFF</span>
+            {heroSlides.map((slide, idx) => (
+              <div key={slide.id} className="hd-hero-slide-item">
+                <Link href={slide.link} className="hd-hero-slide-link">
+                  <img
+                    src={slide.image}
+                    alt={slide.title}
+                    className="hd-hero-full-img"
+                    loading={idx === 0 ? 'eager' : 'lazy'}
+                  />
+                </Link>
               </div>
+            ))}
+          </div>
 
-              <Link href={heroSlides[bannerSlide].link} className="hd-shop-now-btn">
-                {heroSlides[bannerSlide].buttonText}
-              </Link>
-            </div>
+          {/* Navigation Arrows */}
+          <button
+            type="button"
+            className="hd-hero-arrow hd-hero-arrow-prev"
+            onClick={() => setBannerSlide((prev) => (prev === 0 ? heroSlides.length - 1 : prev - 1))}
+            aria-label="Previous slide"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            className="hd-hero-arrow hd-hero-arrow-next"
+            onClick={() => setBannerSlide((prev) => (prev + 1) % heroSlides.length)}
+            aria-label="Next slide"
+          >
+            ›
+          </button>
 
-            {/* Dot Indicators */}
-            <div className="hd-slider-dots">
-              {heroSlides.map((_, idx) => (
-                <button
-                  type="button"
-                  key={idx}
-                  className={`hd-dot ${bannerSlide === idx ? 'dot-active' : ''}`}
-                  onClick={() => setBannerSlide(idx)}
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
-              ))}
-            </div>
+          {/* Dot Indicators */}
+          <div className="hd-slider-dots">
+            {heroSlides.map((_, idx) => (
+              <button
+                type="button"
+                key={idx}
+                className={`hd-dot ${bannerSlide === idx ? 'dot-active' : ''}`}
+                onClick={() => setBannerSlide(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -1064,6 +1069,20 @@ export function ProductPage() {
           </div>
         )}
 
+        {/* SIZE HEADER WITH SIZE CHART TRIGGER BUTTON */}
+        <div className="product-size-header-bar">
+          <span className="product-size-heading-title">CHOOSE POSTER SIZE</span>
+          <button
+            type="button"
+            onClick={() => setSizeChartOpen(true)}
+            className="view-size-chart-link-ecommerce"
+            title="Click to view size guide and dimensions"
+          >
+            <Ruler size={13} />
+            <span>Size Chart</span>
+          </button>
+        </div>
+
         {/* 3. SIZE SELECTOR BOXES (A3, A4, A5 - ONLY SIZE TEXT) */}
         <div className="product-size-boxes-row" role="radiogroup" aria-label="Select poster size">
           {(['A3', 'A4', 'A5'] as PosterSize[]).map((sz) => {
@@ -1572,7 +1591,7 @@ export function CustomPage() {
       artTreatment: 'art-aurora',
       customUpload: {
         name: `Photobooth_${stripPhotos.length}_${Date.now()}`,
-        preview: stripPhotos[0]?.url || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349696/dungeons_store_assets/photobooth_7e67e9.jpg',
+        preview: stripPhotos[0]?.url || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793352215/dungeons_hero_assets/photobooth_strip_new.jpg',
         photos: stripPhotos.map((p) => p.url),
         borderStyle: stripFrameStyle,
         customType: 'Photobooth Strip',
@@ -1664,7 +1683,7 @@ export function CustomPage() {
         artTreatment: 'art-aurora',
         customUpload: {
           name: `Photobooth_${stripPhotos.length}_${Date.now()}`,
-          preview: stripPhotos[0]?.url || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349696/dungeons_store_assets/photobooth_7e67e9.jpg',
+          preview: stripPhotos[0]?.url || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793352215/dungeons_hero_assets/photobooth_strip_new.jpg',
           photos: stripPhotos.map((p) => p.url),
           borderStyle: stripFrameStyle,
           customType: 'Photobooth Strip',
@@ -1761,7 +1780,7 @@ export function CustomPage() {
           {/* Box 1: Custom Photobooth Strip */}
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
-              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349696/dungeons_store_assets/photobooth_7e67e9.jpg" alt="Custom Photobooth Strip" className="box-thumb-img" />
+              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793352215/dungeons_hero_assets/photobooth_strip_new.jpg" alt="Custom Photobooth Strip" className="box-thumb-img" />
               <span className="box-tag-pill">HOT FAVORITE</span>
             </div>
             <div className="box-body-wrap">

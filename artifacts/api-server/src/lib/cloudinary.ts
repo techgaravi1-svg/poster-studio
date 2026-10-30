@@ -80,3 +80,4 @@ export async function uploadBase64ToCloudinary(fileData: string, publicIdPrefix 
     }
   });
 }
+
