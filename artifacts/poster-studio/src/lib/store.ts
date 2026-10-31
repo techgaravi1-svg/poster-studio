@@ -313,14 +313,93 @@ export const store = {
   },
 };
 
-export function cartTotals(cart: CartItem[], coupon: string) {
+export interface ActiveCoupon {
+  id?: string;
+  code: string;
+  description?: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  minSpend?: number;
+  minQty?: number;
+  maxDiscount?: number | null;
+  isActive?: boolean;
+}
+
+// Global cached coupons list from API / Admin
+let liveCouponsCache: ActiveCoupon[] = [
+  {
+    code: 'FIRST10',
+    description: 'Welcome 10% Discount for New Art Lovers',
+    discountType: 'percentage',
+    discountValue: 10,
+    minSpend: 0,
+    minQty: 1,
+    isActive: true,
+  },
+];
+
+if (typeof window !== 'undefined') {
+  try {
+    const raw = localStorage.getItem('dungeons_live_coupons');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        liveCouponsCache = parsed;
+      }
+    }
+  } catch {}
+}
+
+export async function fetchLiveCoupons(): Promise<ActiveCoupon[]> {
+  try {
+    const res = await fetch(`/api/coupons?_t=${Date.now()}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.coupons)) {
+        liveCouponsCache = data.coupons;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('dungeons_live_coupons', JSON.stringify(data.coupons));
+          window.dispatchEvent(new CustomEvent('dungeons:coupons-updated', { detail: data.coupons }));
+        }
+        return data.coupons;
+      }
+    }
+  } catch (err) {
+    console.warn('[Store] Failed to fetch live coupons:', err);
+  }
+  return liveCouponsCache;
+}
+
+if (typeof window !== 'undefined') {
+  fetchLiveCoupons();
+}
+
+export function cartTotals(cart: CartItem[], coupon: string, customCoupons?: ActiveCoupon[]) {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const totalItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const shipping = subtotal === 0 || subtotal >= 299 ? 0 : 49;
+  const platformFee = subtotal > 0 ? 10 : 0; // ₹10 Platform Fee
 
   const code = coupon.trim().toUpperCase();
   let discount = 0;
-  if (code === 'STUDIO10' || code === 'FIRST10') {
+
+  const couponsList = (customCoupons && customCoupons.length > 0) ? customCoupons : liveCouponsCache;
+  const match = couponsList.find((c) => c.code.toUpperCase() === code && c.isActive !== false);
+
+  if (match) {
+    const eligibleQty = !match.minQty || totalItemCount >= match.minQty;
+    const eligibleSpend = !match.minSpend || subtotal >= match.minSpend;
+    if (eligibleQty && eligibleSpend) {
+      if (match.discountType === 'percentage') {
+        discount = Math.round((subtotal * match.discountValue) / 100);
+        if (match.maxDiscount && discount > match.maxDiscount) {
+          discount = match.maxDiscount;
+        }
+      } else {
+        discount = match.discountValue;
+      }
+    }
+  } else if (code === 'STUDIO10' || code === 'FIRST10') {
     discount = Math.round(subtotal * 0.1);
   } else if ((code === 'DUNGEONS3' || code === 'POSTER3') && totalItemCount >= 3) {
     // Buy 2 Get 1 Free: discount cheapest 1 item
@@ -332,8 +411,22 @@ export function cartTotals(cart: CartItem[], coupon: string) {
     discount = (prices[0] || 0) + (prices[1] || 0);
   }
 
-  const total = Math.max(0, subtotal + shipping - discount);
-  return { subtotal, shipping, discount, total, totalItemCount };
+  const total = Math.max(0, subtotal + shipping + platformFee - discount);
+  const minOrderAmount = 300;
+  const isOrderEligible = total >= minOrderAmount;
+  const minOrderShortfall = Math.max(0, minOrderAmount - total);
+
+  return {
+    subtotal,
+    shipping,
+    platformFee,
+    discount,
+    total,
+    totalItemCount,
+    minOrderAmount,
+    isOrderEligible,
+    minOrderShortfall,
+  };
 }
 
 export function makeOrder(input: Omit<DemoOrder, 'id' | 'createdAt'>): DemoOrder {

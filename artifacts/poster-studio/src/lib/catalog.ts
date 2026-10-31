@@ -1,4 +1,18 @@
 import { useState, useEffect } from 'react';
+import rawDatabaseProducts from './catalog-full-db.json';
+
+// Universal Cloudinary next-gen format, auto-quality, and responsive sizing helper
+export function optimizeCloudinary(url?: string, width?: number, quality: number = 80): string {
+  if (!url || typeof url !== 'string') return '';
+  if (!url.includes('res.cloudinary.com')) return url;
+  if (url.includes('/image/upload/f_auto') || url.includes('/image/upload/c_')) return url;
+
+  const transforms = ['f_auto', `q_${quality}`];
+  if (width) {
+    transforms.push(`w_${width}`, 'c_limit');
+  }
+  return url.replace('/image/upload/', `/image/upload/${transforms.join(',')}/`);
+}
 
 export type PosterSize = 'A5' | 'A4' | 'A3';
 export type Orientation = 'portrait' | 'landscape' | 'square';
@@ -49,7 +63,7 @@ const defaultShipping = [
   { title: 'Delivery Timeline', desc: 'Once dispatched, orders are typically delivered within 7 working days. Delivery times may vary depending on your location and courier partner.' },
 ];
 
-export const defaultCatalogProducts: Product[] = [
+export const seedFallbackProducts: Product[] = [
   {
     id: 'prod-asta-black-clover',
     slug: 'asta-black-clover-anime-poster',
@@ -783,18 +797,18 @@ export type StoreCategory = {
 
 // 8 Official Coming Soon Categories
 export const comingSoonCategories = [
-  { id: 'cat-wallart', name: 'Wall Art', slug: 'wall-art', image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-2_3df893.jpg', description: 'Handcrafted gallery canvas art and modern wall decor.' },
-  { id: 'cat-wallmounts', name: 'Wall Mounts', slug: 'wall-mounts', image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349692/dungeons_store_assets/circle-3_c756da.jpg', description: 'Floating oak shelves, display brackets, and gallery mounts.' },
-  { id: 'cat-beanbags', name: 'Bean Bags', slug: 'bean-bags', image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349693/dungeons_store_assets/circle-4_4f8dd6.jpg', description: 'Ultra-comfortable luxury corduroy and velvet lounger bean bags.' },
-  { id: 'cat-flags', name: 'Flags', slug: 'flags', image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-5_e14394.jpg', description: 'Vintage pop-culture, motorsport, and aesthetic wall tapestry flags.' },
-  { id: 'cat-mirrors', name: 'Mirrors', slug: 'mirrors', image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-6_71a8b7.jpg', description: 'Chic wavy and arched statement aesthetic vanity wall mirrors.' },
-  { id: 'cat-curtains', name: 'Curtains', slug: 'curtains', image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-7_cac42e.jpg', description: 'Sun-drenched natural linen and sheer drapery for modern rooms.' },
-  { id: 'cat-tables', name: 'Tables', slug: 'tables', image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-8_851b08.jpg', description: 'Minimalist designer side tables and accent coffee tables.' },
-  { id: 'cat-rugs', name: 'Rugs & Carpets', slug: 'rugs-carpets', image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/circle-9_d755df.jpg', description: 'Hand-tufted Berber wool area rugs and modern floor tapestries.' },
+  { id: 'cat-wallart', name: 'Wall Art', slug: 'wall-art', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-2_3df893.jpg', 200, 80), description: 'Handcrafted gallery canvas art and modern wall decor.' },
+  { id: 'cat-wallmounts', name: 'Wall Mounts', slug: 'wall-mounts', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349692/dungeons_store_assets/circle-3_c756da.jpg', 200, 80), description: 'Floating oak shelves, display brackets, and gallery mounts.' },
+  { id: 'cat-beanbags', name: 'Bean Bags', slug: 'bean-bags', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349693/dungeons_store_assets/circle-4_4f8dd6.jpg', 200, 80), description: 'Ultra-comfortable luxury corduroy and velvet lounger bean bags.' },
+  { id: 'cat-flags', name: 'Flags', slug: 'flags', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-5_e14394.jpg', 200, 80), description: 'Vintage pop-culture, motorsport, and aesthetic wall tapestry flags.' },
+  { id: 'cat-mirrors', name: 'Mirrors', slug: 'mirrors', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-6_71a8b7.jpg', 200, 80), description: 'Chic wavy and arched statement aesthetic vanity wall mirrors.' },
+  { id: 'cat-cushions', name: 'Cushions', slug: 'cushions', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-7_cac42e.jpg', 200, 80), description: 'Plush velvet, aesthetic woven, and statement designer throw cushions.' },
+  { id: 'cat-tables', name: 'Tables', slug: 'tables', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-8_851b08.jpg', 200, 80), description: 'Minimalist designer side tables and accent coffee tables.' },
+  { id: 'cat-rugs', name: 'Rugs & Carpets', slug: 'rugs-carpets', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/circle-9_d755df.jpg', 200, 80), description: 'Hand-tufted Berber wool area rugs and modern floor tapestries.' },
 ];
 
 export const storeCategories: StoreCategory[] = [
-  { id: 'cat-posters', name: 'Posters', slug: 'posters', available: true, image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349692/dungeons_store_assets/circle-1_15823b.jpg', description: 'Museum-grade archival matte posters.' },
+  { id: 'cat-posters', name: 'Posters', slug: 'posters', available: true, image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349692/dungeons_store_assets/circle-1_15823b.jpg', 200, 80), description: 'Museum-grade archival matte posters.' },
   ...comingSoonCategories.map((c) => ({ ...c, available: false })),
 ];
 
@@ -903,6 +917,10 @@ export function transformDbProductToFrontend(p: any): Product {
   };
 }
 
+export const defaultCatalogProducts: Product[] = Array.isArray(rawDatabaseProducts) && rawDatabaseProducts.length > 0
+  ? (rawDatabaseProducts as any[]).map(transformDbProductToFrontend)
+  : seedFallbackProducts;
+
 export function getProductSizePrice(product: Product, size: PosterSize = 'A5'): number {
   if (product.sizePrices && typeof product.sizePrices[size] === 'number' && product.sizePrices[size]! > 0) {
     return product.sizePrices[size]!;
@@ -966,12 +984,12 @@ export function saveCatalogToIndexedDB(list: Product[]) {
 }
 
 export function loadCatalogFromStorage(): Product[] {
-  if (typeof window === 'undefined') return defaultCatalogProducts;
+  if (typeof window === 'undefined') return [...defaultCatalogProducts];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length >= defaultCatalogProducts.length) {
         return parsed.map((item: any, idx: number) => {
           const fallback = defaultCatalogProducts.find(
             (d) => d.id === item.id || (item.slug && d.slug === item.slug)
@@ -993,11 +1011,21 @@ export function loadCatalogFromStorage(): Product[] {
           };
         });
       }
+      // If cached catalog has fewer products than full database (e.g. stale 20 items from old dev session),
+      // preserve any user-uploaded custom posters and merge with full defaultCatalogProducts (732 posters)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const customItems = parsed.filter((p: any) => p && (String(p.id).startsWith('cust') || p.customUpload));
+        const merged = [...defaultCatalogProducts, ...customItems];
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        } catch {}
+        return merged;
+      }
     }
   } catch (e) {
     console.warn('[Catalog] Error loading catalog from localStorage:', e);
   }
-  return defaultCatalogProducts;
+  return [...defaultCatalogProducts];
 }
 
 export const products: Product[] = typeof window !== 'undefined'
@@ -1155,7 +1183,7 @@ export function deleteSingleProduct(productId: string): Product[] {
 
 export async function fetchLiveProducts(): Promise<Product[]> {
   try {
-    const res = await fetch(`/api/products?limit=500&_t=${Date.now()}`, {
+    const res = await fetch(`/api/products?limit=2000&_t=${Date.now()}`, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         Pragma: 'no-cache',
@@ -1163,12 +1191,12 @@ export async function fetchLiveProducts(): Promise<Product[]> {
     });
     const contentType = res.headers.get('content-type') || '';
     if (!res.ok || !contentType.includes('application/json')) {
-      return loadCatalogFromStorage();
+      const stored = loadCatalogFromStorage();
+      return stored && stored.length > 0 ? stored : [...defaultCatalogProducts];
     }
     const data = await res.json();
-    // A successful empty response is meaningful: the database is the source
-    // of truth, including when the admin has removed the last active product.
-    if (data.success && Array.isArray(data.products)) {
+    // A successful response is the database source of truth
+    if (data.success && Array.isArray(data.products) && data.products.length > 0) {
       const transformed = data.products.map(transformDbProductToFrontend);
       saveCatalogToStorage(transformed);
       return transformed;
@@ -1176,35 +1204,45 @@ export async function fetchLiveProducts(): Promise<Product[]> {
   } catch (err) {
     console.warn('[Catalog] Database fetch fallback to local storage:', err);
   }
-  return loadCatalogFromStorage();
+  const stored = loadCatalogFromStorage();
+  return stored && stored.length > 0 ? stored : [...defaultCatalogProducts];
 }
 
-export function useLiveProducts(): Product[] {
+export function useLiveProductsWithStatus(): { products: Product[]; isLoading: boolean } {
   const [list, setList] = useState<Product[]>(() => {
-    return typeof window !== 'undefined' ? loadCatalogFromStorage() : [...products];
+    const stored = typeof window !== 'undefined' ? loadCatalogFromStorage() : [...products];
+    return stored && stored.length > 0 ? stored : [...defaultCatalogProducts];
   });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    // Immediately sync with localStorage in case it updated
+    // Immediately sync with localStorage if available
     const localCurrent = loadCatalogFromStorage();
     if (localCurrent && localCurrent.length > 0) {
       setList([...localCurrent]);
+      setIsLoading(false);
     }
 
-    // Try fetching live from Prisma PostgreSQL
+    // Fetch up to 2000 live posters from Prisma database
     fetchLiveProducts().then((dbList) => {
       if (isMounted) {
         setList([...dbList]);
+        setIsLoading(false);
       }
+    }).catch(() => {
+      if (isMounted) setIsLoading(false);
     });
 
     const onUpdate = (e: any) => {
       if (e.detail && Array.isArray(e.detail)) {
         setList([...e.detail]);
+        setIsLoading(false);
       } else {
-        setList([...loadCatalogFromStorage()]);
+        const stored = loadCatalogFromStorage();
+        setList([...stored]);
+        if (stored.length > 0) setIsLoading(false);
       }
     };
 
@@ -1215,7 +1253,12 @@ export function useLiveProducts(): Product[] {
     };
   }, []);
 
-  return list;
+  return { products: list, isLoading };
+}
+
+export function useLiveProducts(): Product[] {
+  const { products } = useLiveProductsWithStatus();
+  return products;
 }
 
 // Auto-fetch from Prisma database on client startup and listen to other tabs

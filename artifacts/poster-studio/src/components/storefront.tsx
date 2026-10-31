@@ -17,11 +17,10 @@ import {
   Trash2,
   Instagram,
   Facebook,
-  Linkedin,
   Check,
 } from 'lucide-react';
 import type { Product } from '@/lib/catalog';
-import { formatPrice, products, storeCategories, getProductStock } from '@/lib/catalog';
+import { formatPrice, products, storeCategories, getProductStock, optimizeCloudinary } from '@/lib/catalog';
 import { cartTotals, store, useStore } from '@/lib/store';
 
 export function PosterArt({
@@ -35,23 +34,44 @@ export function PosterArt({
   title: string;
   compact?: boolean;
 }) {
-  const displaySrc = src && src.trim().length > 0 ? src : 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg';
+  const [isLoaded, setIsLoaded] = useState(false);
+  const rawSrc = src && src.trim().length > 0 ? src : 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg';
+  const displaySrc = optimizeCloudinary(rawSrc, compact ? 260 : 440, 80);
 
   return (
     <div className={`poster-art-img-wrapper ${compact ? 'poster-art-compact' : ''}`}>
+      {!isLoaded && <div className="skeleton-box poster-image-skeleton" />}
       <img
         src={displaySrc}
         alt={title}
-        className="poster-art-real-img"
+        width={compact ? 130 : 210}
+        height={compact ? 173 : 280}
+        className={`poster-art-real-img ${isLoaded ? 'img-loaded' : 'img-loading'}`}
         loading="lazy"
+        onLoad={() => setIsLoaded(true)}
         onError={(e) => {
+          setIsLoaded(true);
           const target = e.currentTarget as HTMLImageElement;
           if (!target.src.includes('poster-01.jpg')) {
-            target.src = 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg';
+            target.src = optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg', compact ? 260 : 440, 80);
           }
         }}
       />
     </div>
+  );
+}
+
+export function ProductCardSkeleton() {
+  return (
+    <article className="postgenz-product-card skeleton-card">
+      <div className="product-media-wrap">
+        <div className="skeleton-box skeleton-poster-media" />
+      </div>
+      <div className="product-info-block">
+        <div className="skeleton-box skeleton-text skeleton-title" />
+        <div className="skeleton-box skeleton-text skeleton-price" />
+      </div>
+    </article>
   );
 }
 
@@ -134,7 +154,6 @@ function CartDrawer({ onClose }: { onClose: () => void }) {
       >
         <div className="drawer-header">
           <div>
-            <span className="section-kicker">POSTGENZ</span>
             <h2 id="cart-drawer-title">
               Your Bag <span>({cart.reduce((sum, item) => sum + item.quantity, 0)})</span>
             </h2>
@@ -195,13 +214,48 @@ function CartDrawer({ onClose }: { onClose: () => void }) {
               ))}
             </div>
             <div className="drawer-footer-actions">
-              <div className="drawer-total">
-                <span>Subtotal</span>
-                <strong>{formatPrice(totals.subtotal)}</strong>
+              <div className="drawer-total flex flex-col gap-1 w-full text-xs text-gray-500 mb-2">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span className="font-semibold text-gray-900">{formatPrice(totals.subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Platform Fee</span>
+                  <span className="font-semibold text-gray-900">{formatPrice(totals.platformFee)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Shipping</span>
+                  <span className={totals.shipping === 0 ? "font-semibold text-emerald-600" : "font-semibold text-gray-900"}>
+                    {totals.shipping === 0 ? "FREE" : formatPrice(totals.shipping)}
+                  </span>
+                </div>
+                {totals.discount > 0 && (
+                  <div className="flex justify-between text-emerald-600 font-semibold">
+                    <span>Coupon Discount</span>
+                    <span>−{formatPrice(totals.discount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm font-bold text-gray-950 pt-1 border-t border-gray-100">
+                  <span>Total Amount</span>
+                  <span>{formatPrice(totals.total)}</span>
+                </div>
               </div>
-              <Link className="button postgenz-btn button-wide" href="/checkout" onClick={onClose}>
-                Proceed to Checkout <ArrowRight size={14} />
-              </Link>
+
+              {!totals.isOrderEligible && (
+                <div className="mb-2 p-2 bg-amber-50 border border-amber-300 rounded-lg text-amber-900 text-[11px] font-semibold text-center">
+                  ⚠️ Minimum order must be ₹300 (Add ₹{totals.minOrderShortfall} more)
+                </div>
+              )}
+
+              {totals.isOrderEligible ? (
+                <Link className="button postgenz-btn button-wide" href="/checkout" onClick={onClose}>
+                  Proceed to Checkout <ArrowRight size={14} />
+                </Link>
+              ) : (
+                <Link className="button postgenz-btn button-wide opacity-50 pointer-events-none" href="/checkout" onClick={onClose}>
+                  Add ₹{totals.minOrderShortfall} More to Order
+                </Link>
+              )}
             </div>
           </>
         )}
@@ -234,8 +288,10 @@ function MenuDrawer({
         <div className="menu-drawer-top">
           <Link href="/" onClick={onClose} className="header-brand-logo" aria-label="DUNGEONS Home">
             <img
-              src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349716/dungeons_store_assets/header-logo_b11022.png"
+              src={optimizeCloudinary("https://res.cloudinary.com/pyjyrmry/image/upload/v1793349716/dungeons_store_assets/header-logo_b11022.png", 360, 85)}
               alt="DUNGEONS"
+              width="180"
+              height="43"
               className="postgenz-logo-img dungeons-navbar-logo"
             />
           </Link>
@@ -267,13 +323,10 @@ function MenuDrawer({
                 <span>Custom Orders</span>
                 <span className="badge-new-pill">NEW</span>
               </Link>
-              <Link
-                href="/collections/wall-packs"
-                className={`menu-nav-item ${location === '/collections/wall-packs' ? 'active-pill' : ''}`}
-                onClick={onClose}
-              >
-                Wall Packs
-              </Link>
+              <div className="menu-nav-item opacity-60 cursor-not-allowed select-none flex items-center justify-between" title="Coming Soon">
+                <span>Wall Packs</span>
+                <span className="cat-status-chip soon-chip text-[10px]">Coming Soon</span>
+              </div>
               <div className="menu-categories-accordion">
                 <button
                   type="button"
@@ -446,8 +499,10 @@ export function Header() {
             {!menuOpen && (
               <Link href="/" className="header-brand-logo" aria-label="DUNGEONS Home">
                 <img
-                  src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349716/dungeons_store_assets/header-logo_b11022.png"
+                  src={optimizeCloudinary("https://res.cloudinary.com/pyjyrmry/image/upload/v1793349716/dungeons_store_assets/header-logo_b11022.png", 360, 85)}
                   alt="DUNGEONS"
+                  width="180"
+                  height="43"
                   className="postgenz-logo-img dungeons-navbar-logo"
                 />
               </Link>
@@ -463,9 +518,10 @@ export function Header() {
                 <span>Custom Orders</span>
                 <span className="badge-new-pill">NEW</span>
               </Link>
-              <Link href="/collections/wall-packs" className="desktop-nav-item">
+              <span className="desktop-nav-item opacity-60 cursor-not-allowed select-none inline-flex items-center gap-1.5" title="Coming Soon">
                 Wall Packs
-              </Link>
+                <span className="cat-status-chip soon-chip text-[9px] py-0.5 px-1.5 font-bold">Coming Soon</span>
+              </span>
               {/* 4. Posters Dropdown */}
               <div className="desktop-categories-dropdown">
                 <button type="button" className="desktop-nav-item categories-dropdown-trigger">
@@ -716,8 +772,11 @@ export function Footer() {
           <div className="footer-block footer-brand-block">
             <Link href="/" className="footer-brand-link" aria-label="DUNGEONS Home">
               <img
-                src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349716/dungeons_store_assets/footer-logo_53c8ed.png"
+                src={optimizeCloudinary("https://res.cloudinary.com/pyjyrmry/image/upload/v1793349716/dungeons_store_assets/footer-logo_53c8ed.png", 320, 85)}
                 alt="DUNGEONS"
+                width="150"
+                height="98"
+                loading="lazy"
                 className="footer-dungeons-logo"
               />
             </Link>
@@ -815,14 +874,6 @@ export function Footer() {
               aria-label="Facebook"
             >
               <Facebook size={18} />
-            </a>
-            <a
-              href="#"
-              onClick={(e) => e.preventDefault()}
-              className="social-icon-box"
-              aria-label="LinkedIn"
-            >
-              <Linkedin size={18} />
             </a>
           </div>
         </div>

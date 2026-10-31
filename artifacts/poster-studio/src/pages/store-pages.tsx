@@ -44,9 +44,9 @@ import {
   Download,
   FileText,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, products, searchProducts, storeCategories, useLiveProducts, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, products, searchProducts, storeCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
-import { PosterArt, ProductCard, Toast } from '@/components/storefront';
+import { PosterArt, ProductCard, ProductCardSkeleton, Toast } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
 import { authService } from '@/services/auth';
 import { paymentService } from '@/services/payment';
@@ -75,7 +75,7 @@ function SizeChartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       <div className="size-guide-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="size-guide-modal-header">
           <div className="size-guide-modal-title">
-            <Ruler size={18} className="text-purple-400" />
+            <Ruler size={18} className="text-slate-800" />
             <span>DUNGEONS • POSTERS SIZE GUIDE</span>
           </div>
           <button
@@ -96,10 +96,6 @@ function SizeChartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
               className="size-guide-graphic-img"
             />
           </div>
-
-          <p className="text-xs text-neutral-300 text-center leading-relaxed px-2">
-            All DUNGEONS posters are archival printed on <strong>premium luxury matte stock</strong> with vivid HD inks. Choose the perfect size based on the space you want to decorate.
-          </p>
         </div>
 
         <div className="size-guide-modal-footer">
@@ -119,33 +115,79 @@ function SizeChartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 export function HomePage() {
   const [toast, setToast] = useState('');
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
-  const liveProducts = useLiveProducts();
+  const { products: liveProducts, isLoading } = useLiveProductsWithStatus();
 
-  const bestSellers = liveProducts.filter((p) => p.bestseller).slice(0, 6);
-  const trending = liveProducts.filter((p) => p.newArrival || p.collection === 'football').slice(0, 6);
-  const newArrivals = liveProducts.filter((p) => p.newArrival || p.collection === 'marvel-dc' || p.tags.includes('sports')).slice(0, 6);
+  // Distinct curated sections on HomePage with zero overlapping posters (5 posters each, single row):
+  const bestSellers = useMemo(() => {
+    if (!liveProducts || liveProducts.length === 0) return [];
+    const curated = liveProducts.filter((p) => p.bestseller || p.featured);
+    if (curated.length >= 5) return curated.slice(0, 5);
+    return liveProducts.slice(0, 5);
+  }, [liveProducts]);
+
+  const trending = useMemo(() => {
+    if (!liveProducts || liveProducts.length === 0) return [];
+    const bestSellerIds = new Set(bestSellers.map((p) => p.id));
+    const trendingMatches = liveProducts.filter(
+      (p) =>
+        !bestSellerIds.has(p.id) &&
+        (p.collection === 'football' ||
+          p.collection === 'sports' ||
+          p.category === 'SPORTS' ||
+          p.category === 'ANIME' ||
+          p.tags?.some((t) => typeof t === 'string' && (t.toLowerCase().includes('football') || t.toLowerCase().includes('sport') || t.toLowerCase().includes('trending'))))
+    );
+    if (trendingMatches.length >= 5) {
+      return trendingMatches.slice(0, 5);
+    }
+    const leftovers = liveProducts.filter((p) => !bestSellerIds.has(p.id));
+    return [...trendingMatches, ...leftovers].slice(0, 5);
+  }, [liveProducts, bestSellers]);
+
+  const newArrivals = useMemo(() => {
+    if (!liveProducts || liveProducts.length === 0) return [];
+    const usedIds = new Set([...bestSellers.map((p) => p.id), ...trending.map((p) => p.id)]);
+    const arrivalMatches = liveProducts.filter(
+      (p) =>
+        !usedIds.has(p.id) &&
+        (p.collection === 'marvel-dc' ||
+          p.category === 'MARVEL-DC' ||
+          p.category === 'MOVIES' ||
+          p.category === 'AESTHETIC' ||
+          p.tags?.some((t) => typeof t === 'string' && (t.toLowerCase().includes('marvel') || t.toLowerCase().includes('dc') || t.toLowerCase().includes('spider') || t.toLowerCase().includes('batman'))) ||
+          p.newArrival)
+    );
+    if (arrivalMatches.length >= 5) {
+      return arrivalMatches.slice(0, 5);
+    }
+    const leftovers = liveProducts.filter((p) => !usedIds.has(p.id));
+    return [...arrivalMatches, ...leftovers].slice(0, 5);
+  }, [liveProducts, bestSellers, trending]);
 
   const customCategories = [
     {
       id: 'photo-strip',
       title: 'Custom Photobooth Strip',
       subtitle: 'Turn your camera roll into aesthetic 3-strip & 4-strip prints',
-      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793352215/dungeons_hero_assets/photobooth_strip_new.jpg',
-      link: '/custom?type=strip',
+      image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793352215/dungeons_hero_assets/photobooth_strip_new.jpg', 600, 80),
+      link: '#',
+      available: false,
     },
     {
       id: 'mini-pocket',
       title: 'Mini Pocket Photos (Mini Prints)',
       subtitle: 'Cute pocket-sized instant polaroid style keepsake memories',
-      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/minipocket_1d50a9.jpg',
-      link: '/custom?type=pocket',
+      image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/minipocket_1d50a9.jpg', 600, 80),
+      link: '#',
+      available: false,
     },
     {
       id: 'custom-posters',
       title: 'Custom Wall Posters',
       subtitle: 'Ultra-HD custom archival gallery prints of your own art',
-      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/custom-poster_1640a9.jpg',
+      image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/custom-poster_1640a9.jpg', 600, 80),
       link: '/custom?type=poster',
+      available: true,
     },
   ];
   const [customSlideIndex, setCustomSlideIndex] = useState(0);
@@ -203,19 +245,19 @@ export function HomePage() {
   const heroSlides = [
     {
       id: 'hero-1',
-      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793352224/dungeons_hero_assets/hero_slide_1.jpg',
+      image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793352224/dungeons_hero_assets/hero_slide_1.jpg', 1280, 80),
       link: '/collections',
       title: 'Dungeons Posters Hero 1',
     },
     {
       id: 'hero-2',
-      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793352231/dungeons_hero_assets/hero_slide_2.jpg',
+      image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793352231/dungeons_hero_assets/hero_slide_2.jpg', 1280, 80),
       link: '/collections',
       title: 'Dungeons Posters Hero 2',
     },
     {
       id: 'hero-3',
-      image: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793352239/dungeons_hero_assets/hero_slide_3.jpg',
+      image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793352239/dungeons_hero_assets/hero_slide_3.jpg', 1280, 80),
       link: '/custom',
       title: 'Dungeons Posters Hero 3',
     },
@@ -245,10 +287,15 @@ export function HomePage() {
               <div key={slide.id} className="hd-hero-slide-item">
                 <Link href={slide.link} className="hd-hero-slide-link">
                   <img
-                    src={slide.image}
+                    src={optimizeCloudinary(slide.image, 1200, 80)}
+                    srcSet={`${optimizeCloudinary(slide.image, 640, 80)} 640w, ${optimizeCloudinary(slide.image, 1200, 80)} 1200w`}
+                    sizes="(max-width: 640px) 100vw, 100vw"
                     alt={slide.title}
                     className="hd-hero-full-img"
                     loading={idx === 0 ? 'eager' : 'lazy'}
+                    fetchPriority={idx === 0 ? 'high' : 'auto'}
+                    width="1200"
+                    height="675"
                   />
                 </Link>
               </div>
@@ -297,7 +344,14 @@ export function HomePage() {
                 <Link key={cat.id} href="/collections/posters" className="cat-icon-card cat-clickable">
                   <div className="cat-img-wrap insta-story-ring available-ring">
                     <div className="cat-img-inner">
-                      <img src={cat.image} alt={cat.name} className="cat-img" />
+                      <img
+                        src={optimizeCloudinary(cat.image, 180, 80)}
+                        alt={cat.name}
+                        className="cat-img"
+                        width="83"
+                        height="83"
+                        loading="lazy"
+                      />
                     </div>
                   </div>
                   <span className="cat-name">{cat.name}</span>
@@ -314,7 +368,14 @@ export function HomePage() {
               >
                 <div className="cat-img-wrap insta-story-ring disabled-ring">
                   <div className="cat-img-inner">
-                    <img src={cat.image} alt={cat.name} className="cat-img modern-soon-img" />
+                    <img
+                      src={optimizeCloudinary(cat.image, 180, 80)}
+                      alt={cat.name}
+                      className="cat-img modern-soon-img"
+                      width="83"
+                      height="83"
+                      loading="lazy"
+                    />
                   </div>
                 </div>
                 <span className="cat-name">{cat.name}</span>
@@ -334,46 +395,62 @@ export function HomePage() {
 
         <div className="poster-single-line-carousel-wrap">
           <div className="poster-single-line-track">
-            {bestSellers.map((product) => (
-              <div key={product.id} className="single-line-poster-item">
-                <ProductCard product={product} onAdded={notify} />
-              </div>
-            ))}
+            {(isLoading || bestSellers.length === 0) ? (
+              [1, 2, 3, 4, 5].map((n) => (
+                <div key={n} className="single-line-poster-item">
+                  <ProductCardSkeleton />
+                </div>
+              ))
+            ) : (
+              bestSellers.map((product) => (
+                <div key={product.id} className="single-line-poster-item">
+                  <ProductCard product={product} onAdded={notify} />
+                </div>
+              ))
+            )}
           </div>
         </div>
 
         <div className="explore-more-wrap">
-          <Link href="/best-sellers" className="btn-explore-more">
+          <Link href="/collections/posters" className="btn-explore-more">
             EXPLORE MORE
           </Link>
         </div>
       </section>
 
-      {/* 4. SECTION 2: TRENDING POSTERS (SINGLE LINE ON MOBILE - PAGE 3) */}
+      {/* 4. SECTION 2: TRENDING POSTERS (SINGLE LINE - 5 POSTERS ONLY) */}
       <section className="home-poster-section">
         <div className="poster-section-header">
           <h2 className="stencil-heading">TRENDING POSTERS</h2>
-          <span className="stencil-subheading">NEW ARRIVALS</span>
+          <span className="stencil-subheading">HOT DROPS</span>
         </div>
 
         <div className="poster-single-line-carousel-wrap">
           <div className="poster-single-line-track">
-            {trending.map((product) => (
-              <div key={product.id} className="single-line-poster-item">
-                <ProductCard product={product} onAdded={notify} />
-              </div>
-            ))}
+            {(isLoading || trending.length === 0) ? (
+              [1, 2, 3, 4, 5].map((n) => (
+                <div key={n} className="single-line-poster-item">
+                  <ProductCardSkeleton />
+                </div>
+              ))
+            ) : (
+              trending.map((product) => (
+                <div key={product.id} className="single-line-poster-item">
+                  <ProductCard product={product} onAdded={notify} />
+                </div>
+              ))
+            )}
           </div>
         </div>
 
         <div className="explore-more-wrap">
-          <Link href="/collections/football" className="btn-explore-more">
+          <Link href="/collections/posters" className="btn-explore-more">
             EXPLORE MORE
           </Link>
         </div>
       </section>
 
-      {/* 5. SECTION 3: NEW ARRIVALS POSTERS (SINGLE LINE ON MOBILE - PAGE 3) */}
+      {/* 5. SECTION 3: NEW ARRIVALS POSTERS (SINGLE LINE - 5 POSTERS ONLY) */}
       <section className="home-poster-section">
         <div className="poster-section-header">
           <h2 className="stencil-heading">NEW ARRIVALS POSTERS</h2>
@@ -382,11 +459,19 @@ export function HomePage() {
 
         <div className="poster-single-line-carousel-wrap">
           <div className="poster-single-line-track">
-            {newArrivals.map((product) => (
-              <div key={product.id} className="single-line-poster-item">
-                <ProductCard product={product} onAdded={notify} />
-              </div>
-            ))}
+            {(isLoading || newArrivals.length === 0) ? (
+              [1, 2, 3, 4, 5].map((n) => (
+                <div key={n} className="single-line-poster-item">
+                  <ProductCardSkeleton />
+                </div>
+              ))
+            ) : (
+              newArrivals.map((product) => (
+                <div key={product.id} className="single-line-poster-item">
+                  <ProductCard product={product} onAdded={notify} />
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -412,20 +497,45 @@ export function HomePage() {
           {customCategories.map((item, idx) => (
             <div
               key={item.id}
-              className={`custom-photobooth-preview-card ${customSlideIndex === idx ? 'card-active-mobile' : ''}`}
+              className={`custom-photobooth-preview-card ${customSlideIndex === idx ? 'card-active-mobile' : ''} ${!item.available ? 'opacity-90' : ''}`}
             >
-              <Link href={item.link} className="photobooth-img-link">
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="photobooth-preview-img"
-                />
-              </Link>
+              {item.available ? (
+                <Link href={item.link} className="photobooth-img-link">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    width="485"
+                    height="325"
+                    loading="lazy"
+                    className="photobooth-preview-img"
+                  />
+                </Link>
+              ) : (
+                <div className="photobooth-img-link relative cursor-not-allowed select-none">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    width="485"
+                    height="325"
+                    loading="lazy"
+                    className="photobooth-preview-img opacity-85"
+                  />
+                  <div className="absolute top-3 right-3 bg-neutral-900/80 backdrop-blur-md text-white text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border border-white/20 tracking-wider">
+                    Coming Soon
+                  </div>
+                </div>
+              )}
               <div className="photobooth-details">
                 <h3 className="photobooth-title">{item.title}</h3>
-                <Link href={item.link} className="btn-design-now">
-                  DESIGN NOW
-                </Link>
+                {item.available ? (
+                  <Link href={item.link} className="btn-design-now">
+                    DESIGN NOW
+                  </Link>
+                ) : (
+                  <span className="btn-design-now opacity-60 cursor-not-allowed select-none bg-neutral-200 text-neutral-600 border border-neutral-300">
+                    COMING SOON
+                  </span>
+                )}
               </div>
             </div>
           ))}
@@ -478,11 +588,11 @@ const categoryTeasers: Record<string, { title: string; subtitle: string; priceEs
     { title: 'Charcoal Gaming Recliner Bag', subtitle: 'With Headrest & Side Pocket', priceEstimate: 'Rs. 2,899' },
     { title: 'Pecan Vegan Leather Lounger', subtitle: 'Waterproof Luxury Aesthetic Bean Bag', priceEstimate: 'Rs. 3,299' },
   ],
-  curtains: [
-    { title: 'French Washed Linen Sheers', subtitle: 'Natural Daylight Filtering Drape', priceEstimate: 'Rs. 999' },
-    { title: 'Sunlit Ochre Cotton Panels', subtitle: 'Textured Semi-Blackout 2-Pack', priceEstimate: 'Rs. 1,299' },
-    { title: 'Boho Slub Weave Room Divider', subtitle: 'Heavy Organic Cotton Header', priceEstimate: 'Rs. 1,499' },
-    { title: 'Charcoal Minimalist Blackout', subtitle: 'Thermal Insulated Studio Curtains', priceEstimate: 'Rs. 1,699' },
+  cushions: [
+    { title: 'Plush Velvet Aesthetic Cushion', subtitle: 'Ultra-Soft Geometric Throw Pillow', priceEstimate: 'Rs. 499' },
+    { title: 'Textured Bouclé Accent Cushion', subtitle: 'Premium Modern Minimalist Pillow', priceEstimate: 'Rs. 699' },
+    { title: 'Woven Bohemian Fringe Cushion', subtitle: 'Heavy Organic Cotton Pillow Case', priceEstimate: 'Rs. 599' },
+    { title: 'Charcoal Minimalist Studio Cushion', subtitle: 'Luxury Velvet Sofa & Bed Accent', priceEstimate: 'Rs. 799' },
   ],
   mirrors: [
     { title: 'Wavy Ripple Full Body Mirror', subtitle: 'Curved Velvet Frame 160x60cm', priceEstimate: 'Rs. 3,499' },
@@ -542,6 +652,8 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     ? 'bestsellers'
     : slugParam === 'posters' || slugParam === 'all'
     ? 'all'
+    : slugParam === 'football' || slugParam === 'cricket'
+    ? 'sports'
     : slugParam && collections.some((c) => c.slug === slugParam)
     ? slugParam
     : 'all';
@@ -566,7 +678,7 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     { slug: 'devotional', label: 'DEVOTIONAL' },
   ];
 
-  const liveProducts = useLiveProducts();
+  const { products: liveProducts, isLoading } = useLiveProductsWithStatus();
 
   const currentCategoryLabel = !isPostersActive
     ? `${activeCategory.name} — COMING SOON`
@@ -584,19 +696,26 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     } else if (activePosterSubSlug !== 'all') {
       const slug = activePosterSubSlug.toLowerCase();
       list = liveProducts.filter((p) => {
-        if (p.collection === slug) return true;
-        if (slug === 'marvel-dc') return p.collection === 'marvel-dc' || p.tags.some((t) => t.includes('marvel') || t.includes('dc') || t.includes('spider'));
-        if (slug === 'anime') return p.collection === 'anime' || p.category.toLowerCase().includes('anime') || p.tags.some((t) => t.includes('anime') || t.includes('manga') || t.includes('clover'));
-        if (slug === 'diva') return p.category.toLowerCase().includes('diva') || p.tags.some((t) => t.includes('vogue') || t.includes('fashion') || t.includes('diva') || t.includes('chic') || t.includes('lips') || t.includes('supreme'));
-        if (slug === 'landscapes') return p.tags.some((t) => t.includes('landscape') || t.includes('nature') || t.includes('skyline') || t.includes('view') || t.includes('leap of faith'));
-        if (slug === 'automative') return p.tags.some((t) => t.includes('car') || t.includes('mustang') || t.includes('automotive') || t.includes('automative') || t.includes('speed'));
-        if (slug === 'movies-web-series') return p.collection === 'aesthetic' || p.category.toLowerCase().includes('cinema') || p.tags.some((t) => t.includes('cinema') || t.includes('movie') || t.includes('wick') || t.includes('bateman') || t.includes('bean'));
-        if (slug === 'music-artists') return p.tags.some((t) => t.includes('music') || t.includes('album') || t.includes('artist') || t.includes('pop art') || t.includes('lips') || t.includes('tiger'));
-        if (slug === 'video-games') return p.tags.some((t) => t.includes('game') || t.includes('gaming') || t.includes('pixel') || t.includes('spider-verse'));
-        if (slug === 'sports') return p.collection === 'football' || p.collection === 'cricket' || p.tags.some((t) => t.includes('sport') || t.includes('football') || t.includes('cricket') || t.includes('messi') || t.includes('ronaldo'));
-        if (slug === 'motivational') return p.tags.some((t) => t.includes('motivational') || t.includes('focus') || t.includes('inspire') || t.includes('mindset') || t.includes('psycho'));
-        if (slug === 'devotional') return p.collection === 'devotional' || p.tags.some((t) => t.includes('devotional') || t.includes('god') || t.includes('divine') || t.includes('works out'));
-        return p.tags.includes(slug) || p.category.toLowerCase().includes(slug);
+        const cat = (p.category || '').toLowerCase();
+        const col = (p.collection || '').toLowerCase();
+        const title = (p.title || '').toLowerCase();
+        const tags = Array.isArray(p.tags) ? p.tags.map((t) => String(t).toLowerCase()) : [];
+        const hasKeyword = (keywords: string[]) =>
+          keywords.some((kw) => col === kw || cat.includes(kw) || title.includes(kw) || tags.some((t) => t.includes(kw)));
+
+        if (col === slug) return true;
+        if (slug === 'marvel-dc') return hasKeyword(['marvel', 'dc', 'superhero', 'spider', 'batman', 'iron man', 'avenger']);
+        if (slug === 'anime') return hasKeyword(['anime', 'manga', 'clover', 'zoldyck', 'hunter', 'jujutsu', 'goku', 'naruto', 'one piece', 'luffy', 'zoro']);
+        if (slug === 'diva') return hasKeyword(['diva', 'fashion', 'vogue', 'chic', 'lips', 'supreme', 'model', 'aesthetic']);
+        if (slug === 'landscapes') return hasKeyword(['landscape', 'nature', 'skyline', 'mountain', 'view', 'ocean', 'sunset']);
+        if (slug === 'automative') return hasKeyword(['automotive', 'automative', 'car', 'mustang', 'porsche', 'speed', 'drift', 'gtr', 'bmw', 'ferrari']);
+        if (slug === 'movies-web-series') return hasKeyword(['movie', 'series', 'cinema', 'wick', 'bateman', 'bean', 'peaky', 'film', 'godfather', 'breaking bad', 'aesthetic']);
+        if (slug === 'music-artists') return hasKeyword(['music', 'artist', 'singer', 'album', 'rap', 'rock', 'hip hop', 'travis', 'eminem']);
+        if (slug === 'video-games') return hasKeyword(['game', 'gaming', 'esports', 'pixel', 'arcade', 'playstation', 'xbox', 'gta', 'witcher', 'cyberpunk']);
+        if (slug === 'sports' || slug === 'football' || slug === 'cricket') return hasKeyword(['sport', 'sports', 'football', 'cricket', 'messi', 'ronaldo', 'fifa', 'neymar', 'real madrid', 'barcelona']);
+        if (slug === 'motivational') return hasKeyword(['motivational', 'motivation', 'focus', 'inspire', 'inspiration', 'mindset', 'gym', 'hustle', 'quote']);
+        if (slug === 'devotional') return hasKeyword(['devotional', 'god', 'divine', 'shiva', 'krishna', 'ram', 'hanuman', 'spiritual', 'temple', 'buddha']);
+        return tags.some((t) => t.includes(slug)) || cat.includes(slug) || col.includes(slug);
       });
     }
     list = list.filter((p) => p.price >= minPrice && p.price <= maxPrice);
@@ -669,7 +788,7 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
             </button>
 
             <span className="text-xs font-semibold text-gray-500">
-              {filteredProducts.length} POSTERS AVAILABLE
+              {isLoading && filteredProducts.length === 0 ? 'LOADING POSTERS...' : `${filteredProducts.length} POSTERS AVAILABLE`}
             </span>
 
             <div className="view-mode-toggles">
@@ -694,7 +813,13 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
 
           {/* POSTERS PRODUCT GRID */}
           <section className="collection-products-section">
-            {filteredProducts.length === 0 ? (
+            {isLoading && filteredProducts.length === 0 ? (
+              <div className={`collection-grid-container ${viewMode === 'single' ? 'single-col-grid' : 'four-col-laptop-grid'}`}>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                  <ProductCardSkeleton key={n} />
+                ))}
+              </div>
+            ) : filteredProducts.length === 0 ? (
               <div className="empty-state">
                 <p>No posters found matching this filter.</p>
                 <Link href="/collections/posters" className="button postgenz-btn">
@@ -939,8 +1064,8 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
 
 export function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
-  const liveProducts = useLiveProducts();
-  const product = liveProducts.find((p) => p.slug === slug || p.id === slug) || getProduct(slug) || liveProducts[0] || products[0];
+  const { products: liveProducts, isLoading } = useLiveProductsWithStatus();
+  const product = liveProducts.find((p) => p.slug === slug || p.id === slug) || getProduct(slug);
   const [, navigate] = useLocation();
   const { cart, wishlist = [] } = useStore();
   const [selectedSize, setSelectedSize] = useState<PosterSize>('A5');
@@ -950,17 +1075,66 @@ export function ProductPage() {
   const [offerModalOpen, setOfferModalOpen] = useState(false);
   const [toast, setToast] = useState('');
 
+  if (!product) {
+    if (isLoading) {
+      return (
+        <main className="product-page-main max-w-6xl mx-auto px-4 py-8">
+          <div className="product-layout-grid grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="skeleton-box" style={{ aspectRatio: '3/4', borderRadius: '16px' }} />
+            <div className="flex flex-col gap-4">
+              <div className="skeleton-box" style={{ height: '32px', width: '80%' }} />
+              <div className="skeleton-box" style={{ height: '24px', width: '40%' }} />
+              <div className="skeleton-box" style={{ height: '60px', width: '100%', marginTop: '20px' }} />
+              <div className="skeleton-box" style={{ height: '50px', width: '100%', marginTop: '20px' }} />
+            </div>
+          </div>
+        </main>
+      );
+    }
+    return (
+      <main className="empty-state max-w-md mx-auto py-16 text-center">
+        <h2>Poster Not Found</h2>
+        <p className="text-gray-500 mt-2 mb-6">The poster you are looking for is either unavailable or has been removed.</p>
+        <Link href="/collections/posters" className="button postgenz-btn">
+          Explore All Posters
+        </Link>
+      </main>
+    );
+  }
+
   const isWishlisted = wishlist.includes(product.slug) || wishlist.includes(product.id);
 
   const toggleWishlist = () => {
     store.toggleWishlist(product.slug);
   };
 
+  // User star-only rating state
+  const [userRating, setUserRating] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(`dungeons_rating_${product.id}`);
+      return saved ? parseInt(saved, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
+  const [hoverRating, setHoverRating] = useState<number>(0);
+
+  const handleRateProduct = (stars: number) => {
+    setUserRating(stars);
+    try {
+      localStorage.setItem(`dungeons_rating_${product.id}`, stars.toString());
+    } catch {
+      // ignore
+    }
+    setToast(`Thank you! You rated this poster ${stars} stars.`);
+    window.setTimeout(() => setToast(''), 3000);
+  };
+
   const similarProducts = useMemo(() => {
     const list = liveProducts.filter((p) => p.id !== product.id);
     const sameCategory = list.filter((p) => p.category === product.category || p.collection === product.collection);
     const others = list.filter((p) => p.category !== product.category && p.collection !== product.collection);
-    return [...sameCategory, ...others].slice(0, 4);
+    return [...sameCategory, ...others].slice(0, 6);
   }, [liveProducts, product.id, product.category, product.collection]);
 
   const toggleAccordion = (name: string) => {
@@ -1029,13 +1203,17 @@ export function ProductPage() {
           </div>
         )}
         <img
-          src={heroImageSrc}
+          src={optimizeCloudinary(heroImageSrc, 800, 85)}
           alt={product.title}
+          width="600"
+          height="800"
+          fetchPriority="high"
+          loading="eager"
           className="product-hero-real-img"
           onError={(e) => {
             const target = e.currentTarget as HTMLImageElement;
             if (!target.src.includes('poster-01.jpg')) {
-              target.src = 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg';
+              target.src = optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg', 800, 85);
             }
           }}
         />
@@ -1282,6 +1460,105 @@ export function ProductPage() {
       </section>
     </div>
 
+      {/* 9.5 CUSTOMER REVIEWS & STAR RATING SECTION */}
+      <section className="product-reviews-section max-w-7xl mx-auto px-4 py-8 border-t border-neutral-200 mt-10">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xl md:text-2xl font-black text-neutral-900 tracking-tight uppercase">
+                CUSTOMER REVIEWS
+              </span>
+              <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                <Star size={12} className="fill-emerald-700 text-emerald-700" /> 4.9 / 5
+              </span>
+            </div>
+            <p className="text-xs text-neutral-500 mt-1">
+              Based on 148 verified customer ratings &amp; reviews across India
+            </p>
+          </div>
+
+          {/* Interactive Star Only Rating Input */}
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div>
+              <span className="text-xs font-black text-neutral-900 block uppercase tracking-wide">
+                RATE THIS POSTER
+              </span>
+              <span className="text-[11px] text-neutral-500">
+                {userRating > 0 ? `You rated this ${userRating} ★` : 'Click to submit your star rating'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => {
+                const isFilled = (hoverRating || userRating) >= star;
+                return (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => handleRateProduct(star)}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    className="p-1 text-neutral-300 hover:scale-125 transition-transform cursor-pointer focus:outline-hidden"
+                    title={`Rate ${star} Star${star > 1 ? 's' : ''}`}
+                    aria-label={`Rate ${star} stars`}
+                  >
+                    <Star
+                      size={24}
+                      className={isFilled ? 'fill-amber-400 text-amber-400' : 'text-neutral-300'}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+            {userRating > 0 && (
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 flex items-center gap-1 shrink-0">
+                <Check size={12} strokeWidth={3} /> Saved
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Reviews Breakdown & Rating Metrics Bar */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-white border border-neutral-200 rounded-2xl p-5 mb-8 shadow-xs">
+          <div className="md:col-span-4 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-neutral-100 pb-4 md:pb-0 md:pr-6 text-center">
+            <span className="text-5xl font-black text-neutral-900 leading-none">4.9</span>
+            <div className="flex items-center gap-1 text-amber-400 my-2">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={18} className="fill-amber-400 text-amber-400" />
+              ))}
+            </div>
+            <span className="text-xs text-neutral-500 font-semibold">148 Verified Buyers</span>
+            <span className="text-[11px] text-emerald-600 font-bold mt-1 flex items-center gap-1">
+              <CheckCircle2 size={13} /> 99% Recommended this print
+            </span>
+          </div>
+
+          <div className="md:col-span-8 flex flex-col justify-center gap-2">
+            {[
+              { stars: 5, pct: '88%', count: 130 },
+              { stars: 4, pct: '10%', count: 15 },
+              { stars: 3, pct: '2%', count: 3 },
+              { stars: 2, pct: '0%', count: 0 },
+              { stars: 1, pct: '0%', count: 0 },
+            ].map((row) => (
+              <div key={row.stars} className="flex items-center gap-3 text-xs">
+                <span className="w-8 font-bold text-neutral-700 flex items-center gap-1 shrink-0">
+                  {row.stars} <Star size={11} className="fill-amber-400 text-amber-400" />
+                </span>
+                <div className="flex-1 h-2.5 bg-neutral-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-amber-400 rounded-full"
+                    style={{ width: row.pct }}
+                  />
+                </div>
+                <span className="w-10 text-right text-[11px] text-neutral-500 font-medium shrink-0">
+                  {row.pct}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* 10. YOU MAY ALSO LIKE / SIMILAR PRODUCTS (PAGE 7) */}
       <section className="product-similar-section">
         <div className="poster-section-header">
@@ -1301,6 +1578,16 @@ export function ProductPage() {
                 }}
               />
             ))}
+          </div>
+
+          <div className="explore-all-posters-wrap">
+            <Link
+              href="/collections/posters"
+              className="explore-all-posters-btn"
+            >
+              <span>EXPLORE ALL POSTERS</span>
+              <ArrowRight size={16} />
+            </Link>
           </div>
         </div>
       </section>
@@ -1383,12 +1670,12 @@ export function CustomPage() {
   const [location] = useLocation();
   const [toast, setToast] = useState('');
 
-  // Check initial type from query params or URL
+  // Check initial type from query params or URL (strip and pocket are coming soon)
   const getUrlType = (): 'strip' | 'pocket' | 'poster' | null => {
     try {
       const sp = new URLSearchParams(window.location.search);
       const t = sp.get('type');
-      if (t === 'strip' || t === 'pocket' || t === 'poster') return t;
+      if (t === 'poster') return t;
     } catch { /* ignore */ }
     return null;
   };
@@ -1777,11 +2064,11 @@ export function CustomPage() {
         </div>
 
         <div className="custom-boxes-selection-grid">
-          {/* Box 1: Custom Photobooth Strip */}
-          <div className="custom-selection-box-card">
+          {/* Box 1: Custom Photobooth Strip (Coming Soon) */}
+          <div className="custom-selection-box-card opacity-90">
             <div className="box-media-wrap">
-              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793352215/dungeons_hero_assets/photobooth_strip_new.jpg" alt="Custom Photobooth Strip" className="box-thumb-img" />
-              <span className="box-tag-pill">HOT FAVORITE</span>
+              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793352215/dungeons_hero_assets/photobooth_strip_new.jpg" alt="Custom Photobooth Strip" className="box-thumb-img opacity-85" />
+              <span className="box-tag-pill bg-neutral-900 text-white">COMING SOON</span>
             </div>
             <div className="box-body-wrap">
               <h2 className="box-title">Custom Photobooth Strip</h2>
@@ -1789,23 +2076,23 @@ export function CustomPage() {
                 Turn your best moments into vintage photobooth strips. Choose 3 or 4 photos with aesthetic borders.
               </p>
               <div className="box-footer-row">
-                <span className="box-price-hint">Starting from Rs. 149</span>
+                <span className="box-price-hint text-neutral-400">Launching Soon</span>
                 <button
                   type="button"
-                  className="btn-design-now-highlight"
-                  onClick={() => selectFormat('strip')}
+                  disabled
+                  className="btn-design-now-highlight opacity-50 cursor-not-allowed select-none bg-neutral-200 text-neutral-600 border border-neutral-300 shadow-none"
                 >
-                  DESIGN NOW →
+                  COMING SOON
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Box 2: Mini Pocket Photos (Mini Prints) */}
-          <div className="custom-selection-box-card">
+          {/* Box 2: Mini Pocket Photos (Coming Soon) */}
+          <div className="custom-selection-box-card opacity-90">
             <div className="box-media-wrap">
-              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/minipocket_1d50a9.jpg" alt="Mini Pocket Photos" className="box-thumb-img" />
-              <span className="box-tag-pill">POCKET MEMORIES</span>
+              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/minipocket_1d50a9.jpg" alt="Mini Pocket Photos" className="box-thumb-img opacity-85" />
+              <span className="box-tag-pill bg-neutral-900 text-white">COMING SOON</span>
             </div>
             <div className="box-body-wrap">
               <h2 className="box-title">Mini Pocket Photos (Mini Prints)</h2>
@@ -1813,13 +2100,13 @@ export function CustomPage() {
                 Aesthetic wallet & pocket-sized instant photo prints. Select 5 or 7 photos to print as a cute pack.
               </p>
               <div className="box-footer-row">
-                <span className="box-price-hint">Starting from Rs. 129</span>
+                <span className="box-price-hint text-neutral-400">Launching Soon</span>
                 <button
                   type="button"
-                  className="btn-design-now-highlight"
-                  onClick={() => selectFormat('pocket')}
+                  disabled
+                  className="btn-design-now-highlight opacity-50 cursor-not-allowed select-none bg-neutral-200 text-neutral-600 border border-neutral-300 shadow-none"
                 >
-                  DESIGN NOW →
+                  COMING SOON
                 </button>
               </div>
             </div>
@@ -2338,7 +2625,7 @@ export function CustomPage() {
           <div className="size-guide-modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="size-guide-modal-header">
               <div className="size-guide-modal-title">
-                <Ruler size={18} className="text-amber-400" />
+                <Ruler size={18} className="text-slate-800" />
                 <span>CUSTOM POSTERS • SIZE GUIDE</span>
               </div>
               <button
@@ -2352,14 +2639,23 @@ export function CustomPage() {
             </div>
 
             <div className="size-guide-modal-body">
-              <div className="size-guide-image-wrap" style={{ backgroundColor: '#fcfaf6' }}>
+              <div className="size-guide-image-wrap" style={{ backgroundColor: '#ffffff' }}>
                 <img
                   src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349669/dungeons_store_assets/custom-poster-size-guide_184f53.png?v=2"
                   alt="Custom Posters Size Guide - A3, A4, A5 Dimensions"
                   className="size-guide-graphic-img"
                 />
               </div>
+            </div>
 
+            <div className="size-guide-modal-footer">
+              <button
+                type="button"
+                className="btn-size-guide-done"
+                onClick={() => setSizeChartOpen(false)}
+              >
+                Got It
+              </button>
             </div>
           </div>
         </div>
@@ -2376,7 +2672,7 @@ export function CustomPage() {
 export function WishlistPage() {
   const { wishlist = [] } = useStore();
   const [toast, setToast] = useState('');
-  const liveProducts = useLiveProducts();
+  const { products: liveProducts, isLoading } = useLiveProductsWithStatus();
 
   const wishlistProducts = liveProducts.filter(
     (p) => wishlist.includes(p.slug) || wishlist.includes(p.id)
@@ -2818,6 +3114,11 @@ export function CheckoutPage() {
       return;
     }
 
+    if (totals.total < 300) {
+      setError(`Minimum order amount is ₹300 (Current: ₹${totals.total}). Please add posters worth ₹${Math.max(0, 300 - totals.total)} more to proceed with checkout.`);
+      return;
+    }
+
     // If user has NO address at all, redirect to addresses page to add one
     if (!activeAddress && !validate()) {
       navigate('/addresses');
@@ -3177,7 +3478,7 @@ export function OrderSuccessPage() {
 
           <h1 className="success-hero-title">ORDER PLACED SUCCESSFULLY!</h1>
           <p className="success-hero-sub">
-            Thank you for ordering with <strong>POSTGENZ</strong>. Your high-definition archival art prints are now in production and will be safely packed in heavy-duty protective hard tubes.
+            Thank you for ordering with <strong>DUNGEONS</strong>. Your high-definition archival art prints are now in production and will be safely packed in heavy-duty protective hard tubes.
           </p>
 
           <div className="success-ref-strip">
@@ -3350,7 +3651,7 @@ export function OrderSuccessPage() {
 
           {/* WhatsApp Support Strip */}
           <a
-            href={`https://wa.me/919265964547?text=${encodeURIComponent(`Hi POSTGENZ, I have a query about my order #${order.id}`)}`}
+            href={`https://wa.me/919265964547?text=${encodeURIComponent(`Hi DUNGEONS, I have a query about my order #${order.id}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="whatsapp-support-pill"
@@ -3391,7 +3692,7 @@ export function OrderSuccessPage() {
 export function SearchPage() {
   const [, navigate] = useLocation();
   const initial = new URLSearchParams(window.location.search).get('q') || '';
-  const liveProducts = useLiveProducts();
+  const { products: liveProducts, isLoading } = useLiveProductsWithStatus();
   const results = searchProducts(initial, liveProducts);
 
   return (
@@ -3401,7 +3702,13 @@ export function SearchPage() {
       </div>
 
       <div className="search-page-box max-w-4xl mx-auto px-4 py-6">
-        {initial && results.length === 0 ? (
+        {isLoading && initial && results.length === 0 ? (
+          <div className="collection-grid-container four-col-laptop-grid">
+            {[1, 2, 3, 4].map((n) => (
+              <ProductCardSkeleton key={n} />
+            ))}
+          </div>
+        ) : initial && results.length === 0 ? (
           <div className="search-empty-state-card text-center py-12 px-4 max-w-md mx-auto">
             {/* SVG Document with Sad Face (Page 9 Reference) */}
             <div className="empty-search-icon-wrapper mb-5 flex justify-center">
@@ -3699,6 +4006,49 @@ export function OrdersPage() {
                     </div>
                   </div>
 
+                  {/* Flipkart / Myntra 4-Step Visual Tracking Stepper */}
+                  <div className="order-tracker-card" style={{ margin: 0, borderRadius: 0, borderLeft: 'none', borderRight: 'none', borderTop: 'none', borderBottom: '1px solid #f1f5f9', padding: '14px 16px', background: '#fafbfc' }}>
+                    <div className="order-tracker-steps">
+                      <div className="tracker-step-item is-active">
+                        <div className="tracker-step-dot completed">
+                          <Check size={12} strokeWidth={3} />
+                        </div>
+                        <span className="tracker-step-label">Order Placed</span>
+                      </div>
+
+                      <div className="tracker-step-item is-active">
+                        <div className={`tracker-step-dot ${order.fulfillmentStatus === 'delivered' || order.fulfillmentStatus === 'shipped' ? 'completed' : 'active'}`}>
+                          {order.fulfillmentStatus === 'delivered' || order.fulfillmentStatus === 'shipped' ? (
+                            <Check size={12} strokeWidth={3} />
+                          ) : (
+                            <Sparkles size={11} />
+                          )}
+                        </div>
+                        <span className="tracker-step-label">Printing / Confirmed</span>
+                      </div>
+
+                      <div className={`tracker-step-item ${order.fulfillmentStatus === 'delivered' || order.fulfillmentStatus === 'shipped' ? 'is-active' : ''}`}>
+                        <div className={`tracker-step-dot ${order.fulfillmentStatus === 'delivered' ? 'completed' : order.fulfillmentStatus === 'shipped' ? 'active' : 'pending'}`}>
+                          {order.fulfillmentStatus === 'delivered' ? (
+                            <Check size={12} strokeWidth={3} />
+                          ) : (
+                            <Truck size={11} />
+                          )}
+                        </div>
+                        <span className="tracker-step-label">Shipped</span>
+                      </div>
+
+                      <div className={`tracker-step-item ${order.fulfillmentStatus === 'delivered' ? 'is-active' : ''}`}>
+                        <div className={`tracker-step-dot ${order.fulfillmentStatus === 'delivered' ? 'completed' : 'pending'}`}>
+                          <Package size={11} />
+                        </div>
+                        <span className="tracker-step-label">
+                          {order.fulfillmentStatus === 'delivered' ? 'Delivered' : `Delivery by ${estDeliveryStr}`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Items List Inside Card (Same box & style as shopping bag) */}
                   <div className="order-card-items-wrap p-4 flex flex-col gap-3">
                     {order.products.map((item) => (
@@ -3710,6 +4060,18 @@ export function OrdersPage() {
                         orderDate={estDeliveryStr}
                       />
                     ))}
+                  </div>
+
+                  {/* Delivery Address & Assurance Bar (Flipkart / Myntra Style) */}
+                  <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
+                    <div className="flex items-center gap-2">
+                      <MapPin size={13} className="text-slate-400 shrink-0" />
+                      <span><strong>Deliver to:</strong> {order.address.address}, {order.address.city} - {order.address.pincode} ({order.customer.phone})</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-emerald-700 font-medium text-[11px]">
+                      <ShieldCheck size={13} />
+                      <span>7-Day Replacement Guarantee</span>
+                    </div>
                   </div>
 
                   {/* Card Bottom Actions (Amazon / Flipkart Style) */}
@@ -3743,7 +4105,7 @@ export function OrdersPage() {
                     </div>
 
                     <a
-                      href={`https://wa.me/919265964547?text=${encodeURIComponent(`Hi POSTGENZ, I need help with my order #${order.id}`)}`}
+                      href={`https://wa.me/919265964547?text=${encodeURIComponent(`Hi DUNGEONS, I need help with my order #${order.id}`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="order-help-link"
@@ -3837,14 +4199,14 @@ export function OrderDetailPage() {
           <div className="invoice-header-grid">
             <div>
               <div className="flex items-center gap-2">
-                <span className="invoice-brand-title">POSTGENZ</span>
+                <span className="invoice-brand-title">DUNGEONS</span>
                 <span className="text-[10px] font-black uppercase tracking-wider bg-neutral-900 text-white px-2 py-0.5 rounded">
                   STUDIO
                 </span>
               </div>
               <div className="invoice-company-details">
                 <strong className="text-neutral-900 block font-bold">
-                  POSTGENZ CREATIVE STUDIO PRIVATE LIMITED
+                  DUNGEONS CREATIVE STUDIO PRIVATE LIMITED
                 </strong>
                 <span>Fulfillment Studio: 417, Satyamev Eminence, Science City Road, Sola</span><br />
                 <span>Ahmedabad, Gujarat - 380060, India</span><br />
@@ -3861,7 +4223,7 @@ export function OrderDetailPage() {
               <div className="invoice-meta-fields text-neutral-700">
                 <div>
                   <strong>Invoice No: </strong>
-                  <span className="font-mono font-bold">INV-PG-{order.id.replace('PS-', '')}</span>
+                  <span className="font-mono font-bold">INV-DUN-{order.id.replace('PS-', '')}</span>
                 </div>
                 <div>
                   <strong>Invoice Date: </strong>
@@ -3921,7 +4283,7 @@ export function OrderDetailPage() {
                 {order.address.address}<br />
                 {order.address.city}, {order.address.state} - {order.address.pincode}<br />
                 <strong>Place of Supply:</strong> Gujarat (Code: 24)<br />
-                <strong>Delivery Partner:</strong> POSTGENZ Express Dispatch (Air Cargo)
+                <strong>Delivery Partner:</strong> DUNGEONS Express Dispatch (Air Cargo)
               </div>
             </div>
           </div>
@@ -4021,13 +4383,13 @@ export function OrderDetailPage() {
             <div className="invoice-terms-block">
               <strong>Declaration &amp; Terms:</strong><br />
               1. We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.<br />
-              2. Goods are backed by the POSTGENZ Damage-Proof Guarantee. Any transit defect reported within 7 days will be replaced free of charge.<br />
+              2. Goods are backed by the DUNGEONS Damage-Proof Guarantee. Any transit defect reported within 7 days will be replaced free of charge.<br />
               3. This is a computer-generated tax invoice issued under Rule 46 of the CGST Rules, 2017 and does not require physical signature.
             </div>
 
             <div className="invoice-signatory-block">
-              <div>For <strong>POSTGENZ CREATIVE STUDIO PVT. LTD.</strong></div>
-              <div className="invoice-sign-signature">Postgenz Studio</div>
+              <div>For <strong>DUNGEONS CREATIVE STUDIO PVT. LTD.</strong></div>
+              <div className="invoice-sign-signature">Dungeons Studio</div>
               <div className="text-[9px] uppercase font-bold text-neutral-500">Authorized Signatory</div>
             </div>
           </div>

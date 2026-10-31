@@ -68,53 +68,62 @@ function uploadToCloudinary(fileData, publicId) {
   });
 }
 
-// Concurrency pool helper
-async function pool(items, concurrency, fn) {
-  let index = 0;
-  const results = [];
-  const executing = [];
-
-  for (const item of items) {
-    const p = Promise.resolve().then(() => fn(item, index++));
-    results.push(p);
-
-    if (concurrency <= items.length) {
-      const e = p.then(() => executing.splice(executing.indexOf(e), 1));
-      executing.push(e);
-      if (executing.length >= concurrency) {
-        await Promise.race(executing);
-      }
-    }
-  }
-  return Promise.all(results);
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
 }
 
-async function migrateAll() {
-  const url = 'postgres://fd93ae4e270290d6018e47884ac04b7f75bb2f8b62a464490246b78b74f06291:sk_6qYpH3csyfqvztglGVtFt@pooled.db.prisma.io:5432/postgres?sslmode=require&connect_timeout=60';
-  const prisma = new PrismaClient({ datasources: { db: { url } } });
+async function migrateRemaining() {
+  const url = 'postgres://fd93ae4e270290d6018e47884ac04b7f75bb2f8b62a464490246b78b74f06291:sk_6qYpH3csyfqvztglGVtFt@pooled.db.prisma.io:5432/postgres?sslmode=require&connect_timeout=60&pool_timeout=60';
+  let prisma = new PrismaClient({ datasources: { db: { url } } });
 
   try {
-    console.log('Fetching products from database...');
-    const products = await prisma.product.findMany();
-    const needsMigration = products.filter(p => p.images && p.images.some(img => img.startsWith('data:image')));
+    const allMeta = await prisma.product.findMany({
+      select: { id: true, slug: true, title: true },
+      orderBy: { id: 'asc' },
+    });
 
-    console.log(`Found ${products.length} total products. ${needsMigration.length} need migration from base64 to Cloudinary.`);
+    console.log(`Checking ${allMeta.length} total products for base64 images...`);
 
-    if (needsMigration.length === 0) {
-      console.log('All products already have clean URLs!');
-      return;
-    }
-
-    let completed = 0;
+    let migrated = 0;
+    let clean = 0;
     let failed = 0;
 
-    await pool(needsMigration, 6, async (product, idx) => {
+    for (let i = 0; i < allMeta.length; i++) {
+      const meta = allMeta[i];
+      let p = null;
+      let retries = 3;
+
+      while (retries > 0) {
+        try {
+          p = await prisma.product.findUnique({
+            where: { id: meta.id },
+            select: { id: true, slug: true, title: true, images: true },
+          });
+          break;
+        } catch (err) {
+          retries--;
+          console.warn(`Retry fetching product ${meta.id}: ${err.message}`);
+          await prisma.$disconnect().catch(() => {});
+          await sleep(1500);
+          prisma = new PrismaClient({ datasources: { db: { url } } });
+        }
+      }
+
+      if (!p) continue;
+
+      const hasBase64 = p.images && p.images.some(img => img.startsWith('data:image'));
+      if (!hasBase64) {
+        clean++;
+        continue;
+      }
+
+      console.log(`[${i + 1}/${allMeta.length}] Migrating: "${p.title}"...`);
       try {
         const newImages = [];
-        for (let i = 0; i < product.images.length; i++) {
-          const img = product.images[i];
+        for (let imgIdx = 0; imgIdx < p.images.length; imgIdx++) {
+          const img = p.images[imgIdx];
           if (img.startsWith('data:image')) {
-            const pubId = `${product.slug || product.id}_img${i}`;
+            const pubId = `${p.slug || p.id}_img${imgIdx}_${Date.now().toString().slice(-4)}`;
             const cdnUrl = await uploadToCloudinary(img, pubId);
             newImages.push(cdnUrl);
           } else {
@@ -122,28 +131,38 @@ async function migrateAll() {
           }
         }
 
-        await prisma.product.update({
-          where: { id: product.id },
-          data: { images: newImages },
-        });
-
-        completed++;
-        if (completed % 10 === 0 || completed === needsMigration.length) {
-          console.log(`[${completed}/${needsMigration.length}] Migrated: "${product.title}"`);
+        let updateRetries = 3;
+        while (updateRetries > 0) {
+          try {
+            await prisma.product.update({
+              where: { id: p.id },
+              data: { images: newImages },
+            });
+            break;
+          } catch (updateErr) {
+            updateRetries--;
+            console.warn(`Retry updating product ${p.id}: ${updateErr.message}`);
+            await prisma.$disconnect().catch(() => {});
+            await sleep(1500);
+            prisma = new PrismaClient({ datasources: { db: { url } } });
+          }
         }
+
+        migrated++;
+        console.log(`✓ Migrated (${migrated}): "${p.title}"`);
       } catch (err) {
         failed++;
-        console.error(`Failed on product [${product.id}] "${product.title}":`, err.message || err);
+        console.error(`✗ Failed "${p.title}":`, err.message);
       }
-    });
+    }
 
-    console.log(`\nMigration completed! Successfully migrated: ${completed}, Failed: ${failed}`);
+    console.log(`\n=== Migration Complete ===`);
+    console.log(`Clean: ${clean}, Migrated: ${migrated}, Failed: ${failed}`);
   } catch (err) {
-    console.error('Fatal error during migration:', err);
+    console.error('Fatal error:', err);
   } finally {
-    await prisma.$disconnect();
+    await prisma.$disconnect().catch(() => {});
   }
 }
 
-migrateAll();
-
+migrateRemaining();

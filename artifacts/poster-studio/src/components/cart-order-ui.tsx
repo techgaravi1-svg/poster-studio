@@ -14,9 +14,10 @@ import {
   ShoppingBag,
   Lock,
   Ruler,
+  AlertCircle,
 } from 'lucide-react';
 import { formatPrice, getProductSizePrice, getProductSizeComparePrice, products, type PosterSize } from '@/lib/catalog';
-import { store, useStore, type CartItem } from '@/lib/store';
+import { store, useStore, fetchLiveCoupons, type CartItem, type ActiveCoupon } from '@/lib/store';
 
 export const sizeInfoMap: Record<string, { name: string; dims: string; badge?: string; recommendation: string }> = {
   A5: {
@@ -39,7 +40,7 @@ export const sizeInfoMap: Record<string, { name: string; dims: string; badge?: s
   },
 };
 
-export const availableVouchers = [
+const defaultVouchers = [
   {
     code: 'STUDIO10',
     title: 'Extra 10% OFF on All Posters',
@@ -168,15 +169,13 @@ export function MyntraItemCard({
 
       {/* Right Column: Item Information & Details */}
       <div className="myntra-details-col">
-        {/* Top Meta Line: Brand Heading + Remove Button / Order Status */}
+        {/* Top Meta Line: Remove Button / Order Status */}
         <div className="myntra-card-top-row">
-          <h4 className="myntra-brand-heading">POSTGENZ</h4>
-
           {!isOrderMode && onRemove && (
             <button
               type="button"
               onClick={onRemove}
-              className="myntra-btn-remove"
+              className="myntra-btn-remove ml-auto"
               aria-label={`Remove ${item.title} from bag`}
               title="Remove item"
             >
@@ -185,7 +184,7 @@ export function MyntraItemCard({
           )}
 
           {isOrderMode && orderStatus && (
-            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 ml-auto">
               {orderStatus}
             </span>
           )}
@@ -194,9 +193,12 @@ export function MyntraItemCard({
         {/* Product Title / Description */}
         <Link
           href={item.slug ? `/products/${item.slug}` : '#'}
-          className="myntra-item-name"
+          className="myntra-item-name block"
         >
-          {item.title}
+          <span className="block font-semibold text-gray-900 leading-tight">{item.title}</span>
+          {matchProduct?.description && (
+            <span className="block text-xs text-gray-500 font-normal line-clamp-1 mt-0.5 leading-snug">{matchProduct.description}</span>
+          )}
         </Link>
 
         {/* Selectors Row: Size & Qty Pills + Stock alert */}
@@ -341,7 +343,6 @@ export function MyntraItemCard({
                 className="ecommerce-size-product-thumb"
               />
               <div className="ecommerce-size-product-meta">
-                <span className="ecommerce-size-brand-tag">POSTGENZ</span>
                 <h4 className="ecommerce-size-product-title">{item.title}</h4>
                 <div className="ecommerce-size-price-row">
                   <span className="ecommerce-size-current-price">{formatPrice(item.price)}</span>
@@ -453,6 +454,37 @@ export function SwiggyCouponBox({
   const [isOpen, setIsOpen] = useState(false);
   const [couponInput, setCouponInput] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [liveCoupons, setLiveCoupons] = useState<ActiveCoupon[]>([]);
+
+  useEffect(() => {
+    fetchLiveCoupons().then((list) => {
+      if (Array.isArray(list) && list.length > 0) {
+        setLiveCoupons(list);
+      }
+    });
+
+    const onUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setLiveCoupons(e.detail);
+      }
+    };
+    window.addEventListener('dungeons:coupons-updated', onUpdate);
+    return () => window.removeEventListener('dungeons:coupons-updated', onUpdate);
+  }, []);
+
+  const activeVouchers = liveCoupons.length > 0
+    ? liveCoupons.filter((c) => c.isActive !== false)
+    : [
+        {
+          code: 'FIRST10',
+          description: 'Welcome 10% Discount for New Art Lovers',
+          discountType: 'percentage' as const,
+          discountValue: 10,
+          minSpend: 0,
+          minQty: 1,
+          isActive: true,
+        },
+      ];
 
   const handleApply = (codeToApply: string) => {
     const code = codeToApply.trim().toUpperCase();
@@ -461,17 +493,25 @@ export function SwiggyCouponBox({
       return;
     }
 
-    const match = availableVouchers.find((v) => v.code === code);
+    const match = activeVouchers.find((v) => v.code.toUpperCase() === code);
     if (!match) {
-      setFeedback({ type: 'error', text: 'Invalid coupon code. Try STUDIO10 for 10% OFF.' });
+      setFeedback({ type: 'error', text: `Invalid coupon code "${code}". Please check for typos.` });
       return;
     }
 
-    if (totalCount < match.minQty) {
+    if (match.minQty && totalCount < match.minQty) {
       const needed = match.minQty - totalCount;
       setFeedback({
         type: 'error',
         text: `Add ${needed} more poster${needed > 1 ? 's' : ''} to unlock this offer!`,
+      });
+      return;
+    }
+
+    if (match.minSpend && subtotal < match.minSpend) {
+      setFeedback({
+        type: 'error',
+        text: `Minimum order value of ₹${match.minSpend} required for this coupon.`,
       });
       return;
     }
@@ -487,15 +527,12 @@ export function SwiggyCouponBox({
     if (onAppliedToast) onAppliedToast('Coupon removed');
   };
 
-  // Estimate maximum saving amount
-  const maxSaving = Math.max(850, Math.round(subtotal * 0.1) || 850);
-
   return (
     <div className="swiggy-coupon-wrapper">
       {/* Top Header Row */}
       {showHeader && (
         <div className="swiggy-coupon-header-row">
-          <h3 className="swiggy-coupon-header-title">Coupons &amp; Bank Offers</h3>
+          <h3 className="swiggy-coupon-header-title">Coupons &amp; Offers</h3>
         </div>
       )}
 
@@ -522,7 +559,7 @@ export function SwiggyCouponBox({
               {coupon ? (
                 'Coupon applied successfully on this order'
               ) : (
-                `${availableVouchers.length} Coupons & Offers Available`
+                `${activeVouchers.length} Coupons & Offers Available`
               )}
             </div>
           </div>
@@ -579,7 +616,7 @@ export function SwiggyCouponBox({
                   value={couponInput}
                   onChange={(e) => setCouponInput(e.target.value)}
                   placeholder="Enter coupon code"
-                  className="swiggy-code-input"
+                  className="swiggy-code-input uppercase"
                 />
                 <button
                   type="button"
@@ -602,9 +639,14 @@ export function SwiggyCouponBox({
 
               {/* List of Available Offers */}
               <div className="swiggy-offers-list">
-                {availableVouchers.map((voucher) => {
-                  const isEligible = totalCount >= voucher.minQty;
-                  const needed = voucher.minQty - totalCount;
+                {activeVouchers.map((voucher) => {
+                  const minQ = voucher.minQty || 1;
+                  const isEligible = totalCount >= minQ && (!voucher.minSpend || subtotal >= voucher.minSpend);
+                  const needed = minQ - totalCount;
+
+                  const badgeText = voucher.discountType === 'percentage'
+                    ? `${voucher.discountValue}% OFF`
+                    : `₹${voucher.discountValue} FLAT OFF`;
 
                   return (
                     <div key={voucher.code} className="swiggy-voucher-item">
@@ -615,14 +657,21 @@ export function SwiggyCouponBox({
                             <span>{voucher.code}</span>
                           </span>
                           <span className="swiggy-voucher-badge">
-                            {voucher.badge}
+                            {badgeText}
                           </span>
                         </div>
-                        <h4 className="swiggy-voucher-title">{voucher.title}</h4>
-                        <p className="swiggy-voucher-desc">{voucher.desc}</p>
-                        {!isEligible && (
+                        <h4 className="swiggy-voucher-title">{voucher.description || `${voucher.discountValue}% OFF on Art Prints`}</h4>
+                        <p className="swiggy-voucher-desc">
+                          {voucher.minSpend ? `Applicable on orders above ₹${voucher.minSpend}` : 'Applicable on your order'}
+                        </p>
+                        {totalCount < minQ && (
                           <span className="swiggy-voucher-locked">
                             🔒 Add {needed} more poster{needed > 1 ? 's' : ''} to unlock
+                          </span>
+                        )}
+                        {voucher.minSpend && subtotal < voucher.minSpend && (
+                          <span className="swiggy-voucher-locked block mt-1">
+                            🔒 Min order value of ₹{voucher.minSpend} required
                           </span>
                         )}
                       </div>
@@ -705,11 +754,9 @@ export function MyntraPriceDetails({
 
         {/* Platform Fee */}
         <div className="myntra-price-line">
-          <span className="myntra-line-label">
-            Platform Fee <span className="myntra-know-more">Know More</span>
-          </span>
-          <span className="myntra-line-value text-emerald-600 font-bold uppercase">
-            FREE
+          <span className="myntra-line-label">Platform Fee</span>
+          <span className="myntra-line-value text-gray-900 font-bold">
+            {formatPrice(10)}
           </span>
         </div>
 
@@ -721,6 +768,49 @@ export function MyntraPriceDetails({
           <span className="myntra-total-value">{formatPrice(total)}</span>
         </div>
       </div>
+
+      {/* Minimum Order Value Alert (Modern E-Commerce Progress Bar Card) */}
+      {total < 300 && total > 0 && (() => {
+        const shortfall = Math.max(0, 300 - total);
+        const progressPct = Math.min(100, Math.max(8, Math.round((total / 300) * 100)));
+        return (
+          <div className="min-order-highlight-card">
+            {/* Top row: Label & Shortfall Badge */}
+            <div className="min-order-card-header">
+              <div className="min-order-title-group">
+                <span className="min-order-icon-badge" aria-hidden="true">
+                  ₹
+                </span>
+                <span className="min-order-title-text">
+                  Minimum Order ₹300
+                </span>
+              </div>
+              <span className="min-order-chip-shortfall">
+                Add ₹{shortfall} More
+              </span>
+            </div>
+
+            {/* Visual Progress Bar */}
+            <div className="min-order-track-bg">
+              <div
+                className="min-order-track-fill"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+
+            {/* Amount Progress Labels */}
+            <div className="min-order-stats-row">
+              <span>Current: ₹{total}</span>
+              <span>Target: ₹300</span>
+            </div>
+
+            {/* Microcopy message */}
+            <p className="min-order-notice-text">
+              Add posters worth <strong>₹{shortfall}</strong> more to your bag to place this order.
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Green Savings Banner like in Screenshot 1 */}
       {totalSavings > 0 && (
@@ -742,7 +832,7 @@ export function MyntraPriceDetails({
         <div className="w-full flex flex-col gap-2 myntra-checkout-action-wrap">
           <button
             type="button"
-            disabled={disabled}
+            disabled={disabled || (total < 300 && total > 0)}
             onClick={onProceed}
             className="btn-myntra-checkout-black"
             style={{
@@ -752,22 +842,27 @@ export function MyntraPriceDetails({
               gap: '8px',
               width: '100%',
               minHeight: '48px',
-              backgroundColor: '#0f172a',
+              backgroundColor: (total < 300 && total > 0) ? '#94a3b8' : '#0f172a',
               color: '#ffffff',
               borderRadius: '12px',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 800,
               letterSpacing: '0.04em',
               textTransform: 'uppercase',
               border: 'none',
-              cursor: disabled ? 'not-allowed' : 'pointer',
-              opacity: disabled ? 0.6 : 1,
-              boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
+              cursor: (disabled || (total < 300 && total > 0)) ? 'not-allowed' : 'pointer',
+              opacity: (disabled || (total < 300 && total > 0)) ? 0.75 : 1,
+              boxShadow: (total < 300 && total > 0) ? 'none' : '0 4px 14px rgba(15, 23, 42, 0.25)',
               margin: '0',
+              padding: '12px 16px',
             }}
           >
             <Lock size={15} className="shrink-0" />
-            <span>{proceedLabel}</span>
+            <span>
+              {total < 300 && total > 0
+                ? `ADD ₹${300 - total} MORE TO ORDER`
+                : proceedLabel}
+            </span>
           </button>
           {subtext}
         </div>

@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState, useCallback } from 'react';
+import { lazy, Suspense, type ReactNode, useEffect, useState, useCallback } from 'react';
 import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { SiteShell } from '@/components/storefront';
@@ -6,7 +6,6 @@ import { BrandIntroAnimation } from '@/components/brand-intro';
 import NotFound from '@/pages/not-found';
 import {
   AccountPage,
-  AdminPage,
   BagPage,
   CartPage,
   CheckoutPage,
@@ -20,9 +19,14 @@ import {
   SearchPage,
   WishlistPage,
 } from '@/pages/store-pages';
-import { FaqPage, TermsPage, ReturnPolicyPage, PrivacyPolicyPage } from '@/pages/policy-pages';
-import { AddressesPage } from '@/pages/addresses-page';
-import { AdminDashboardPage } from '@/pages/admin-page';
+
+// Code-split heavy routes so initial storefront payload stays ultra-lightweight
+const AdminDashboardPage = lazy(() => import('@/pages/admin-page').then((m) => ({ default: m.AdminDashboardPage })));
+const AddressesPage = lazy(() => import('@/pages/addresses-page').then((m) => ({ default: m.AddressesPage })));
+const FaqPage = lazy(() => import('@/pages/policy-pages').then((m) => ({ default: m.FaqPage })));
+const TermsPage = lazy(() => import('@/pages/policy-pages').then((m) => ({ default: m.TermsPage })));
+const ReturnPolicyPage = lazy(() => import('@/pages/policy-pages').then((m) => ({ default: m.ReturnPolicyPage })));
+const PrivacyPolicyPage = lazy(() => import('@/pages/policy-pages').then((m) => ({ default: m.PrivacyPolicyPage })));
 
 const INTRO_KEY = 'dungeons_intro_played';
 
@@ -32,13 +36,25 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
+function PageSuspense({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={<div className="min-h-[40vh] flex items-center justify-center p-8"><div className="w-8 h-8 rounded-full border-2 border-slate-300 border-t-slate-900 animate-spin" /></div>}>
+      {children}
+    </Suspense>
+  );
+}
+
 function Router() {
   return (
     <RoutedErrorBoundary>
       <Switch>
         {/* Dedicated Standalone Enterprise Admin Portal */}
-        <Route path="/admin" component={AdminDashboardPage} />
-        <Route path="/admin/:sub*" component={AdminDashboardPage} />
+        <Route path="/admin">
+          <PageSuspense><AdminDashboardPage /></PageSuspense>
+        </Route>
+        <Route path="/admin/:sub*">
+          <PageSuspense><AdminDashboardPage /></PageSuspense>
+        </Route>
 
         {/* Customer Storefront with Public Site Shell */}
         <Route>
@@ -61,20 +77,44 @@ function Router() {
               <Route path="/checkout" component={CheckoutPage} />
               <Route path="/account/orders/:id" component={OrderDetailPage} />
               <Route path="/account/orders" component={OrdersPage} />
-              <Route path="/account/addresses" component={AddressesPage} />
-              <Route path="/addresses" component={AddressesPage} />
+              <Route path="/account/addresses">
+                <PageSuspense><AddressesPage /></PageSuspense>
+              </Route>
+              <Route path="/addresses">
+                <PageSuspense><AddressesPage /></PageSuspense>
+              </Route>
               <Route path="/account" component={AccountPage} />
               <Route path="/search" component={SearchPage} />
-              <Route path="/faqs" component={FaqPage} />
-              <Route path="/faq" component={FaqPage} />
-              <Route path="/terms" component={TermsPage} />
-              <Route path="/terms-and-conditions" component={TermsPage} />
-              <Route path="/returns" component={ReturnPolicyPage} />
-              <Route path="/return-policy" component={ReturnPolicyPage} />
-              <Route path="/refund-policy" component={ReturnPolicyPage} />
-              <Route path="/shipping-policy" component={ReturnPolicyPage} />
-              <Route path="/privacy" component={PrivacyPolicyPage} />
-              <Route path="/privacy-policy" component={PrivacyPolicyPage} />
+              <Route path="/faqs">
+                <PageSuspense><FaqPage /></PageSuspense>
+              </Route>
+              <Route path="/faq">
+                <PageSuspense><FaqPage /></PageSuspense>
+              </Route>
+              <Route path="/terms">
+                <PageSuspense><TermsPage /></PageSuspense>
+              </Route>
+              <Route path="/terms-and-conditions">
+                <PageSuspense><TermsPage /></PageSuspense>
+              </Route>
+              <Route path="/returns">
+                <PageSuspense><ReturnPolicyPage /></PageSuspense>
+              </Route>
+              <Route path="/return-policy">
+                <PageSuspense><ReturnPolicyPage /></PageSuspense>
+              </Route>
+              <Route path="/refund-policy">
+                <PageSuspense><ReturnPolicyPage /></PageSuspense>
+              </Route>
+              <Route path="/shipping-policy">
+                <PageSuspense><ReturnPolicyPage /></PageSuspense>
+              </Route>
+              <Route path="/privacy">
+                <PageSuspense><PrivacyPolicyPage /></PageSuspense>
+              </Route>
+              <Route path="/privacy-policy">
+                <PageSuspense><PrivacyPolicyPage /></PageSuspense>
+              </Route>
               <Route component={NotFound} />
             </Switch>
           </SiteShell>

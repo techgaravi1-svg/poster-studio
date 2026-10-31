@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 
-const SPLASH_LOGO_URL = 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793352216/dungeons_hero_assets/dungeons_splash_logo.jpg';
+const SPLASH_LOGO_URL = 'https://res.cloudinary.com/pyjyrmry/image/upload/e_make_transparent/v1793352216/dungeons_hero_assets/dungeons_splash_logo.png';
 
 export function BrandIntroAnimation({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState<'enter' | 'show' | 'exit' | 'done'>('enter');
@@ -13,28 +13,22 @@ export function BrandIntroAnimation({ onComplete }: { onComplete: () => void }) 
       return t;
     };
 
-    // 6.5 - 7.0 seconds total cinematic logo animation
-    schedule(() => setPhase('show'), 300);
-    schedule(() => setPhase('exit'), 5800);
+    // Exactly 4.0 seconds cinematic logo animation centered for all screen sizes
+    schedule(() => setPhase('show'), 200);
+    schedule(() => setPhase('exit'), 3200);
     schedule(() => {
       setPhase('done');
       onComplete();
-    }, 6800);
+    }, 4000);
 
     return () => timerRefs.current.forEach(clearTimeout);
   }, [onComplete]);
-
-  const handleSkip = () => {
-    setPhase('done');
-    onComplete();
-  };
 
   if (phase === 'done') return null;
 
   return (
     <div
       className={`dungeons-splash-intro-overlay ${phase}`}
-      onClick={handleSkip}
       role="dialog"
       aria-label="Welcome to DUNGEONS"
     >
@@ -42,12 +36,12 @@ export function BrandIntroAnimation({ onComplete }: { onComplete: () => void }) 
         <img
           src={SPLASH_LOGO_URL}
           alt="DUNGEONS"
+          width="220"
+          height="220"
+          fetchPriority="high"
           className="dungeons-splash-logo-img"
         />
       </div>
-      <button type="button" className="dungeons-splash-skip-btn" onClick={handleSkip}>
-        Skip
-      </button>
     </div>
   );
 }

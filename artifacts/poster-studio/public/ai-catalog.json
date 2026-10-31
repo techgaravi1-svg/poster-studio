@@ -1,0 +1,22 @@
+{
+  "$schema": "https://agenticresourcediscovery.org/schemas/v1/ai-catalog.json",
+  "name": "DUNGEONS Poster Store",
+  "description": "Premium archival matte posters, custom photobooth strips, anime wall art, and sports prints.",
+  "url": "https://dungeons.store",
+  "version": "1.0.0",
+  "provider": {
+    "name": "DUNGEONS",
+    "url": "https://dungeons.store"
+  },
+  "capabilities": [
+    {
+      "name": "Catalog Search",
+      "description": "Browse and filter 700+ curated wall art posters and custom printing services",
+      "endpoint": "/api/products"
+    }
+  ],
+  "contact": {
+    "email": "dungeons.support@gmail.com"
+  }
+}
+
