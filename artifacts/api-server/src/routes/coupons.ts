@@ -22,6 +22,7 @@ router.get('/coupons', async (_req: Request, res: Response) => {
       orderBy: { minQty: 'asc' },
     });
 
+    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
     return res.json({ success: true, coupons });
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Failed to retrieve vouchers' });

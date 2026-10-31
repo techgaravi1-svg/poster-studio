@@ -26,10 +26,13 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
   // Strict Referrer Policy
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  // Prevent caching of sensitive API requests
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
+  // Set default caching: non-sensitive GET requests can be cached at Vercel Edge CDN,
+  // while mutation and admin requests remain strictly no-store.
+  if (req.method !== 'GET' || req.path.startsWith('/admin')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
 
   next();
 }

@@ -36,7 +36,7 @@ router.get('/products', async (req: Request, res: Response) => {
       prisma.product.count({ where: whereClause }),
     ]);
 
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=3600, stale-while-revalidate=86400');
     return res.json({
       success: true,
       products,
@@ -70,7 +70,7 @@ router.get('/products/:slug', async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: 'Product not found' });
     }
 
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=3600, stale-while-revalidate=86400');
     return res.json({ success: true, product });
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Failed to fetch product details' });
