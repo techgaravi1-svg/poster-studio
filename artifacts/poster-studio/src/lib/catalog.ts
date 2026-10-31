@@ -1181,31 +1181,48 @@ export function deleteSingleProduct(productId: string): Product[] {
   return updatedList;
 }
 
-export async function fetchLiveProducts(): Promise<Product[]> {
-  try {
-    const res = await fetch(`/api/products?limit=2000&_t=${Date.now()}`, {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        Pragma: 'no-cache',
-      },
-    });
-    const contentType = res.headers.get('content-type') || '';
-    if (!res.ok || !contentType.includes('application/json')) {
-      const stored = loadCatalogFromStorage();
-      return stored && stored.length > 0 ? stored : [...defaultCatalogProducts];
-    }
-    const data = await res.json();
-    // A successful response is the database source of truth
-    if (data.success && Array.isArray(data.products) && data.products.length > 0) {
-      const transformed = data.products.map(transformDbProductToFrontend);
-      saveCatalogToStorage(transformed);
-      return transformed;
-    }
-  } catch (err) {
-    console.warn('[Catalog] Database fetch fallback to local storage:', err);
+let activeFetchPromise: Promise<Product[]> | null = null;
+let lastFetchTimestamp = 0;
+
+export async function fetchLiveProducts(force = false): Promise<Product[]> {
+  const now = Date.now();
+  // If fetched within the last 30 minutes, reuse storage/memory and do not burn serverless bandwidth
+  if (!force && lastFetchTimestamp > 0 && now - lastFetchTimestamp < 30 * 60 * 1000) {
+    const stored = loadCatalogFromStorage();
+    if (stored && stored.length > 0) return stored;
   }
-  const stored = loadCatalogFromStorage();
-  return stored && stored.length > 0 ? stored : [...defaultCatalogProducts];
+
+  // Deduplicate concurrent calls: return existing in-flight promise
+  if (activeFetchPromise && !force) {
+    return activeFetchPromise;
+  }
+
+  activeFetchPromise = (async () => {
+    try {
+      // Clean request without unique timestamp query so Vercel Edge CDN caches it
+      const res = await fetch('/api/products?limit=2000');
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        const stored = loadCatalogFromStorage();
+        return stored && stored.length > 0 ? stored : [...defaultCatalogProducts];
+      }
+      const data = await res.json();
+      if (data.success && Array.isArray(data.products) && data.products.length > 0) {
+        const transformed = data.products.map(transformDbProductToFrontend);
+        saveCatalogToStorage(transformed);
+        lastFetchTimestamp = Date.now();
+        return transformed;
+      }
+    } catch (err) {
+      console.warn('[Catalog] Database fetch fallback to local storage:', err);
+    } finally {
+      activeFetchPromise = null;
+    }
+    const stored = loadCatalogFromStorage();
+    return stored && stored.length > 0 ? stored : [...defaultCatalogProducts];
+  })();
+
+  return activeFetchPromise;
 }
 
 export function useLiveProductsWithStatus(): { products: Product[]; isLoading: boolean } {

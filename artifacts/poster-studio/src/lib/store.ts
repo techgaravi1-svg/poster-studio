@@ -350,24 +350,40 @@ if (typeof window !== 'undefined') {
   } catch {}
 }
 
-export async function fetchLiveCoupons(): Promise<ActiveCoupon[]> {
-  try {
-    const res = await fetch(`/api/coupons?_t=${Date.now()}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.coupons)) {
-        liveCouponsCache = data.coupons;
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('dungeons_live_coupons', JSON.stringify(data.coupons));
-          window.dispatchEvent(new CustomEvent('dungeons:coupons-updated', { detail: data.coupons }));
-        }
-        return data.coupons;
-      }
-    }
-  } catch (err) {
-    console.warn('[Store] Failed to fetch live coupons:', err);
+let couponsLastFetched = 0;
+let couponsFetchPromise: Promise<ActiveCoupon[]> | null = null;
+
+export async function fetchLiveCoupons(force = false): Promise<ActiveCoupon[]> {
+  const now = Date.now();
+  if (!force && couponsLastFetched > 0 && now - couponsLastFetched < 15 * 60 * 1000) {
+    return liveCouponsCache;
   }
-  return liveCouponsCache;
+  if (couponsFetchPromise && !force) return couponsFetchPromise;
+
+  couponsFetchPromise = (async () => {
+    try {
+      const res = await fetch('/api/coupons');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.coupons)) {
+          liveCouponsCache = data.coupons;
+          couponsLastFetched = Date.now();
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('dungeons_live_coupons', JSON.stringify(data.coupons));
+            window.dispatchEvent(new CustomEvent('dungeons:coupons-updated', { detail: data.coupons }));
+          }
+          return data.coupons;
+        }
+      }
+    } catch (err) {
+      console.warn('[Store] Failed to fetch live coupons:', err);
+    } finally {
+      couponsFetchPromise = null;
+    }
+    return liveCouponsCache;
+  })();
+
+  return couponsFetchPromise;
 }
 
 if (typeof window !== 'undefined') {

@@ -289,20 +289,20 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
       {
         version: 3,
         routes: [
-          // API routes → serverless function at /api.func/
-          {
-            src: "^/api(/.*)?$",
-            dest: "/api",
-          },
           // Static asset cache headers (hashed filenames from Vite)
           {
             src: "^/assets/(.+)$",
             headers: { "cache-control": "public, max-age=31536000, immutable" },
             continue: true,
           },
-          // Let Vercel serve static files that exist
+          // Let Vercel serve static files that exist directly from Edge CDN (0 origin transfer)
           {
             handle: "filesystem",
+          },
+          // API routes → serverless function at /api.func/
+          {
+            src: "^/api(/.*)?$",
+            dest: "/api",
           },
           // SPA fallback — any unmatched path (excluding /api) gets index.html
           {
