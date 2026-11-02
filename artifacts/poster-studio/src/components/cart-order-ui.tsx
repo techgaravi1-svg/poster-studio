@@ -3,6 +3,7 @@ import { Link } from 'wouter';
 import {
   Check,
   ChevronDown,
+  ChevronUp,
   RotateCcw,
   Truck,
   X,
@@ -169,13 +170,14 @@ export function MyntraItemCard({
 
       {/* Right Column: Item Information & Details */}
       <div className="myntra-details-col">
-        {/* Top Meta Line: Remove Button / Order Status */}
-        <div className="myntra-card-top-row">
+        {/* Top Meta Line: Remove Button / Order Status (Aligned to Opposite / Right Side) */}
+        <div className="myntra-card-top-row" style={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
           {!isOrderMode && onRemove && (
             <button
               type="button"
               onClick={onRemove}
-              className="myntra-btn-remove ml-auto"
+              className="myntra-btn-remove"
+              style={{ marginLeft: 'auto' }}
               aria-label={`Remove ${item.title} from bag`}
               title="Remove item"
             >
@@ -184,7 +186,7 @@ export function MyntraItemCard({
           )}
 
           {isOrderMode && orderStatus && (
-            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 ml-auto">
+            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200" style={{ marginLeft: 'auto' }}>
               {orderStatus}
             </span>
           )}
@@ -451,7 +453,8 @@ export function SwiggyCouponBox({
   showHeader = true,
 }: SwiggyCouponBoxProps) {
   const { coupon, cart } = useStore();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
+  const [viewAllModalOpen, setViewAllModalOpen] = useState(false);
   const [couponInput, setCouponInput] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [liveCoupons, setLiveCoupons] = useState<ActiveCoupon[]>([]);
@@ -527,171 +530,261 @@ export function SwiggyCouponBox({
     if (onAppliedToast) onAppliedToast('Coupon removed');
   };
 
+  const maxSavings = Math.max(
+    ...activeVouchers.map((v) =>
+      v.discountType === 'percentage'
+        ? Math.round(subtotal * (v.discountValue / 100))
+        : v.discountValue
+    ),
+    subtotal > 0 ? Math.round(subtotal * 0.1) : 102
+  );
+
+  const featuredVoucher = activeVouchers[0];
+  const featuredMinQ = featuredVoucher ? (featuredVoucher.minQty || 1) : 1;
+  const isFeaturedEligible = featuredVoucher
+    ? totalCount >= featuredMinQ && (!featuredVoucher.minSpend || subtotal >= featuredVoucher.minSpend)
+    : false;
+  const featuredDiscountAmt = featuredVoucher
+    ? (featuredVoucher.discountType === 'percentage'
+        ? Math.round(subtotal * (featuredVoucher.discountValue / 100))
+        : featuredVoucher.discountValue)
+    : 0;
+
   return (
-    <div className="swiggy-coupon-wrapper">
-      {/* Top Header Row */}
+    <div className="myntra-coupon-wrapper">
+      {/* Top Header Row with 'Coupons & Bank Offers' and 'View All Offers' */}
       {showHeader && (
-        <div className="swiggy-coupon-header-row">
-          <h3 className="swiggy-coupon-header-title">Coupons &amp; Offers</h3>
+        <div className="myntra-coupon-header-row">
+          <span className="myntra-coupon-header-title">Coupons &amp; Bank Offers</span>
+          <button
+            type="button"
+            onClick={() => setViewAllModalOpen(true)}
+            className="myntra-coupon-view-all-link"
+          >
+            View All Offers
+          </button>
         </div>
       )}
 
-      {/* Main Expandable Accordion Box */}
-      <div
-        className={`swiggy-coupon-card-box ${coupon ? 'swiggy-card-applied' : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <div className="swiggy-card-inner-left">
-          {/* Gold Coin Icon Badge (Swiggy / Myntra Style) */}
-          <div className="swiggy-gold-coin-badge" aria-hidden="true">
-            <span className="swiggy-coin-symbol">₹</span>
-          </div>
-
-          <div className="swiggy-coupon-text-col">
-            <div className="swiggy-coupon-headline">
-              {coupon ? (
-                <span className="text-emerald-700">🎉 {coupon} APPLIED</span>
-              ) : (
-                <span>Apply Coupon</span>
-              )}
+      {/* Main Single Card matching reference image */}
+      <div className={`myntra-coupon-card ${coupon ? 'is-applied' : ''}`}>
+        {/* Card Top Row (Toggle Accordion) */}
+        <div
+          className="myntra-coupon-top-row"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <div className="myntra-coupon-top-left">
+            {/* Realistic 3D Indian Rupee Coin */}
+            <div className="myntra-gold-coin">
+              <span className="myntra-gold-coin-symbol">₹</span>
             </div>
-            <div className="swiggy-coupon-subtext">
-              {coupon ? (
-                'Coupon applied successfully on this order'
-              ) : (
-                `${activeVouchers.length} Coupons & Offers Available`
-              )}
+
+            <div className="myntra-coupon-top-text">
+              <div className="myntra-coupon-save-headline">
+                {coupon ? `🎉 ${coupon} APPLIED` : `Save upto ₹ ${maxSavings > 0 ? maxSavings : 102}`}
+              </div>
+              <div className="myntra-coupon-count-subtext">
+                {coupon ? 'Coupon discount applied to cart' : '1 Coupon & Offer Available'}
+              </div>
             </div>
           </div>
+
+          <button
+            type="button"
+            className="myntra-coupon-chevron-btn"
+            aria-label="Toggle coupon"
+          >
+            {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          </button>
         </div>
 
-        {/* Right Arrow Chevron */}
-        <div className="swiggy-card-inner-right">
-          <ChevronDown
-            size={22}
-            className={`swiggy-chevron-icon ${isOpen ? 'rotate-180' : ''}`}
-          />
-        </div>
+        {/* Card Body (When Open) */}
+        {isOpen && (
+          <div>
+            {coupon ? (
+              <div className="myntra-coupon-applied-box">
+                <div className="myntra-coupon-applied-left">
+                  <div className="myntra-coupon-check-circle">
+                    <Check size={14} strokeWidth={3} />
+                  </div>
+                  <div>
+                    <span className="myntra-coupon-applied-code">{coupon} APPLIED</span>
+                    <p className="myntra-coupon-applied-desc">Savings unlocked on your order!</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  className="myntra-coupon-remove-btn"
+                >
+                  REMOVE
+                </button>
+              </div>
+            ) : featuredVoucher ? (
+              /* ONLY 1 Single Featured Coupon Item as in reference image! */
+              <div className="myntra-coupon-item-row">
+                <div className="myntra-coupon-item-left">
+                  {/* Purple Gradient Tag Icon */}
+                  <div className="myntra-purple-tag">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8 8a2 2 0 0 0 2.828 0l7.172-7.172a2 2 0 0 0 0-2.828l-8-8zM7 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/>
+                    </svg>
+                  </div>
+
+                  <div className="myntra-coupon-item-details">
+                    <span className="myntra-coupon-code-text">
+                      {featuredVoucher.code}
+                    </span>
+                    <span className="myntra-coupon-discount-text">
+                      {featuredVoucher.discountType === 'percentage'
+                        ? `Extra ₹${featuredDiscountAmt > 0 ? featuredDiscountAmt : 102} OFF`
+                        : `Extra ₹${featuredVoucher.discountValue} OFF`}
+                    </span>
+                    <span className="myntra-coupon-sub-text">
+                      {featuredVoucher.discountType === 'percentage'
+                        ? `${featuredVoucher.discountValue}% off`
+                        : `Flat ₹${featuredVoucher.discountValue} off`}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={!isFeaturedEligible}
+                  onClick={() => handleApply(featuredVoucher.code)}
+                  className={`myntra-card-apply-btn ${!isFeaturedEligible ? 'opacity-40 cursor-not-allowed' : ''}`}
+                >
+                  Apply
+                </button>
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
 
-      {/* Accordion Expandable Content */}
-      {isOpen && (
+      {/* VIEW ALL OFFERS MODAL / BOTTOM SHEET */}
+      {viewAllModalOpen && (
         <div
-          className="swiggy-coupon-drawer"
-          onClick={(e) => e.stopPropagation()}
+          className="myntra-offers-modal-backdrop"
+          onClick={() => setViewAllModalOpen(false)}
         >
-          {/* If coupon is applied: show celebration banner + Remove */}
-          {coupon ? (
-            <div className="swiggy-applied-celebration-card">
-              <div className="flex items-center gap-2.5">
-                <div className="swiggy-check-circle">
-                  <Check size={16} strokeWidth={3} className="text-white" />
+          <div
+            className="myntra-offers-modal-sheet"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drag bar for mobile */}
+            <div className="myntra-offers-drag-bar" />
+
+            {/* Modal Header */}
+            <div className="myntra-offers-modal-header">
+              <div className="myntra-offers-title-group">
+                <div className="myntra-purple-tag">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8 8a2 2 0 0 0 2.828 0l7.172-7.172a2 2 0 0 0 0-2.828l-8-8zM7 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/>
+                  </svg>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-sm uppercase text-emerald-950">
-                      {coupon}
-                    </span>
-                    <span className="swiggy-applied-chip">APPLIED</span>
-                  </div>
-                  <p className="text-xs text-emerald-800 font-semibold mt-0.5">
-                    Offer unlocked on your shopping bag!
-                  </p>
-                </div>
+                <h3>Coupons &amp; Bank Offers</h3>
               </div>
               <button
                 type="button"
-                onClick={handleRemove}
-                className="swiggy-remove-btn"
+                onClick={() => setViewAllModalOpen(false)}
+                className="myntra-offers-close-btn"
+                aria-label="Close"
               >
-                REMOVE
+                <X size={18} />
               </button>
             </div>
-          ) : (
-            <>
-              {/* Promo Code Input Box */}
-              <div className="swiggy-input-apply-row">
+
+            {/* Modal Body */}
+            <div className="myntra-offers-modal-body">
+              {/* Custom Promo Code Input */}
+              <div className="myntra-offers-input-pill">
                 <input
                   type="text"
                   value={couponInput}
                   onChange={(e) => setCouponInput(e.target.value)}
                   placeholder="Enter coupon code"
-                  className="swiggy-code-input uppercase"
+                  className="myntra-offers-input"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && couponInput.trim()) {
+                      handleApply(couponInput);
+                      setViewAllModalOpen(false);
+                    }
+                  }}
                 />
                 <button
                   type="button"
-                  onClick={() => handleApply(couponInput)}
-                  className="swiggy-apply-submit-btn"
+                  onClick={() => {
+                    if (couponInput.trim()) {
+                      handleApply(couponInput);
+                      setViewAllModalOpen(false);
+                    }
+                  }}
+                  className="myntra-offers-pill-apply-btn"
                 >
-                  APPLY
+                  Apply
                 </button>
               </div>
 
               {feedback && (
-                <div
-                  className={`swiggy-feedback-msg ${
-                    feedback.type === 'success' ? 'feedback-success' : 'feedback-error'
-                  }`}
-                >
+                <div className={`p-3 rounded-xl text-xs font-semibold ${feedback.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
                   {feedback.text}
                 </div>
               )}
 
-              {/* List of Available Offers */}
-              <div className="swiggy-offers-list">
+              {/* All Vouchers List */}
+              <div className="myntra-offers-section-label">
+                AVAILABLE COUPONS ({activeVouchers.length})
+              </div>
+
+              <div className="myntra-offers-list">
                 {activeVouchers.map((voucher) => {
                   const minQ = voucher.minQty || 1;
                   const isEligible = totalCount >= minQ && (!voucher.minSpend || subtotal >= voucher.minSpend);
-                  const needed = minQ - totalCount;
-
-                  const badgeText = voucher.discountType === 'percentage'
-                    ? `${voucher.discountValue}% OFF`
-                    : `₹${voucher.discountValue} FLAT OFF`;
+                  const discountAmt = voucher.discountType === 'percentage'
+                    ? Math.round(subtotal * (voucher.discountValue / 100))
+                    : voucher.discountValue;
+                  const isAlreadyApplied = coupon === voucher.code;
 
                   return (
-                    <div key={voucher.code} className="swiggy-voucher-item">
-                      <div className="swiggy-voucher-info">
-                        <div className="flex items-center gap-2">
-                          <span className="swiggy-voucher-code">
-                            <Tag size={12} className="shrink-0" />
-                            <span>{voucher.code}</span>
-                          </span>
-                          <span className="swiggy-voucher-badge">
-                            {badgeText}
-                          </span>
+                    <div
+                      key={voucher.code}
+                      className="myntra-voucher-card"
+                    >
+                      <div className="myntra-voucher-left">
+                        <span className="myntra-voucher-code-badge">
+                          {voucher.code}
+                        </span>
+                        <div className="myntra-voucher-discount-title">
+                          {voucher.discountType === 'percentage'
+                            ? `Extra ₹${discountAmt > 0 ? discountAmt : voucher.discountValue} OFF`
+                            : `Extra ₹${voucher.discountValue} OFF`}
                         </div>
-                        <h4 className="swiggy-voucher-title">{voucher.description || `${voucher.discountValue}% OFF on Art Prints`}</h4>
-                        <p className="swiggy-voucher-desc">
-                          {voucher.minSpend ? `Applicable on orders above ₹${voucher.minSpend}` : 'Applicable on your order'}
-                        </p>
-                        {totalCount < minQ && (
-                          <span className="swiggy-voucher-locked">
-                            🔒 Add {needed} more poster{needed > 1 ? 's' : ''} to unlock
-                          </span>
-                        )}
-                        {voucher.minSpend && subtotal < voucher.minSpend && (
-                          <span className="swiggy-voucher-locked block mt-1">
-                            🔒 Min order value of ₹{voucher.minSpend} required
-                          </span>
-                        )}
+                        <div className="myntra-voucher-desc">
+                          {voucher.description || (voucher.discountType === 'percentage' ? `${voucher.discountValue}% off on all orders` : `Flat ₹${voucher.discountValue} off`)}
+                        </div>
+                        <div className="myntra-voucher-condition">
+                          {voucher.minSpend ? `Applicable on orders above ₹${voucher.minSpend}` : 'Applicable on this order'}
+                        </div>
                       </div>
 
                       <button
                         type="button"
-                        disabled={!isEligible}
-                        onClick={() => handleApply(voucher.code)}
-                        className={`swiggy-voucher-apply-btn ${
-                          isEligible ? 'btn-active' : 'btn-disabled'
-                        }`}
+                        disabled={!isEligible || isAlreadyApplied}
+                        onClick={() => {
+                          handleApply(voucher.code);
+                          setViewAllModalOpen(false);
+                        }}
+                        className={`myntra-voucher-apply-btn ${isAlreadyApplied ? 'is-active' : ''} ${!isEligible ? 'opacity-40 cursor-not-allowed' : ''}`}
                       >
-                        APPLY
+                        {isAlreadyApplied ? 'Applied' : 'Apply'}
                       </button>
                     </div>
                   );
                 })}
               </div>
-            </>
-          )}
+            </div>
+          </div>
         </div>
       )}
     </div>

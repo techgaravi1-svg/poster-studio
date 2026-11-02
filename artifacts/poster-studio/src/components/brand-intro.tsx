@@ -41,6 +41,7 @@ export function BrandIntroAnimation({ onComplete }: { onComplete: () => void }) 
           fetchPriority="high"
           className="dungeons-splash-logo-img"
         />
+        <p className="dungeons-splash-tagline">Within the Dungeons, Treasures Await</p>
       </div>
     </div>
   );

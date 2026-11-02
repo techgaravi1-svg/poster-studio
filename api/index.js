@@ -32707,9 +32707,11 @@ function securityHeadersMiddleware(req, res, next) {
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   }
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-  res.setHeader("Pragma", "no-cache");
-  res.setHeader("Expires", "0");
+  if (req.method !== "GET" || req.path.startsWith("/admin")) {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+  }
   next();
 }
 var rateLimitStore = /* @__PURE__ */ new Map();
@@ -33144,6 +33146,7 @@ router4.get("/coupons", async (_req, res) => {
       where: { isActive: true },
       orderBy: { minQty: "asc" }
     });
+    res.setHeader("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=600");
     return res.json({ success: true, coupons });
   } catch (error) {
     return res.status(500).json({ success: false, error: "Failed to retrieve vouchers" });
@@ -33271,7 +33274,7 @@ router6.get("/products", async (req, res) => {
       }),
       prisma.product.count({ where: whereClause })
     ]);
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Cache-Control", "public, max-age=120, s-maxage=3600, stale-while-revalidate=86400");
     return res.json({
       success: true,
       products,
@@ -33297,7 +33300,7 @@ router6.get("/products/:slug", async (req, res) => {
     if (!product) {
       return res.status(404).json({ success: false, error: "Product not found" });
     }
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Cache-Control", "public, max-age=120, s-maxage=3600, stale-while-revalidate=86400");
     return res.json({ success: true, product });
   } catch (error) {
     return res.status(500).json({ success: false, error: "Failed to fetch product details" });

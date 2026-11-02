@@ -519,11 +519,8 @@ export function HomePage() {
                     width="485"
                     height="325"
                     loading="lazy"
-                    className="photobooth-preview-img opacity-85"
+                    className="photobooth-preview-img opacity-95"
                   />
-                  <div className="absolute top-3 right-3 bg-neutral-900/80 backdrop-blur-md text-white text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border border-white/20 tracking-wider">
-                    Coming Soon
-                  </div>
                 </div>
               )}
               <div className="photobooth-details">
@@ -595,6 +592,12 @@ const categoryTeasers: Record<string, { title: string; subtitle: string; priceEs
     { title: 'Woven Bohemian Fringe Cushion', subtitle: 'Heavy Organic Cotton Pillow Case', priceEstimate: 'Rs. 599' },
     { title: 'Charcoal Minimalist Studio Cushion', subtitle: 'Luxury Velvet Sofa & Bed Accent', priceEstimate: 'Rs. 799' },
   ],
+  couches: [
+    { title: 'Modular Cloud Sectional Couch', subtitle: 'Ultra-Deep Velvet Minimalist Sofa', priceEstimate: 'Rs. 14,999' },
+    { title: 'Bouclé Curved 3-Seater Couch', subtitle: 'Sculptural Organic Living Room Couch', priceEstimate: 'Rs. 18,499' },
+    { title: 'Caramel Top-Grain Leather Couch', subtitle: 'Mid-Century Retro Statement Sofa', priceEstimate: 'Rs. 22,999' },
+    { title: 'Charcoal Minimalist Studio Couch', subtitle: 'Ergonomic Japanese Low Profile Sofa', priceEstimate: 'Rs. 16,999' },
+  ],
   mirrors: [
     { title: 'Wavy Ripple Full Body Mirror', subtitle: 'Curved Velvet Frame 160x60cm', priceEstimate: 'Rs. 3,499' },
     { title: 'Minimalist Arch Vanity Mirror', subtitle: 'Brushed Brass Metal Trim', priceEstimate: 'Rs. 1,899' },
@@ -606,6 +609,18 @@ const categoryTeasers: Record<string, { title: string; subtitle: string; priceEs
     { title: 'Smoked Fluted Glass Coffee Table', subtitle: 'Tempered Glass with Matte Black Legs', priceEstimate: 'Rs. 3,999' },
     { title: 'Lucite Minimalist Acrylic Cube', subtitle: 'Ultra Clear Gallery Display Stand', priceEstimate: 'Rs. 2,799' },
     { title: 'Brutalist Concrete Pedestal', subtitle: 'Architectural Accent End Table', priceEstimate: 'Rs. 3,499' },
+  ],
+  'tables-chairs': [
+    { title: 'Nordic Oak Dining & Study Table', subtitle: 'Solid White Oak Finish Table', priceEstimate: 'Rs. 4,999' },
+    { title: 'Smoked Fluted Glass Accent Table', subtitle: 'Tempered Glass with Matte Black Legs', priceEstimate: 'Rs. 3,999' },
+    { title: 'Ergonomic Rattan Lounge Chair', subtitle: 'Curved Teak & Natural Cane Chair', priceEstimate: 'Rs. 3,499' },
+    { title: 'Bouclé Accent Dining Armchair', subtitle: 'Sculptural Modern Dining & Desk Chair', priceEstimate: 'Rs. 2,999' },
+  ],
+  curtains: [
+    { title: 'Embroidered Floral Sheer Drapes', subtitle: 'Light-Filtering Vintage Tassel Curtains', priceEstimate: 'Rs. 1,299' },
+    { title: 'Heavy Thermal Velvet Blackout Curtains', subtitle: 'Room Darkening Soundproof Window Drape', priceEstimate: 'Rs. 1,799' },
+    { title: 'Natural French Linen Window Panel', subtitle: 'Textured Flowing Luxury Drapes', priceEstimate: 'Rs. 1,499' },
+    { title: 'Aesthetic Bohemian Fringe Curtains', subtitle: 'Cotton Slub Window Drapery Set', priceEstimate: 'Rs. 1,199' },
   ],
   'wall-mounts': [
     { title: 'Solid Oak Floating Print Ledge', subtitle: '100cm Gallery Display Shelf', priceEstimate: 'Rs. 799' },
@@ -1112,28 +1127,6 @@ export function ProductPage() {
     store.toggleWishlist(product.slug);
   };
 
-  // User star-only rating state
-  const [userRating, setUserRating] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem(`dungeons_rating_${product.id}`);
-      return saved ? parseInt(saved, 10) : 0;
-    } catch {
-      return 0;
-    }
-  });
-  const [hoverRating, setHoverRating] = useState<number>(0);
-
-  const handleRateProduct = (stars: number) => {
-    setUserRating(stars);
-    try {
-      localStorage.setItem(`dungeons_rating_${product.id}`, stars.toString());
-    } catch {
-      // ignore
-    }
-    setToast(`Thank you! You rated this poster ${stars} stars.`);
-    window.setTimeout(() => setToast(''), 3000);
-  };
-
   const similarProducts = useMemo(() => {
     const list = liveProducts.filter((p) => p.id !== product.id);
     const sameCategory = list.filter((p) => p.category === product.category || p.collection === product.collection);
@@ -1227,8 +1220,20 @@ export function ProductPage() {
       <section className="product-primary-details">
         <h1 className="product-page-title">{product.title}</h1>
 
-        <div className="product-stars-row">
-          <span className="stars-gold">★★★★★</span>
+        <div className="product-stars-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0 10px' }}>
+          <div style={{ display: 'flex', color: '#f59e0b', fontSize: '15px' }}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <span key={star}>
+                {(product.rating || 4.9) >= star ? '★' : (product.rating || 4.9) >= star - 0.5 ? '★' : '☆'}
+              </span>
+            ))}
+          </div>
+          <span style={{ fontSize: '12px', fontWeight: 800, color: '#1e293b' }}>
+            {(product.rating || 4.9).toFixed(1)}
+          </span>
+          <span style={{ fontSize: '12px', color: '#64748b' }}>
+            ({product.reviewsCount !== undefined ? product.reviewsCount : 148} verified ratings)
+          </span>
         </div>
 
         <div className="product-price-display-row">
@@ -1463,105 +1468,6 @@ export function ProductPage() {
         </div>
       </section>
     </div>
-
-      {/* 9.5 CUSTOMER REVIEWS & STAR RATING SECTION */}
-      <section className="product-reviews-section max-w-7xl mx-auto px-4 py-8 border-t border-neutral-200 mt-10">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl md:text-2xl font-black text-neutral-900 tracking-tight uppercase">
-                CUSTOMER REVIEWS
-              </span>
-              <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <Star size={12} className="fill-emerald-700 text-emerald-700" /> 4.9 / 5
-              </span>
-            </div>
-            <p className="text-xs text-neutral-500 mt-1">
-              Based on 148 verified customer ratings &amp; reviews across India
-            </p>
-          </div>
-
-          {/* Interactive Star Only Rating Input */}
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-            <div>
-              <span className="text-xs font-black text-neutral-900 block uppercase tracking-wide">
-                RATE THIS POSTER
-              </span>
-              <span className="text-[11px] text-neutral-500">
-                {userRating > 0 ? `You rated this ${userRating} ★` : 'Click to submit your star rating'}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((star) => {
-                const isFilled = (hoverRating || userRating) >= star;
-                return (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => handleRateProduct(star)}
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    className="p-1 text-neutral-300 hover:scale-125 transition-transform cursor-pointer focus:outline-hidden"
-                    title={`Rate ${star} Star${star > 1 ? 's' : ''}`}
-                    aria-label={`Rate ${star} stars`}
-                  >
-                    <Star
-                      size={24}
-                      className={isFilled ? 'fill-amber-400 text-amber-400' : 'text-neutral-300'}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-            {userRating > 0 && (
-              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 flex items-center gap-1 shrink-0">
-                <Check size={12} strokeWidth={3} /> Saved
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Reviews Breakdown & Rating Metrics Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-white border border-neutral-200 rounded-2xl p-5 mb-8 shadow-xs">
-          <div className="md:col-span-4 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-neutral-100 pb-4 md:pb-0 md:pr-6 text-center">
-            <span className="text-5xl font-black text-neutral-900 leading-none">4.9</span>
-            <div className="flex items-center gap-1 text-amber-400 my-2">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} size={18} className="fill-amber-400 text-amber-400" />
-              ))}
-            </div>
-            <span className="text-xs text-neutral-500 font-semibold">148 Verified Buyers</span>
-            <span className="text-[11px] text-emerald-600 font-bold mt-1 flex items-center gap-1">
-              <CheckCircle2 size={13} /> 99% Recommended this print
-            </span>
-          </div>
-
-          <div className="md:col-span-8 flex flex-col justify-center gap-2">
-            {[
-              { stars: 5, pct: '88%', count: 130 },
-              { stars: 4, pct: '10%', count: 15 },
-              { stars: 3, pct: '2%', count: 3 },
-              { stars: 2, pct: '0%', count: 0 },
-              { stars: 1, pct: '0%', count: 0 },
-            ].map((row) => (
-              <div key={row.stars} className="flex items-center gap-3 text-xs">
-                <span className="w-8 font-bold text-neutral-700 flex items-center gap-1 shrink-0">
-                  {row.stars} <Star size={11} className="fill-amber-400 text-amber-400" />
-                </span>
-                <div className="flex-1 h-2.5 bg-neutral-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-amber-400 rounded-full"
-                    style={{ width: row.pct }}
-                  />
-                </div>
-                <span className="w-10 text-right text-[11px] text-neutral-500 font-medium shrink-0">
-                  {row.pct}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* 10. YOU MAY ALSO LIKE / SIMILAR PRODUCTS (PAGE 7) */}
       <section className="product-similar-section">
@@ -2069,10 +1975,9 @@ export function CustomPage() {
 
         <div className="custom-boxes-selection-grid">
           {/* Box 1: Custom Photobooth Strip (Coming Soon) */}
-          <div className="custom-selection-box-card opacity-90">
+          <div className="custom-selection-box-card">
             <div className="box-media-wrap">
-              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793352215/dungeons_hero_assets/photobooth_strip_new.jpg" alt="Custom Photobooth Strip" className="box-thumb-img opacity-85" />
-              <span className="box-tag-pill bg-neutral-900 text-white">COMING SOON</span>
+              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793352215/dungeons_hero_assets/photobooth_strip_new.jpg" alt="Custom Photobooth Strip" className="box-thumb-img" />
             </div>
             <div className="box-body-wrap">
               <h2 className="box-title">Custom Photobooth Strip</h2>
@@ -2093,10 +1998,9 @@ export function CustomPage() {
           </div>
 
           {/* Box 2: Mini Pocket Photos (Coming Soon) */}
-          <div className="custom-selection-box-card opacity-90">
+          <div className="custom-selection-box-card">
             <div className="box-media-wrap">
-              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/minipocket_1d50a9.jpg" alt="Mini Pocket Photos" className="box-thumb-img opacity-85" />
-              <span className="box-tag-pill bg-neutral-900 text-white">COMING SOON</span>
+              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/minipocket_1d50a9.jpg" alt="Mini Pocket Photos" className="box-thumb-img" />
             </div>
             <div className="box-body-wrap">
               <h2 className="box-title">Mini Pocket Photos (Mini Prints)</h2>
@@ -3367,26 +3271,12 @@ export function CheckoutPage() {
               )}
             </div>
 
-            {/* STEP 3: COUPONS & OFFERS (SWIGGY ACCORDION STYLE) */}
-            <div className="checkout-stepper-card">
-              <div className="checkout-card-header">
-                <div className="step-label-group">
-                  <div className="flex items-center gap-2">
-                    <BadgePercent size={16} className="text-emerald-600" />
-                    <h2 className="step-title-heading">Coupons &amp; Offers</h2>
-                  </div>
-                </div>
-                {coupon && (
-                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    🎉 {coupon} APPLIED
-                  </span>
-                )}
-              </div>
-
+            {/* STEP 3: COUPONS & BANK OFFERS (MYNTRA REFERENCE STYLE) */}
+            <div className="w-full">
               <SwiggyCouponBox
                 subtotal={totals.subtotal}
                 totalCount={totalCount}
-                showHeader={false}
+                showHeader={true}
                 onAppliedToast={(msg) => {
                   setToast(msg);
                   window.setTimeout(() => setToast(''), 2500);
@@ -3835,8 +3725,6 @@ export function OrdersPage() {
   const [, navigate] = useLocation();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'in_progress' | 'delivered'>('all');
-  const [trackInput, setTrackInput] = useState('');
-  const [trackError, setTrackError] = useState('');
 
   // User orders list
   const displayOrders = orders;
@@ -3853,24 +3741,6 @@ export function OrdersPage() {
     navigator.clipboard?.writeText(id);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2500);
-  };
-
-  const handleTrackSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = trackInput.trim();
-    if (!query) {
-      setTrackError('Please enter a valid Order ID (e.g. PS-...)');
-      return;
-    }
-    setTrackError('');
-    // Check if matching order exists in local store
-    const localMatch = displayOrders.find((o) => o.id.toLowerCase() === query.toLowerCase());
-    if (localMatch) {
-      navigate(`/account/orders/${localMatch.id}`);
-    } else {
-      // Direct to success/tracking page for live tracking
-      navigate(`/checkout/success?order=${encodeURIComponent(query)}`);
-    }
   };
 
   const handleBuyAgain = (item: CartItem, e: React.MouseEvent) => {
@@ -3895,37 +3765,15 @@ export function OrdersPage() {
       <div className="orders-page-container">
         {/* Header & Filter Row */}
         <div className="orders-page-header">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h1 className="orders-heading-title">
-                <span>MY ORDERS</span>
-                <span className="orders-count-badge">{displayOrders.length} {displayOrders.length === 1 ? 'Order' : 'Orders'}</span>
-              </h1>
-              <p className="text-xs text-neutral-500 mt-1">
-                Track shipments, manage deliveries, view invoices and reorder prints.
-              </p>
-            </div>
-
-            {/* Quick Track Search Input */}
-            <form onSubmit={handleTrackSubmit} className="orders-track-input-wrap">
-              <Search size={15} className="text-neutral-400 mr-2 shrink-0" />
-              <input
-                type="text"
-                value={trackInput}
-                onChange={(e) => {
-                  setTrackInput(e.target.value);
-                  if (trackError) setTrackError('');
-                }}
-                placeholder="Enter Order ID to track..."
-                className="orders-track-input"
-              />
-              <button type="submit" className="orders-track-submit-btn">
-                <Truck size={13} />
-                <span>Track</span>
-              </button>
-            </form>
+          <div>
+            <h1 className="orders-heading-title">
+              <span>MY ORDERS</span>
+              <span className="orders-count-badge">{displayOrders.length} {displayOrders.length === 1 ? 'Order' : 'Orders'}</span>
+            </h1>
+            <p className="text-xs text-neutral-500 mt-1">
+              Track shipments, manage deliveries, view invoices and reorder prints.
+            </p>
           </div>
-          {trackError && <p className="text-[11px] text-rose-500 font-medium">{trackError}</p>}
 
           <div className="orders-filter-chips">
             <button
@@ -3955,92 +3803,17 @@ export function OrdersPage() {
         {/* Orders List */}
         {filteredOrders.length === 0 ? (
           <div className="orders-empty-state-box">
-            {/* Flipkart / Myntra Illustrated Badge */}
-            <div className="empty-state-illustration">
-              <Package size={44} strokeWidth={1.8} />
+            <div className="empty-state-icon-circle">
+              <Package size={32} />
             </div>
-
-            <div>
-              <h3 className="text-xl font-black text-neutral-900 tracking-tight">
-                {filter === 'all' ? 'You Haven’t Placed Any Orders Yet' : 'No Orders in this Category'}
-              </h3>
-              <p className="text-xs text-neutral-500 max-w-md mx-auto mt-1.5 leading-relaxed">
-                Your gallery wall is waiting for its first masterpiece! Explore over 700+ curated archival posters on 300 GSM matte cardstock with damage-proof cylindrical tube delivery.
-              </p>
-            </div>
-
-            {/* Primary Action Button */}
-            <Link href="/collections/posters" className="success-btn-primary w-full max-w-sm mx-auto shadow-md hover:shadow-lg transition">
+            <h3 className="text-lg font-black text-neutral-900 mb-1">No Orders Found</h3>
+            <p className="text-xs text-neutral-500 max-w-sm mx-auto mb-5">
+              You don't have any orders under this category. Discover our latest collection of premium art prints!
+            </p>
+            <Link href="/collections/posters" className="success-btn-primary max-w-xs mx-auto">
               <ShoppingBag size={16} />
-              <span>EXPLORE ALL BESTSELLERS</span>
+              <span>EXPLORE BESTSELLERS</span>
             </Link>
-
-            {/* Quick Category Discovery Pills */}
-            <div className="orders-quick-cats-section">
-              <div className="orders-quick-cats-title">Popular Collections to Explore</div>
-              <div className="orders-quick-cats-pills">
-                <Link href="/collections/marvel-dc" className="orders-quick-cat-pill">
-                  <span>🦸 Marvel &amp; DC</span>
-                </Link>
-                <Link href="/collections/anime" className="orders-quick-cat-pill">
-                  <span>⚡ Anime</span>
-                </Link>
-                <Link href="/collections/sports" className="orders-quick-cat-pill">
-                  <span>⚽ Sports</span>
-                </Link>
-                <Link href="/collections/landscapes" className="orders-quick-cat-pill">
-                  <span>🏔️ Landscapes</span>
-                </Link>
-                <Link href="/collections/diva" className="orders-quick-cat-pill">
-                  <span>✨ Diva</span>
-                </Link>
-                <Link href="/collections/automative" className="orders-quick-cat-pill">
-                  <span>🏎️ Automative</span>
-                </Link>
-                <Link href="/collections/motivational" className="orders-quick-cat-pill">
-                  <span>🔥 Motivational</span>
-                </Link>
-                <Link href="/collections/devotional" className="orders-quick-cat-pill">
-                  <span>🙏 Devotional</span>
-                </Link>
-              </div>
-            </div>
-
-            {/* Flipkart Assured / Quality Guarantees */}
-            <div className="orders-assurance-strip">
-              <div className="assurance-strip-item">
-                <ShieldCheck size={20} className="assurance-strip-icon shrink-0" />
-                <div>
-                  <div className="assurance-strip-text">Tube Safe Packaging</div>
-                  <div className="assurance-strip-sub">Zero folds or creases</div>
-                </div>
-              </div>
-              <div className="assurance-strip-item">
-                <Sparkles size={20} className="assurance-strip-icon shrink-0" />
-                <div>
-                  <div className="assurance-strip-text">300 GSM Cardstock</div>
-                  <div className="assurance-strip-sub">Museum-grade vibrancy</div>
-                </div>
-              </div>
-              <div className="assurance-strip-item">
-                <Truck size={20} className="assurance-strip-icon shrink-0" />
-                <div>
-                  <div className="assurance-strip-text">Express Dispatch</div>
-                  <div className="assurance-strip-sub">Ships in 24-48 hours</div>
-                </div>
-              </div>
-            </div>
-
-            {/* WhatsApp Assistance Banner */}
-            <a
-              href={`https://wa.me/919265964547?text=${encodeURIComponent('Hi DUNGEONS, I need help regarding my orders.')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-full transition mt-2"
-            >
-              <MessageCircle size={15} />
-              <span>Need help or ordered via WhatsApp? Chat with DUNGEONS Support →</span>
-            </a>
           </div>
         ) : (
           <div className="flex flex-col gap-4">

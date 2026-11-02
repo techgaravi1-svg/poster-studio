@@ -39,6 +39,7 @@ export type Product = {
   newArrival: boolean;
   tags: string[];
   rating: number;
+  reviewsCount?: number;
   subtitle?: string;
   features?: Array<{ title: string; desc: string }>;
   notes?: Array<{ title: string; desc: string }>;
@@ -795,15 +796,16 @@ export type StoreCategory = {
   description?: string;
 };
 
-// 8 Official Coming Soon Categories
+// 9 Official Coming Soon Categories
 export const comingSoonCategories = [
   { id: 'cat-wallart', name: 'Wall Art', slug: 'wall-art', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-2_3df893.jpg', 200, 80), description: 'Handcrafted gallery canvas art and modern wall decor.' },
   { id: 'cat-wallmounts', name: 'Wall Mounts', slug: 'wall-mounts', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349692/dungeons_store_assets/circle-3_c756da.jpg', 200, 80), description: 'Floating oak shelves, display brackets, and gallery mounts.' },
   { id: 'cat-beanbags', name: 'Bean Bags', slug: 'bean-bags', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349693/dungeons_store_assets/circle-4_4f8dd6.jpg', 200, 80), description: 'Ultra-comfortable luxury corduroy and velvet lounger bean bags.' },
   { id: 'cat-flags', name: 'Flags', slug: 'flags', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-5_e14394.jpg', 200, 80), description: 'Vintage pop-culture, motorsport, and aesthetic wall tapestry flags.' },
   { id: 'cat-mirrors', name: 'Mirrors', slug: 'mirrors', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-6_71a8b7.jpg', 200, 80), description: 'Chic wavy and arched statement aesthetic vanity wall mirrors.' },
-  { id: 'cat-cushions', name: 'Cushions', slug: 'cushions', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-7_cac42e.jpg', 200, 80), description: 'Plush velvet, aesthetic woven, and statement designer throw cushions.' },
-  { id: 'cat-tables', name: 'Tables', slug: 'tables', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-8_851b08.jpg', 200, 80), description: 'Minimalist designer side tables and accent coffee tables.' },
+  { id: 'cat-couches', name: 'Couches', slug: 'couches', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-7_cac42e.jpg', 200, 80), description: 'Plush velvet, aesthetic woven, and statement designer luxury couches.' },
+  { id: 'cat-tables-chairs', name: 'Tables & Chairs', slug: 'tables-chairs', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-8_851b08.jpg', 200, 80), description: 'Minimalist designer dining tables, side tables and accent chairs.' },
+  { id: 'cat-curtains', name: 'Curtains', slug: 'curtains', image: '/assets/cat-curtains.jpg', description: 'Designer floral sheer drapes and luxury blackout window curtains.' },
   { id: 'cat-rugs', name: 'Rugs & Carpets', slug: 'rugs-carpets', image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/circle-9_d755df.jpg', 200, 80), description: 'Hand-tufted Berber wool area rugs and modern floor tapestries.' },
 ];
 
@@ -876,6 +878,24 @@ export function transformDbProductToFrontend(p: any): Product {
     }
   }
 
+  let rating = 4.9;
+  let reviewsCount = 148;
+  if (Array.isArray(p.tags)) {
+    for (const tag of p.tags) {
+      if (typeof tag === 'string') {
+        if (tag.startsWith('rating:')) {
+          const val = parseFloat(tag.split(':')[1]);
+          if (!isNaN(val) && val > 0 && val <= 5) rating = val;
+        } else if (tag.startsWith('reviews:')) {
+          const val = parseInt(tag.split(':')[1], 10);
+          if (!isNaN(val) && val >= 0) reviewsCount = val;
+        }
+      }
+    }
+  }
+  if (typeof p.rating === 'number' && !isNaN(p.rating) && p.rating > 0) rating = p.rating;
+  if (typeof p.reviewsCount === 'number' && !isNaN(p.reviewsCount) && p.reviewsCount >= 0) reviewsCount = p.reviewsCount;
+
   const basePrice = Number(p.price) || 79;
   if (!sizePrices.A5) sizePrices.A5 = basePrice;
   if (!sizePrices.A4) sizePrices.A4 = Math.round(basePrice * 1.5);
@@ -909,7 +929,8 @@ export function transformDbProductToFrontend(p: any): Product {
     bestseller: Boolean(p.isBestSeller),
     newArrival: Boolean(p.isNewRelease),
     tags: Array.isArray(p.tags) ? p.tags : [],
-    rating: 4.9,
+    rating,
+    reviewsCount,
     subtitle: `${(p.category || 'PREMIUM').toUpperCase()} ARCHIVAL POSTER`,
     features: defaultFeatures,
     notes: defaultNotes,
@@ -1106,11 +1127,11 @@ export function saveSingleProduct(productData: Partial<Product> & { id: string }
     }
   }
 
-  // Ensure size prices are stored in tags too for backend compatibility
+  // Ensure size prices and rating/reviews are stored in tags too for backend compatibility
   const sizePrices = productData.sizePrices || {};
   const sizeComparePrices = productData.sizeComparePrices || {};
   const cleanTags = (Array.isArray(productData.tags) ? productData.tags : [])
-    .filter((t) => !t.startsWith('sizeprice:') && !t.startsWith('sizecompare:'));
+    .filter((t) => !t.startsWith('sizeprice:') && !t.startsWith('sizecompare:') && !t.startsWith('rating:') && !t.startsWith('reviews:'));
 
   if (sizePrices.A5) cleanTags.push(`sizeprice:A5:${sizePrices.A5}`);
   if (sizePrices.A4) cleanTags.push(`sizeprice:A4:${sizePrices.A4}`);
@@ -1118,6 +1139,8 @@ export function saveSingleProduct(productData: Partial<Product> & { id: string }
   if (sizeComparePrices.A5) cleanTags.push(`sizecompare:A5:${sizeComparePrices.A5}`);
   if (sizeComparePrices.A4) cleanTags.push(`sizecompare:A4:${sizeComparePrices.A4}`);
   if (sizeComparePrices.A3) cleanTags.push(`sizecompare:A3:${sizeComparePrices.A3}`);
+  if (productData.rating !== undefined) cleanTags.push(`rating:${productData.rating}`);
+  if (productData.reviewsCount !== undefined) cleanTags.push(`reviews:${productData.reviewsCount}`);
 
   const index = isExisting
     ? current.findIndex((p) => p.id === productId)
@@ -1148,6 +1171,8 @@ export function saveSingleProduct(productData: Partial<Product> & { id: string }
       sizePrices: { ...existing.sizePrices, ...sizePrices },
       sizeComparePrices: { ...existing.sizeComparePrices, ...sizeComparePrices },
       stock: productData.stock !== undefined ? Number(productData.stock) : existing.stock,
+      rating: productData.rating !== undefined ? Number(productData.rating) : existing.rating,
+      reviewsCount: productData.reviewsCount !== undefined ? Number(productData.reviewsCount) : existing.reviewsCount,
       images: Array.isArray(productData.images) && productData.images.length > 0
         ? productData.images
         : existing.images,

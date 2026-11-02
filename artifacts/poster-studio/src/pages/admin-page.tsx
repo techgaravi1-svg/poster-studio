@@ -111,6 +111,8 @@ interface AdminProduct {
   isBestSeller: boolean;
   isNewRelease: boolean;
   isActive: boolean;
+  rating?: number;
+  reviewsCount?: number;
 }
 
 interface AdminCoupon {
@@ -385,6 +387,8 @@ export function AdminDashboardPage() {
     stock: 50,
     isBestSeller: true,
     isNewRelease: false,
+    rating: 4.9,
+    reviewsCount: 148,
   };
 
   const [productFormData, setProductFormData] = useState(defaultProductFormData);
@@ -747,6 +751,16 @@ export function AdminDashboardPage() {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
 
+    const cleanTags = (typeof productFormData.tags === 'string'
+      ? productFormData.tags.split(',').map((t) => t.trim()).filter(Boolean)
+      : Array.isArray(productFormData.tags) ? productFormData.tags : [])
+      .filter((t) => !t.startsWith('rating:') && !t.startsWith('reviews:'));
+
+    const ratingVal = Number(productFormData.rating) || 4.9;
+    const reviewsVal = Number(productFormData.reviewsCount) >= 0 ? Number(productFormData.reviewsCount) : 148;
+    cleanTags.push(`rating:${ratingVal}`);
+    cleanTags.push(`reviews:${reviewsVal}`);
+
     const payload: AdminProduct = {
       id: editingProduct ? editingProduct.id : `prod-custom-${Date.now()}`,
       ...productFormData,
@@ -757,9 +771,9 @@ export function AdminDashboardPage() {
       sizePrices: productFormData.sizePrices,
       sizeComparePrices: productFormData.sizeComparePrices,
       stock: Number(productFormData.stock) >= 0 ? Number(productFormData.stock) : 50,
-      tags: typeof productFormData.tags === 'string'
-        ? productFormData.tags.split(',').map((t) => t.trim()).filter(Boolean)
-        : productFormData.tags,
+      tags: cleanTags,
+      rating: ratingVal,
+      reviewsCount: reviewsVal,
       isActive: true,
     };
 
@@ -774,7 +788,7 @@ export function AdminDashboardPage() {
       sizePrices: payload.sizePrices || null,
       sizeComparePrices: payload.sizeComparePrices || null,
       images: payload.images,
-      tags: payload.tags,
+      tags: cleanTags,
       stock: payload.stock,
       isBestSeller: Boolean(payload.isBestSeller),
       isNewRelease: Boolean(payload.isNewRelease),
@@ -837,6 +851,8 @@ export function AdminDashboardPage() {
         stock: savedProduct.stock,
         orientation: (savedProduct.orientation as any) || 'portrait',
         tags: savedProduct.tags,
+        rating: payload.rating,
+        reviewsCount: payload.reviewsCount,
         bestseller: savedProduct.isBestSeller,
         newArrival: savedProduct.isNewRelease,
       });
@@ -2002,6 +2018,24 @@ export function AdminDashboardPage() {
                                 const prodSizeCompare = (prod as any).sizeComparePrices || {};
                                 const a5p = prodSizePrices.A5 || prod.price || 79;
                                 const a5c = prodSizeCompare.A5 || prod.compareAtPrice || Math.round(a5p * 2);
+
+                                let prodRating = (prod as any).rating || 4.9;
+                                let prodReviews = (prod as any).reviewsCount !== undefined ? (prod as any).reviewsCount : 148;
+                                if (Array.isArray(prod.tags)) {
+                                  for (const t of prod.tags) {
+                                    if (typeof t === 'string') {
+                                      if (t.startsWith('rating:')) {
+                                        const r = parseFloat(t.split(':')[1]);
+                                        if (!isNaN(r)) prodRating = r;
+                                      }
+                                      if (t.startsWith('reviews:')) {
+                                        const rc = parseInt(t.split(':')[1], 10);
+                                        if (!isNaN(rc)) prodReviews = rc;
+                                      }
+                                    }
+                                  }
+                                }
+
                                 setProductFormData({
                                   title: prod.title,
                                   slug: prod.slug,
@@ -2025,6 +2059,8 @@ export function AdminDashboardPage() {
                                   stock: prod.stock,
                                   isBestSeller: prod.isBestSeller,
                                   isNewRelease: prod.isNewRelease,
+                                  rating: prodRating,
+                                  reviewsCount: prodReviews,
                                 });
                                 setIsProductModalOpen(true);
                               }}
@@ -2623,7 +2659,56 @@ export function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '20px', marginTop: '6px' }}>
+              {/* Product Review Rating & Stars Option from Admin */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', background: '#0e1628', border: '1px solid #1e2638', borderRadius: '12px', padding: '12px 14px', marginTop: '10px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>
+                    Star Rating (1.0 to 5.0)
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="1.0"
+                      max="5.0"
+                      value={productFormData.rating}
+                      onChange={(e) => setProductFormData({ ...productFormData, rating: parseFloat(e.target.value) || 5.0 })}
+                      className="admin-input-field"
+                      style={{ height: '38px', width: '90px', fontWeight: 800, textAlign: 'center' }}
+                    />
+                    <div style={{ display: 'flex', color: '#f59e0b', fontSize: '16px' }}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span key={star}>
+                          {productFormData.rating >= star ? '★' : productFormData.rating >= star - 0.5 ? '★' : '☆'}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '10px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                    Stars shown on product page
+                  </span>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>
+                    Review Count
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={productFormData.reviewsCount}
+                    onChange={(e) => setProductFormData({ ...productFormData, reviewsCount: parseInt(e.target.value, 10) || 0 })}
+                    placeholder="e.g. 148"
+                    className="admin-input-field"
+                    style={{ height: '38px' }}
+                  />
+                  <span style={{ fontSize: '10px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                    e.g. ({productFormData.reviewsCount || 0} verified ratings)
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '20px', marginTop: '12px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px' }}>
                   <input
                     type="checkbox"

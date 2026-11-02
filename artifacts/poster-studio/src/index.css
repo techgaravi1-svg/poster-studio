@@ -958,12 +958,12 @@ button {
 
 /* SECTION HEADINGS (STENCIL / BLOCK DISPLAY FONT) - REDUCED GAP */
 .home-poster-section {
-  padding: 0 16px 20px;
+  padding: 0 16px 0;
 }
 
 @media (min-width: 768px) {
   .home-poster-section {
-    padding: 4px 24px 30px;
+    padding: 4px 24px 0;
   }
 }
 
@@ -1064,7 +1064,7 @@ button {
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: 4px 0 16px;
+  padding: 4px 0 4px;
   scroll-behavior: smooth;
 }
 
@@ -1333,6 +1333,7 @@ button {
 .product-card-title {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-size: 13px;
@@ -1403,11 +1404,12 @@ button {
   transform: scale(0.98);
 }
 
-/* EXPLORE MORE BUTTON */
+/* EXPLORE MORE BUTTON (HOMEPAGE SECTIONS: SMALL UPPER GAP, GENEROUS LOWER GAP) */
 .explore-more-wrap {
   display: flex;
   justify-content: center;
-  margin-top: 22px;
+  margin-top: 14px !important;
+  margin-bottom: 56px !important;
 }
 
 .btn-explore-more {
@@ -2293,7 +2295,7 @@ button {
 
 /* 6. PRODUCT DETAIL PAGE (PAGE 3) - 2 COLUMNS ON LAPTOP */
 .postgenz-product-page {
-  padding: 16px 20px 48px;
+  padding: 16px 20px 10px;
   max-width: 1240px;
   margin: 0 auto;
   width: 100%;
@@ -2567,6 +2569,9 @@ button {
 /* ============================================================
    DUNGEONS CINEMATIC LOGO INTRO SPLASH (4s CENTERED LOGO)
    ============================================================ */
+/* ============================================================
+   DUNGEONS CINEMATIC LOGO INTRO SPLASH (UPPER OF CENTER + TAGLINE)
+   ============================================================ */
 .dungeons-splash-intro-overlay {
   position: fixed;
   inset: 0;
@@ -2591,12 +2596,16 @@ button {
 
 .dungeons-splash-logo-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 440px;
+  max-width: 520px;
   margin: auto;
-  padding: 20px;
+  padding: 24px 20px;
+  /* Positioned a little upper of center as requested */
+  transform: translateY(-9vh);
+  text-align: center;
   background: transparent;
   border: none;
   box-shadow: none;
@@ -2604,7 +2613,7 @@ button {
 
 .dungeons-splash-logo-img {
   width: 100%;
-  max-width: 300px;
+  max-width: 250px;
   height: auto;
   object-fit: contain;
   background: transparent;
@@ -2614,25 +2623,80 @@ button {
   animation: dungeons-logo-cinematic 3.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+.dungeons-splash-tagline {
+  margin: 18px 0 0 0;
+  font-family: 'Cinzel', 'Playfair Display', 'Cinzel Decorative', Georgia, serif;
+  font-size: clamp(10px, 3.2vw, 15px);
+  font-weight: 600;
+  color: #1e293b;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap !important;
+  animation: dungeons-tagline-cinematic 3.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+  line-height: 1.5;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+@media (min-width: 640px) {
+  .dungeons-splash-logo-container {
+    transform: translateY(-10vh);
+  }
+  .dungeons-splash-logo-img {
+    max-width: 280px;
+  }
+  .dungeons-splash-tagline {
+    font-size: 15px;
+    letter-spacing: 0.26em;
+    margin-top: 22px;
+  }
+}
+
 @keyframes dungeons-logo-cinematic {
   0% {
     opacity: 0;
-    transform: scale(0.8);
-    filter: blur(6px);
+    transform: scale(0.78);
+    filter: blur(8px);
   }
-  20% {
+  18% {
     opacity: 1;
     transform: scale(1);
     filter: blur(0px);
   }
   80% {
     opacity: 1;
-    transform: scale(1.05);
+    transform: scale(1.04);
     filter: blur(0px);
   }
   100% {
     opacity: 0;
-    transform: scale(1.08);
+    transform: scale(1.07);
+    filter: blur(5px);
+  }
+}
+
+@keyframes dungeons-tagline-cinematic {
+  0%, 15% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+    filter: blur(6px);
+    letter-spacing: 0.16em;
+  }
+  32% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+    letter-spacing: 0.22em;
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(0) scale(1.02);
+    filter: blur(0px);
+    letter-spacing: 0.24em;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px) scale(1.04);
     filter: blur(4px);
   }
 }
@@ -2725,6 +2789,7 @@ button {
   opacity: 0;
   cursor: pointer;
   -webkit-appearance: menulist;
+  appearance: menulist;
 }
 
 /* ============================================================
@@ -3122,7 +3187,7 @@ button {
 
 /* 10. YOU MAY ALSO LIKE / SIMILAR PRODUCTS (PAGE 1 & 7) */
 .product-similar-section {
-  padding: 24px 0 48px;
+  padding: 24px 0 6px;
   margin: 20px -8px 0;
   border-top: 1px solid #e5e7eb;
   max-width: 1240px;
@@ -3166,7 +3231,7 @@ button {
 
 @media (min-width: 768px) {
   .product-similar-section {
-    padding: 36px 0 64px;
+    padding: 32px 0 10px;
     margin: 28px auto 0;
     width: 100%;
   }
@@ -3185,7 +3250,7 @@ button {
   align-items: center !important;
   justify-content: center !important;
   width: 100% !important;
-  margin: 32px 0 20px !important;
+  margin: 24px 0 6px !important;
   padding: 0 16px !important;
   box-sizing: border-box !important;
 }
@@ -6097,14 +6162,16 @@ button {
 
 .bag-modern-wrapper,
 .modern-checkout-wrapper {
-  width: 100%;
+  width: 93% !important;
+  max-width: 1140px !important;
+  margin: 0 auto !important;
   box-sizing: border-box;
 }
 
 @media (max-width: 640px) {
   .postgenz-cart-page,
   .postgenz-checkout-page {
-    padding: 8px 6px 40px !important;
+    padding: 8px 0 40px !important;
     width: 100% !important;
     max-width: 100% !important;
   }
@@ -6112,8 +6179,9 @@ button {
   .bag-modern-wrapper,
   .modern-checkout-wrapper {
     padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
+    margin: 0 auto !important;
+    width: 93% !important;
+    max-width: 93% !important;
   }
 
   .bag-modern-wrapper .grid,
@@ -6716,6 +6784,7 @@ button {
   min-height: 32px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin-bottom: 4px;
@@ -6821,10 +6890,10 @@ button {
    AMAZON & FLIPKART STYLE BAG / CART PAGE
 ============================================================ */
 .bag-modern-wrapper {
-  width: 100%;
-  max-width: 1240px;
+  width: 93% !important;
+  max-width: 1140px;
   margin: 0 auto;
-  padding: 20px 16px 100px;
+  padding: 20px 0 100px;
 }
 
 @media (min-width: 768px) {
@@ -7078,8 +7147,8 @@ button {
    AMAZON, FLIPKART & SWIGGY STYLE REDESIGNED CHECKOUT
 ============================================================ */
 .modern-checkout-wrapper {
-  width: 100%;
-  max-width: 1180px;
+  width: 93% !important;
+  max-width: 1140px;
   margin: 0 auto;
   padding: 12px 0 100px;
 }
@@ -8153,183 +8222,14 @@ button {
   text-decoration: underline;
 }
 
-/* Empty Orders State (Flipkart & Myntra Style) */
+/* Empty Orders State */
 .orders-empty-state-box {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 20px;
-  padding: 36px 20px 32px;
+  padding: 48px 20px;
   text-align: center;
-  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.empty-state-illustration {
-  width: 90px;
-  height: 90px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
-  border: 1px solid #bbf7d0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #059669;
-  box-shadow: 0 8px 24px -6px rgba(16, 185, 129, 0.2);
-  margin-bottom: 4px;
-}
-
-.orders-track-input-wrap {
-  width: 100%;
-  max-width: 440px;
-  margin: 6px auto;
-  display: flex;
-  align-items: center;
-  background: #f8fafc;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 4px 6px 4px 12px;
-  transition: all 0.2s ease;
-}
-
-.orders-track-input-wrap:focus-within {
-  border-color: #0f172a;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
-}
-
-.orders-track-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  font-size: 13px;
-  color: #0f172a;
-  font-weight: 500;
-}
-
-.orders-track-input::placeholder {
-  color: #94a3b8;
-  font-weight: 400;
-}
-
-.orders-track-submit-btn {
-  background: #0f172a;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 7px 14px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: background 0.15s ease;
-  white-space: nowrap;
-}
-
-.orders-track-submit-btn:hover {
-  background: #1e293b;
-}
-
-.orders-quick-cats-section {
-  width: 100%;
-  max-width: 520px;
-  margin-top: 4px;
-  padding-top: 14px;
-  border-top: 1px dashed #e2e8f0;
-}
-
-.orders-quick-cats-title {
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #64748b;
-  margin-bottom: 10px;
-}
-
-.orders-quick-cats-pills {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-}
-
-.orders-quick-cat-pill {
-  font-size: 11px;
-  font-weight: 700;
-  color: #334155;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  padding: 5px 12px;
-  border-radius: 9999px;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  transition: all 0.15s ease;
-}
-
-.orders-quick-cat-pill:hover {
-  background: #0f172a;
-  color: #ffffff;
-  border-color: #0f172a;
-}
-
-.orders-assurance-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  width: 100%;
-  max-width: 560px;
-  margin-top: 8px;
-  padding: 14px;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 1px solid #f1f5f9;
-}
-
-@media (max-width: 480px) {
-  .orders-assurance-strip {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    text-align: left;
-  }
-}
-
-.assurance-strip-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 4px;
-}
-
-@media (max-width: 480px) {
-  .assurance-strip-item {
-    flex-direction: row;
-    text-align: left;
-    gap: 8px;
-  }
-}
-
-.assurance-strip-icon {
-  color: #059669;
-}
-
-.assurance-strip-text {
-  font-size: 11px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.assurance-strip-sub {
-  font-size: 10px;
-  color: #64748b;
+  box-shadow: 0 4px 16px -4px rgba(15, 23, 42, 0.04);
 }
 
 .empty-state-icon-circle {
@@ -8890,6 +8790,7 @@ button {
   margin: 1px 0 3px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -9221,9 +9122,10 @@ button {
 }
 
 .myntra-card-top-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  width: 100% !important;
   margin-bottom: 2px;
 }
 
@@ -9245,11 +9147,12 @@ button {
   border: none;
   color: #64748b;
   cursor: pointer;
-  padding: 2px;
+  padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  margin-left: auto !important;
   transition: all 0.15s ease;
 }
 
@@ -9275,6 +9178,7 @@ button {
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin-bottom: 3.5px;
@@ -10455,9 +10359,9 @@ button {
   .bag-modern-wrapper,
   .modern-checkout-wrapper {
     padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
+    margin: 0 auto !important;
+    width: 93% !important;
+    max-width: 93% !important;
     box-sizing: border-box !important;
   }
 
@@ -10689,4 +10593,572 @@ button {
 .brand-intro-tagline.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* ============================================================
+   MYNTRA AUTHENTIC COUPONS & BANK OFFERS SYSTEM
+   ============================================================ */
+
+.myntra-coupon-wrapper {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.myntra-coupon-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.myntra-coupon-header-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #282c3f;
+  letter-spacing: -0.01em;
+}
+
+.myntra-coupon-view-all-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: #282c3f;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px dotted #94a3b8;
+  padding: 0 0 1px 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.myntra-coupon-view-all-link:hover {
+  color: #0f172a;
+  border-bottom-color: #0f172a;
+}
+
+/* Authentic Myntra Card Container */
+.myntra-coupon-card {
+  background: #ffffff;
+  background-image: radial-gradient(circle at 92% 12%, rgba(254, 243, 199, 0.45) 0%, rgba(255, 255, 255, 1) 60%);
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.myntra-coupon-card.is-applied {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+/* Card Top Row */
+.myntra-coupon-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.myntra-coupon-top-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Realistic 3D Indian Rupee Coin */
+.myntra-gold-coin {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fffbeb 0%, #fde68a 32%, #f59e0b 70%, #d97706 100%);
+  border: 2px solid #fbbf24;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 3px 6px rgba(217, 119, 6, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.myntra-gold-coin::after {
+  content: '';
+  position: absolute;
+  inset: 2.5px;
+  border-radius: 50%;
+  border: 1px dashed rgba(180, 83, 9, 0.4);
+  pointer-events: none;
+}
+
+.myntra-gold-coin-symbol {
+  font-size: 17px;
+  font-weight: 900;
+  color: #78350f;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  line-height: 1;
+  margin-top: -1px;
+}
+
+.myntra-coupon-top-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.myntra-coupon-save-headline {
+  font-size: 16px;
+  font-weight: 700;
+  color: #059669;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.myntra-coupon-count-subtext {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #64748b;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+.myntra-coupon-chevron-btn {
+  background: transparent;
+  border: none;
+  color: #1e293b;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* Featured Coupon Row (Below Top Row) */
+.myntra-coupon-item-row {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.myntra-coupon-item-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.myntra-purple-tag {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+  margin-top: 2px;
+  box-shadow: 0 2px 5px rgba(124, 58, 237, 0.28);
+}
+
+.myntra-coupon-item-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.myntra-coupon-code-text {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.myntra-coupon-discount-text {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #374151;
+  margin-top: 3px;
+  line-height: 1.2;
+}
+
+.myntra-coupon-sub-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+/* Myntra Outline Apply Button */
+.myntra-card-apply-btn {
+  background: #ffffff;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  padding: 8px 22px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.myntra-card-apply-btn:hover {
+  border-color: #111827;
+  color: #111827;
+  background: #f8fafc;
+}
+
+.myntra-card-apply-btn:active {
+  transform: scale(0.96);
+}
+
+/* Applied Coupon State inside Card */
+.myntra-coupon-applied-box {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed #bbf7d0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.myntra-coupon-applied-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.myntra-coupon-check-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #059669;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.myntra-coupon-applied-code {
+  font-size: 14px;
+  font-weight: 800;
+  color: #065f46;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.myntra-coupon-applied-desc {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #047857;
+  margin-top: 1px;
+}
+
+.myntra-coupon-remove-btn {
+  background: #ffffff;
+  border: 1.5px solid #fca5a5;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.myntra-coupon-remove-btn:hover {
+  background: #fef2f2;
+  border-color: #dc2626;
+}
+
+/* ============================================================
+   MYNTRA OFFERS MODAL / BOTTOM SHEET
+   ============================================================ */
+
+.myntra-offers-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  animation: myntraFadeIn 0.2s ease-out;
+}
+
+@media (min-width: 640px) {
+  .myntra-offers-modal-backdrop {
+    align-items: center;
+    padding: 20px;
+  }
+}
+
+.myntra-offers-modal-sheet {
+  background: #ffffff;
+  width: 100%;
+  max-width: 460px;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: myntraSheetSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (min-width: 640px) {
+  .myntra-offers-modal-sheet {
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  }
+}
+
+.myntra-offers-drag-bar {
+  width: 40px;
+  height: 4px;
+  background: #cbd5e1;
+  border-radius: 99px;
+  margin: 10px auto 4px auto;
+}
+
+@media (min-width: 640px) {
+  .myntra-offers-drag-bar {
+    display: none;
+  }
+}
+
+.myntra-offers-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.myntra-offers-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.myntra-offers-title-group h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.myntra-offers-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: none;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.myntra-offers-close-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.myntra-offers-modal-body {
+  padding: 18px 20px 24px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Unified Pill Input */
+.myntra-offers-input-pill {
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 4px 5px 4px 14px;
+  transition: all 0.15s ease;
+}
+
+.myntra-offers-input-pill:focus-within {
+  border-color: #0f172a;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+.myntra-offers-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #0f172a;
+  min-width: 0;
+}
+
+.myntra-offers-input::placeholder {
+  text-transform: none;
+  font-weight: 500;
+  letter-spacing: normal;
+  color: #94a3b8;
+}
+
+.myntra-offers-pill-apply-btn {
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.myntra-offers-pill-apply-btn:hover {
+  background: #000000;
+}
+
+.myntra-offers-section-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* Voucher Cards in Modal */
+.myntra-offers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.myntra-voucher-card {
+  background: #ffffff;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: all 0.15s ease;
+}
+
+.myntra-voucher-card:hover {
+  border-color: #7c3aed;
+  background: #faf5ff;
+}
+
+.myntra-voucher-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.myntra-voucher-code-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px dashed #a78bfa;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  width: fit-content;
+  margin-bottom: 2px;
+}
+
+.myntra-voucher-discount-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.myntra-voucher-desc {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.myntra-voucher-condition {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.myntra-voucher-apply-btn {
+  background: #ffffff;
+  border: 1.5px solid #0f172a;
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.myntra-voucher-apply-btn:hover {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.myntra-voucher-apply-btn.is-active {
+  background: #059669;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+@keyframes myntraSheetSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes myntraFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
