@@ -2597,15 +2597,29 @@ button {
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 520px;
-  margin: auto;
-  padding: 20px;
-  /* Exactly positioned slightly above center matching mobile and desktop images */
-  transform: translateY(-7vh);
-  text-align: center;
+  height: 100%;
+  margin: 0;
+  padding: 0;
   background: transparent;
   border: none;
   box-shadow: none;
+}
+
+.dungeons-splash-mobile-exact-img {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  object-fit: contain;
+  background-color: #ffffff;
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.dungeons-splash-desktop-wrap {
+  display: none;
 }
 
 .dungeons-splash-logo-img {
@@ -2617,7 +2631,6 @@ button {
   border: none;
   outline: none;
   box-shadow: none;
-  /* NO animation: immediate static crisp display */
   animation: none !important;
   opacity: 1 !important;
   transform: none !important;
@@ -2626,14 +2639,13 @@ button {
 
 .dungeons-splash-tagline {
   margin: 14px 0 0 0;
-  font-family: 'Comfortaa', 'Quicksand', 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Comic Sans MS', 'Comfortaa', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: clamp(13px, 3.6vw, 16px);
-  font-weight: 600;
+  font-weight: 700;
   color: #0b2545;
   letter-spacing: 0.01em;
   text-transform: none !important;
   white-space: nowrap !important;
-  /* NO animation: immediate static crisp display */
   animation: none !important;
   opacity: 1 !important;
   transform: none !important;
@@ -2641,16 +2653,23 @@ button {
 }
 
 @media (min-width: 640px) {
-  .dungeons-splash-logo-container {
-    transform: translateY(-8vh);
+  .dungeons-splash-mobile-exact-img {
+    display: none;
+  }
+  .dungeons-splash-desktop-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-6vh);
   }
   .dungeons-splash-logo-img {
-    width: 270px;
-    max-width: 320px;
+    width: 260px;
+    max-width: 300px;
   }
   .dungeons-splash-tagline {
     font-size: 16px;
-    margin-top: 16px;
+    margin-top: 14px;
     letter-spacing: 0.02em;
   }
 }
@@ -7947,28 +7966,47 @@ button {
 .orders-filter-chips {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   overflow-x: auto;
-  padding-bottom: 2px;
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE/Edge */
+  -webkit-overflow-scrolling: touch;
+  padding: 4px;
+  background-color: #f1f5f9;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.orders-filter-chips::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .order-filter-chip {
-  padding: 6px 14px;
-  border-radius: 9999px;
-  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 9px;
+  font-size: 11.5px;
   font-weight: 700;
   color: #64748b;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: transparent;
+  border: none;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.order-filter-chip:hover {
+  color: #0f172a;
 }
 
 .order-filter-chip.active {
-  background: #0f172a;
-  color: #ffffff;
-  border-color: #0f172a;
+  background: #ffffff;
+  color: #0f172a;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  font-weight: 800;
 }
 
 /* Order Card (Amazon/Flipkart Style) */

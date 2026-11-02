@@ -32,15 +32,25 @@ export function BrandIntroAnimation({ onComplete }: { onComplete: () => void }) 
       aria-label="Welcome to DUNGEONS"
     >
       <div className="dungeons-splash-logo-container">
+        {/* Exact mobile view asset from user reference */}
         <img
-          src={SPLASH_LOGO_URL}
-          alt="DUNGEONS"
-          width="260"
-          height="260"
+          src="/splash-mobile-exact.png"
+          alt="DUNGEONS - Within the Dungeons, Treasures Await"
           fetchPriority="high"
-          className="dungeons-splash-logo-img"
+          className="dungeons-splash-mobile-exact-img"
         />
-        <p className="dungeons-splash-tagline">Within the Dungeons, Treasures Await</p>
+        {/* Desktop view matching layout */}
+        <div className="dungeons-splash-desktop-wrap">
+          <img
+            src={SPLASH_LOGO_URL}
+            alt="DUNGEONS"
+            width="260"
+            height="260"
+            fetchPriority="high"
+            className="dungeons-splash-logo-img"
+          />
+          <p className="dungeons-splash-tagline">Within the Dungeons, Treasures Await</p>
+        </div>
       </div>
     </div>
   );
