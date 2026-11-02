@@ -2918,18 +2918,20 @@ button.desktop-nav-item:hover {
 }
 
 /* ============================================================
-   DUNGEONS STATIC INTRO SPLASH (MOBILE & DESKTOP MATCHING USER IMAGES)
+   DUNGEONS STATIC INTRO SPLASH (EXACT MOBILE & DESKTOP MATCHING USER REFERENCE)
    ============================================================ */
 .dungeons-splash-intro-overlay {
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   z-index: 999999;
   background-color: #ffffff;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   overflow: hidden;
   opacity: 1;
   transition: opacity 0.5s ease, visibility 0.5s ease;
@@ -2946,12 +2948,11 @@ button.desktop-nav-item:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
-  max-width: 480px;
-  margin: auto;
-  padding: 20px;
-  transform: translateY(-6vh);
+  margin-top: 25.8vh;
+  margin-top: 25.8dvh; /* EXACT 25.8% from top as in user's 472x1024 reference image */
+  padding: 0;
   text-align: center;
   background: transparent;
   border: none;
@@ -2959,8 +2960,8 @@ button.desktop-nav-item:hover {
 }
 
 .dungeons-splash-logo-img {
-  width: 215px;
-  max-width: 65vw;
+  width: min(318px, 66.5vw); /* EXACT 66.5% width as in user's reference image */
+  max-width: 90vw;
   height: auto;
   object-fit: contain;
   background: transparent;
@@ -2972,38 +2973,16 @@ button.desktop-nav-item:hover {
   transform: none !important;
   filter: none !important;
   image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-}
-
-.dungeons-splash-tagline {
-  margin: 12px 0 0 0;
-  font-family: 'Comic Sans MS', 'Comfortaa', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: clamp(14px, 3.8vw, 16px);
-  font-weight: 700;
-  color: #0f2e5a;
-  letter-spacing: 0.01em;
-  text-transform: none !important;
-  white-space: nowrap !important;
-  animation: none !important;
-  opacity: 1 !important;
-  transform: none !important;
-  line-height: 1.4;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  image-rendering: high-quality;
 }
 
 @media (min-width: 640px) {
   .dungeons-splash-logo-container {
-    transform: translateY(-7vh);
+    margin-top: 24vh;
   }
   .dungeons-splash-logo-img {
-    width: 260px;
-    max-width: 320px;
-  }
-  .dungeons-splash-tagline {
-    font-size: 16.5px;
-    margin-top: 14px;
-    letter-spacing: 0.02em;
+    width: 330px;
+    max-width: 380px;
   }
 }
 

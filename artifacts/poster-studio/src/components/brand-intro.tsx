@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 
-// 4K Ultra HD crisp transparent logo
-const SPLASH_LOGO_URL = 'https://res.cloudinary.com/pyjyrmry/image/upload/q_100,f_auto,dpr_3.0/v1793352216/dungeons_hero_assets/dungeons_splash_logo.png';
+// 4K Ultra HD crisp logo with text (matching exact uploaded user reference)
+const SPLASH_LOGO_URL = '/assets/dungeons-splash-4k.png';
 
 export function BrandIntroAnimation({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState<'show' | 'exit' | 'done'>('show');
@@ -35,13 +35,13 @@ export function BrandIntroAnimation({ onComplete }: { onComplete: () => void }) 
       <div className="dungeons-splash-logo-container">
         <img
           src={SPLASH_LOGO_URL}
-          alt="DUNGEONS"
-          width="240"
-          height="160"
+          alt="DUNGEONS - Within the Dungeons, Treasures Await"
+          width="318"
+          height="224"
           fetchPriority="high"
+          loading="eager"
           className="dungeons-splash-logo-img"
         />
-        <p className="dungeons-splash-tagline">Within the Dungeons, Treasures Await</p>
       </div>
     </div>
   );
