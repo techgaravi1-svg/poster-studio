@@ -344,26 +344,17 @@ function MenuDrawer({
                     <Link href="/collections/anime" onClick={onClose} className="sublist-cat-item">
                       <span>Anime</span>
                     </Link>
-                    <Link href="/collections/diva" onClick={onClose} className="sublist-cat-item">
-                      <span>Diva</span>
+                    <Link href="/collections/sports" onClick={onClose} className="sublist-cat-item">
+                      <span>Sports</span>
                     </Link>
                     <Link href="/collections/landscapes" onClick={onClose} className="sublist-cat-item">
                       <span>Landscapes</span>
                     </Link>
+                    <Link href="/collections/diva" onClick={onClose} className="sublist-cat-item">
+                      <span>Diva</span>
+                    </Link>
                     <Link href="/collections/automative" onClick={onClose} className="sublist-cat-item">
                       <span>Automative</span>
-                    </Link>
-                    <Link href="/collections/movies-web-series" onClick={onClose} className="sublist-cat-item">
-                      <span>Movies &amp; Web Series</span>
-                    </Link>
-                    <Link href="/collections/music-artists" onClick={onClose} className="sublist-cat-item">
-                      <span>Music Artists</span>
-                    </Link>
-                    <Link href="/collections/video-games" onClick={onClose} className="sublist-cat-item">
-                      <span>Video Games</span>
-                    </Link>
-                    <Link href="/collections/sports" onClick={onClose} className="sublist-cat-item">
-                      <span>Sports</span>
                     </Link>
                     <Link href="/collections/motivational" onClick={onClose} className="sublist-cat-item">
                       <span>Motivational</span>
@@ -533,13 +524,10 @@ export function Header() {
                   <div className="dropdown-poster-sublinks">
                     <Link href="/collections/marvel-dc">Marvel &amp; DC</Link>
                     <Link href="/collections/anime">Anime</Link>
-                    <Link href="/collections/diva">Diva</Link>
-                    <Link href="/collections/landscapes">Landscapes</Link>
-                    <Link href="/collections/automative">Automative</Link>
-                    <Link href="/collections/movies-web-series">Movies &amp; Web Series</Link>
-                    <Link href="/collections/music-artists">Music Artists</Link>
-                    <Link href="/collections/video-games">Video Games</Link>
                     <Link href="/collections/sports">Sports</Link>
+                    <Link href="/collections/landscapes">Landscapes</Link>
+                    <Link href="/collections/diva">Diva</Link>
+                    <Link href="/collections/automative">Automative</Link>
                     <Link href="/collections/motivational">Motivational</Link>
                     <Link href="/collections/devotional">Devotional</Link>
                   </div>

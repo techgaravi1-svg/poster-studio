@@ -43,6 +43,7 @@ import {
   Printer,
   Download,
   FileText,
+  Search,
 } from 'lucide-react';
 import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, products, searchProducts, storeCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
@@ -647,16 +648,21 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
 
   const isPostersActive = true;
 
-  // Active sub-slug for posters
+  // Active sub-slug for posters (handles spaces, hyphens, %20, etc.)
+  const rawSlug = slugParam ? decodeURIComponent(slugParam).trim().toLowerCase() : '';
+  const normalizedSlug = rawSlug.replace(/[\s_]+/g, '-');
+
   const activePosterSubSlug = bestsellers
     ? 'bestsellers'
-    : slugParam === 'posters' || slugParam === 'all'
+    : normalizedSlug === 'posters' || normalizedSlug === 'all' || !normalizedSlug
     ? 'all'
-    : slugParam === 'football' || slugParam === 'cricket'
+    : normalizedSlug === 'football' || normalizedSlug === 'cricket'
     ? 'sports'
-    : slugParam && collections.some((c) => c.slug === slugParam)
-    ? slugParam
-    : 'all';
+    : normalizedSlug === 'automotive'
+    ? 'automative'
+    : normalizedSlug === 'marvel' || normalizedSlug === 'dc' || normalizedSlug === 'marvel-dc'
+    ? 'marvel-dc'
+    : normalizedSlug;
 
   const notify = (title: string) => {
     setToast(`${title} added to your bag`);
@@ -667,13 +673,10 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     { slug: 'all', label: 'ALL POSTERS' },
     { slug: 'marvel-dc', label: 'MARVEL & DC' },
     { slug: 'anime', label: 'ANIME' },
-    { slug: 'diva', label: 'DIVA' },
-    { slug: 'landscapes', label: 'LANDSCAPES' },
-    { slug: 'automative', label: 'AUTOMATIVE' },
-    { slug: 'movies-web-series', label: 'MOVIES & WEB SERIES' },
-    { slug: 'music-artists', label: 'MUSIC ARTISTS' },
-    { slug: 'video-games', label: 'VIDEO GAMES' },
     { slug: 'sports', label: 'SPORTS' },
+    { slug: 'landscapes', label: 'LANDSCAPES' },
+    { slug: 'diva', label: 'DIVA' },
+    { slug: 'automative', label: 'AUTOMATIVE' },
     { slug: 'motivational', label: 'MOTIVATIONAL' },
     { slug: 'devotional', label: 'DEVOTIONAL' },
   ];
@@ -694,28 +697,29 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     if (activePosterSubSlug === 'bestsellers') {
       list = liveProducts.filter((p) => p.bestseller);
     } else if (activePosterSubSlug !== 'all') {
-      const slug = activePosterSubSlug.toLowerCase();
-      list = liveProducts.filter((p) => {
-        const cat = (p.category || '').toLowerCase();
-        const col = (p.collection || '').toLowerCase();
-        const title = (p.title || '').toLowerCase();
-        const tags = Array.isArray(p.tags) ? p.tags.map((t) => String(t).toLowerCase()) : [];
-        const hasKeyword = (keywords: string[]) =>
-          keywords.some((kw) => col === kw || cat.includes(kw) || title.includes(kw) || tags.some((t) => t.includes(kw)));
+      const targetSlug = activePosterSubSlug.toLowerCase();
+      
+      const normalizeCat = (val: string) => {
+        const s = (val || '').toLowerCase().trim().replace(/[\s_]+/g, '-');
+        if (s === 'football' || s === 'cricket') return 'sports';
+        if (s === 'automotive') return 'automative';
+        if (s === 'marvel' || s === 'dc') return 'marvel-dc';
+        return s;
+      };
 
-        if (col === slug) return true;
-        if (slug === 'marvel-dc') return hasKeyword(['marvel', 'dc', 'superhero', 'spider', 'batman', 'iron man', 'avenger']);
-        if (slug === 'anime') return hasKeyword(['anime', 'manga', 'clover', 'zoldyck', 'hunter', 'jujutsu', 'goku', 'naruto', 'one piece', 'luffy', 'zoro']);
-        if (slug === 'diva') return hasKeyword(['diva', 'fashion', 'vogue', 'chic', 'lips', 'supreme', 'model', 'aesthetic']);
-        if (slug === 'landscapes') return hasKeyword(['landscape', 'nature', 'skyline', 'mountain', 'view', 'ocean', 'sunset']);
-        if (slug === 'automative') return hasKeyword(['automotive', 'automative', 'car', 'mustang', 'porsche', 'speed', 'drift', 'gtr', 'bmw', 'ferrari']);
-        if (slug === 'movies-web-series') return hasKeyword(['movie', 'series', 'cinema', 'wick', 'bateman', 'bean', 'peaky', 'film', 'godfather', 'breaking bad', 'aesthetic']);
-        if (slug === 'music-artists') return hasKeyword(['music', 'artist', 'singer', 'album', 'rap', 'rock', 'hip hop', 'travis', 'eminem']);
-        if (slug === 'video-games') return hasKeyword(['game', 'gaming', 'esports', 'pixel', 'arcade', 'playstation', 'xbox', 'gta', 'witcher', 'cyberpunk']);
-        if (slug === 'sports' || slug === 'football' || slug === 'cricket') return hasKeyword(['sport', 'sports', 'football', 'cricket', 'messi', 'ronaldo', 'fifa', 'neymar', 'real madrid', 'barcelona']);
-        if (slug === 'motivational') return hasKeyword(['motivational', 'motivation', 'focus', 'inspire', 'inspiration', 'mindset', 'gym', 'hustle', 'quote']);
-        if (slug === 'devotional') return hasKeyword(['devotional', 'god', 'divine', 'shiva', 'krishna', 'ram', 'hanuman', 'spiritual', 'temple', 'buddha']);
-        return tags.some((t) => t.includes(slug)) || cat.includes(slug) || col.includes(slug);
+      list = liveProducts.filter((p) => {
+        const cat = normalizeCat(p.category);
+        const col = normalizeCat(p.collection);
+
+        // Strict category / collection match
+        if (col === targetSlug || cat === targetSlug) return true;
+
+        // Exact tag match (avoids substring title match bugs e.g. Spider Hunter X Hunter into Marvel)
+        if (Array.isArray(p.tags) && p.tags.some((t) => typeof t === 'string' && normalizeCat(t) === targetSlug)) {
+          return true;
+        }
+
+        return false;
       });
     }
     list = list.filter((p) => p.price >= minPrice && p.price <= maxPrice);
@@ -3831,6 +3835,8 @@ export function OrdersPage() {
   const [, navigate] = useLocation();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'in_progress' | 'delivered'>('all');
+  const [trackInput, setTrackInput] = useState('');
+  const [trackError, setTrackError] = useState('');
 
   // User orders list
   const displayOrders = orders;
@@ -3847,6 +3853,24 @@ export function OrdersPage() {
     navigator.clipboard?.writeText(id);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2500);
+  };
+
+  const handleTrackSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = trackInput.trim();
+    if (!query) {
+      setTrackError('Please enter a valid Order ID (e.g. PS-...)');
+      return;
+    }
+    setTrackError('');
+    // Check if matching order exists in local store
+    const localMatch = displayOrders.find((o) => o.id.toLowerCase() === query.toLowerCase());
+    if (localMatch) {
+      navigate(`/account/orders/${localMatch.id}`);
+    } else {
+      // Direct to success/tracking page for live tracking
+      navigate(`/checkout/success?order=${encodeURIComponent(query)}`);
+    }
   };
 
   const handleBuyAgain = (item: CartItem, e: React.MouseEvent) => {
@@ -3871,15 +3895,37 @@ export function OrdersPage() {
       <div className="orders-page-container">
         {/* Header & Filter Row */}
         <div className="orders-page-header">
-          <div>
-            <h1 className="orders-heading-title">
-              <span>MY ORDERS</span>
-              <span className="orders-count-badge">{displayOrders.length} {displayOrders.length === 1 ? 'Order' : 'Orders'}</span>
-            </h1>
-            <p className="text-xs text-neutral-500 mt-1">
-              Track shipments, manage deliveries, view invoices and reorder prints.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="orders-heading-title">
+                <span>MY ORDERS</span>
+                <span className="orders-count-badge">{displayOrders.length} {displayOrders.length === 1 ? 'Order' : 'Orders'}</span>
+              </h1>
+              <p className="text-xs text-neutral-500 mt-1">
+                Track shipments, manage deliveries, view invoices and reorder prints.
+              </p>
+            </div>
+
+            {/* Quick Track Search Input */}
+            <form onSubmit={handleTrackSubmit} className="orders-track-input-wrap">
+              <Search size={15} className="text-neutral-400 mr-2 shrink-0" />
+              <input
+                type="text"
+                value={trackInput}
+                onChange={(e) => {
+                  setTrackInput(e.target.value);
+                  if (trackError) setTrackError('');
+                }}
+                placeholder="Enter Order ID to track..."
+                className="orders-track-input"
+              />
+              <button type="submit" className="orders-track-submit-btn">
+                <Truck size={13} />
+                <span>Track</span>
+              </button>
+            </form>
           </div>
+          {trackError && <p className="text-[11px] text-rose-500 font-medium">{trackError}</p>}
 
           <div className="orders-filter-chips">
             <button
@@ -3909,17 +3955,92 @@ export function OrdersPage() {
         {/* Orders List */}
         {filteredOrders.length === 0 ? (
           <div className="orders-empty-state-box">
-            <div className="empty-state-icon-circle">
-              <Package size={32} />
+            {/* Flipkart / Myntra Illustrated Badge */}
+            <div className="empty-state-illustration">
+              <Package size={44} strokeWidth={1.8} />
             </div>
-            <h3 className="text-lg font-black text-neutral-900 mb-1">No Orders Found</h3>
-            <p className="text-xs text-neutral-500 max-w-sm mx-auto mb-5">
-              You don't have any orders under this category. Discover our latest collection of premium art prints!
-            </p>
-            <Link href="/collections/posters" className="success-btn-primary max-w-xs mx-auto">
+
+            <div>
+              <h3 className="text-xl font-black text-neutral-900 tracking-tight">
+                {filter === 'all' ? 'You Haven’t Placed Any Orders Yet' : 'No Orders in this Category'}
+              </h3>
+              <p className="text-xs text-neutral-500 max-w-md mx-auto mt-1.5 leading-relaxed">
+                Your gallery wall is waiting for its first masterpiece! Explore over 700+ curated archival posters on 300 GSM matte cardstock with damage-proof cylindrical tube delivery.
+              </p>
+            </div>
+
+            {/* Primary Action Button */}
+            <Link href="/collections/posters" className="success-btn-primary w-full max-w-sm mx-auto shadow-md hover:shadow-lg transition">
               <ShoppingBag size={16} />
-              <span>EXPLORE BESTSELLERS</span>
+              <span>EXPLORE ALL BESTSELLERS</span>
             </Link>
+
+            {/* Quick Category Discovery Pills */}
+            <div className="orders-quick-cats-section">
+              <div className="orders-quick-cats-title">Popular Collections to Explore</div>
+              <div className="orders-quick-cats-pills">
+                <Link href="/collections/marvel-dc" className="orders-quick-cat-pill">
+                  <span>🦸 Marvel &amp; DC</span>
+                </Link>
+                <Link href="/collections/anime" className="orders-quick-cat-pill">
+                  <span>⚡ Anime</span>
+                </Link>
+                <Link href="/collections/sports" className="orders-quick-cat-pill">
+                  <span>⚽ Sports</span>
+                </Link>
+                <Link href="/collections/landscapes" className="orders-quick-cat-pill">
+                  <span>🏔️ Landscapes</span>
+                </Link>
+                <Link href="/collections/diva" className="orders-quick-cat-pill">
+                  <span>✨ Diva</span>
+                </Link>
+                <Link href="/collections/automative" className="orders-quick-cat-pill">
+                  <span>🏎️ Automative</span>
+                </Link>
+                <Link href="/collections/motivational" className="orders-quick-cat-pill">
+                  <span>🔥 Motivational</span>
+                </Link>
+                <Link href="/collections/devotional" className="orders-quick-cat-pill">
+                  <span>🙏 Devotional</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Flipkart Assured / Quality Guarantees */}
+            <div className="orders-assurance-strip">
+              <div className="assurance-strip-item">
+                <ShieldCheck size={20} className="assurance-strip-icon shrink-0" />
+                <div>
+                  <div className="assurance-strip-text">Tube Safe Packaging</div>
+                  <div className="assurance-strip-sub">Zero folds or creases</div>
+                </div>
+              </div>
+              <div className="assurance-strip-item">
+                <Sparkles size={20} className="assurance-strip-icon shrink-0" />
+                <div>
+                  <div className="assurance-strip-text">300 GSM Cardstock</div>
+                  <div className="assurance-strip-sub">Museum-grade vibrancy</div>
+                </div>
+              </div>
+              <div className="assurance-strip-item">
+                <Truck size={20} className="assurance-strip-icon shrink-0" />
+                <div>
+                  <div className="assurance-strip-text">Express Dispatch</div>
+                  <div className="assurance-strip-sub">Ships in 24-48 hours</div>
+                </div>
+              </div>
+            </div>
+
+            {/* WhatsApp Assistance Banner */}
+            <a
+              href={`https://wa.me/919265964547?text=${encodeURIComponent('Hi DUNGEONS, I need help regarding my orders.')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-full transition mt-2"
+            >
+              <MessageCircle size={15} />
+              <span>Need help or ordered via WhatsApp? Chat with DUNGEONS Support →</span>
+            </a>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
