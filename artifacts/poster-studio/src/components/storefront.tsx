@@ -18,6 +18,8 @@ import {
   Instagram,
   Facebook,
   Check,
+  User,
+  Package,
 } from 'lucide-react';
 import type { Product } from '@/lib/catalog';
 import { formatPrice, products, storeCategories, getProductStock, optimizeCloudinary } from '@/lib/catalog';
@@ -97,16 +99,19 @@ export function ProductCard({
     <article className="postgenz-product-card" data-testid={`card-product-${product.id}`}>
       <div className="product-media-wrap">
         <Link href={`/products/${product.slug}`} className="product-media-link" data-testid={`link-product-${product.id}`}>
-          {product.bestseller && (
+          {product.bestseller ? (
             <div className="badge-best-seller">
               <span className="badge-icon">⚡</span> BEST SELLER
             </div>
-          )}
-          {product.newArrival && !product.bestseller && (
+          ) : product.newArrival ? (
             <div className="badge-new-arrival">
               <span className="badge-icon">⚡</span> NEW ARRIVALS
             </div>
-          )}
+          ) : (product.trending || product.featured) ? (
+            <div className="badge-trending">
+              <span className="badge-icon">🔥</span> TRENDING
+            </div>
+          ) : null}
           <PosterArt src={imageSrc} treatment={product.artTreatment} title={product.title} />
         </Link>
         <button
@@ -498,90 +503,167 @@ export function Header() {
                 />
               </Link>
             )}
+
+            {!menuOpen && (
+              <nav className="desktop-nav-links" aria-label="Desktop navigation">
+                <Link href="/" className="desktop-nav-item">
+                  <span>Home</span>
+                </Link>
+
+                {/* Posters Dropdown */}
+                <div className="desktop-categories-dropdown">
+                  <button type="button" className="desktop-nav-item categories-dropdown-trigger">
+                    <span>Posters</span>
+                    <ChevronDown size={12} className="dropdown-chevron-icon" />
+                  </button>
+                  <div className="desktop-dropdown-menu">
+                    <div className="dropdown-section-title">POSTER CATEGORIES</div>
+                    <div className="dropdown-poster-sublinks">
+                      <Link href="/collections/marvel-dc">Marvel &amp; DC</Link>
+                      <Link href="/collections/anime">Anime</Link>
+                      <Link href="/collections/sports">Sports</Link>
+                      <Link href="/collections/landscapes">Landscapes</Link>
+                      <Link href="/collections/diva">Diva</Link>
+                      <Link href="/collections/automative">Automative</Link>
+                      <Link href="/collections/motivational">Motivational</Link>
+                      <Link href="/collections/devotional">Devotional</Link>
+                    </div>
+                    <Link href="/collections/posters" className="dropdown-view-all">All Available Posters →</Link>
+                  </div>
+                </div>
+
+                {/* Custom Orders with NEW badge */}
+                <Link href="/custom" className="desktop-nav-item">
+                  <span>Custom Orders</span>
+                  <span className="badge-new-pill">NEW</span>
+                </Link>
+
+                {/* Wall Packs */}
+                <span className="desktop-nav-item opacity-60 cursor-not-allowed select-none" title="Coming Soon">
+                  <span>Wall Packs</span>
+                  <span className="cat-status-chip soon-chip">Coming Soon</span>
+                </span>
+
+                {/* Coming Soon Dropdown */}
+                <div className="desktop-categories-dropdown">
+                  <button type="button" className="desktop-nav-item categories-dropdown-trigger">
+                    <span>Coming Soon</span>
+                    <ChevronDown size={12} className="dropdown-chevron-icon" />
+                  </button>
+                  <div className="desktop-dropdown-menu">
+                    <div className="dropdown-section-title">UPCOMING LUXURY COLLECTIONS</div>
+                    <div className="dropdown-soon-grid">
+                      {storeCategories.filter((c) => !c.available).map((cat) => (
+                        <div key={cat.id} className="dropdown-soon-chip disabled" aria-disabled="true" title={`${cat.name} (Coming Soon)`}>
+                          <span>{cat.name}</span>
+                          <span className="chip-soon-badge">Coming Soon</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="dropdown-view-all text-neutral-400 font-normal">Launching soon • Pre-order notification available</div>
+                  </div>
+                </div>
+              </nav>
+            )}
           </div>
 
           {!menuOpen && (
-            <nav className="desktop-nav-links" aria-label="Desktop navigation">
-              <Link href="/" className="desktop-nav-item">
-                Home
-              </Link>
-              <Link href="/custom" className="desktop-nav-item">
-                <span>Custom Orders</span>
-                <span className="badge-new-pill">NEW</span>
-              </Link>
-              <span className="desktop-nav-item opacity-60 cursor-not-allowed select-none inline-flex items-center gap-1.5" title="Coming Soon">
-                Wall Packs
-                <span className="cat-status-chip soon-chip text-[9px] py-0.5 px-1.5 font-bold">Coming Soon</span>
-              </span>
-              {/* 4. Posters Dropdown */}
-              <div className="desktop-categories-dropdown">
-                <button type="button" className="desktop-nav-item categories-dropdown-trigger">
-                  <span>Posters</span>
-                  <ChevronDown size={14} />
-                </button>
-                <div className="desktop-dropdown-menu">
-                  <div className="dropdown-section-title">POSTER CATEGORIES</div>
-                  <div className="dropdown-poster-sublinks">
-                    <Link href="/collections/marvel-dc">Marvel &amp; DC</Link>
-                    <Link href="/collections/anime">Anime</Link>
-                    <Link href="/collections/sports">Sports</Link>
-                    <Link href="/collections/landscapes">Landscapes</Link>
-                    <Link href="/collections/diva">Diva</Link>
-                    <Link href="/collections/automative">Automative</Link>
-                    <Link href="/collections/motivational">Motivational</Link>
-                    <Link href="/collections/devotional">Devotional</Link>
-                  </div>
-                  <Link href="/collections/posters" className="dropdown-view-all">All Available Posters →</Link>
-                </div>
-              </div>
-
-              {/* 5. Coming Soon Dropdown */}
-              <div className="desktop-categories-dropdown">
-                <button type="button" className="desktop-nav-item categories-dropdown-trigger">
-                  <span>Coming Soon</span>
-                  <ChevronDown size={14} />
-                </button>
-                <div className="desktop-dropdown-menu">
-                  <div className="dropdown-section-title">UPCOMING LUXURY COLLECTIONS</div>
-                  <div className="dropdown-soon-grid">
-                    {storeCategories.filter((c) => !c.available).map((cat) => (
-                      <div key={cat.id} className="dropdown-soon-chip disabled" aria-disabled="true" title={`${cat.name} (Coming Soon)`}>
-                        <span>{cat.name}</span>
-                        <span className="chip-soon-badge">Coming Soon</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="dropdown-view-all text-neutral-400 font-normal">Launching soon • Pre-order notification available</div>
-                </div>
-              </div>
-            </nav>
+            <div className="header-center-search">
+              {/* Desktop Myntra / Flipkart Search Bar */}
+              <form onSubmit={submitSearch} className="desktop-header-search-bar" role="search">
+                <Search size={15} className="desktop-search-icon" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search for posters, anime, superhero..."
+                  className="desktop-search-input"
+                  aria-label="Search posters"
+                />
+              </form>
+            </div>
           )}
 
           {!menuOpen && (
             <div className="header-actions-right">
+              {/* Mobile Search Button (<768px ONLY) */}
               <button
                 type="button"
-                className="header-icon-btn"
+                className="header-icon-btn mobile-search-btn"
                 aria-label="Search"
                 onClick={() => setSearchOpen(true)}
               >
-                <Search size={21} />
+                <Search size={20} />
               </button>
+
+              {/* Flipkart / Myntra 24x7 Customer Support Direct Link (DESKTOP ONLY) */}
+              <a
+                href="mailto:blumun.in@gmail.com"
+                className="hidden md:flex desktop-header-action-item desktop-support-action"
+                title="Customer Support"
+              >
+                <Headphones size={18} strokeWidth={2.2} />
+                <span className="action-item-label">Support</span>
+              </a>
+
+              {/* Profile / Account Dropdown (Myntra / Flipkart layout - DESKTOP ONLY) */}
+              <div className="hidden md:flex desktop-account-dropdown">
+                <button
+                  type="button"
+                  className="desktop-header-action-item"
+                  aria-label="Profile and Orders menu"
+                >
+                  <User size={18} strokeWidth={2.2} />
+                  <span className="action-item-label">Profile</span>
+                </button>
+                <div className="desktop-account-menu">
+                  <div className="account-menu-header">
+                    <p className="account-menu-title">Welcome to DUNGEONS</p>
+                    <p className="account-menu-sub">To view orders and manage account</p>
+                  </div>
+                  <div className="account-menu-links">
+                    <Link href="/account/orders" className="account-dropdown-row">
+                      <Package size={16} />
+                      <span>My Orders</span>
+                    </Link>
+                    <Link href="/account/addresses" className="account-dropdown-row">
+                      <MapPin size={16} />
+                      <span>Saved Addresses</span>
+                    </Link>
+                    <Link href="/wishlist" className="account-dropdown-row">
+                      <Heart size={16} />
+                      <span>Wishlist</span>
+                    </Link>
+                    <a href="mailto:blumun.in@gmail.com" className="account-dropdown-row">
+                      <Headphones size={16} />
+                      <span>Customer Support</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Wishlist Action Item */}
               <Link
                 href="/wishlist"
-                className="header-icon-btn header-wishlist-btn"
+                className="header-icon-btn md:desktop-header-action-item header-wishlist-btn"
                 aria-label="Wishlist"
               >
-                <Heart size={21} />
-                {wishlist.length > 0 && <span className="cart-badge-count">{wishlist.length}</span>}
+                <div className="action-icon-rel">
+                  <Heart size={18} strokeWidth={2} />
+                </div>
+                <span className="action-item-label">Wishlist</span>
               </Link>
+
+              {/* Bag Action Item - early clean bag icon, no count number */}
               <Link
                 href="/bag"
-                className="header-icon-btn cart-btn-wrap"
-                aria-label={`Bag with ${totalCartCount} items`}
+                className="header-icon-btn md:desktop-header-action-item cart-btn-wrap"
+                aria-label="Bag"
               >
-                <ShoppingBag size={21} />
-                {totalCartCount > 0 && <span className="cart-badge-count">{totalCartCount}</span>}
+                <div className="action-icon-rel">
+                  <ShoppingBag size={18} strokeWidth={2} />
+                </div>
+                <span className="action-item-label">Bag</span>
               </Link>
             </div>
           )}

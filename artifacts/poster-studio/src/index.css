@@ -71,12 +71,12 @@ button {
 .main-content-flow {
   flex: 1;
   width: 100%;
-  padding-top: 64px;
+  padding-top: 60px;
 }
 
 @media (min-width: 768px) {
   .main-content-flow {
-    padding-top: 72px;
+    padding-top: 60px;
   }
 }
 
@@ -113,32 +113,41 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 64px;
-  padding: 0 16px;
-  max-width: 1280px;
+  height: 60px;
+  padding: 0 14px;
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
 }
 
 @media (min-width: 768px) {
   .header-inner {
-    height: 72px;
-    padding: 0 24px;
+    height: 60px;
+    padding: 0 20px;
+    gap: 16px;
   }
 }
 
 .header-left-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .header-left-group {
+    gap: clamp(14px, 1.8vw, 24px);
+  }
 }
 
 .header-icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   color: #1f2937;
   transition: background-color 0.15s ease;
@@ -155,13 +164,14 @@ button {
   justify-content: flex-start;
   text-decoration: none;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .postgenz-logo-img,
 .dungeons-navbar-logo {
-  height: 36px;
+  height: 32px;
   width: auto;
-  max-width: 160px;
+  max-width: 140px;
   object-fit: contain;
   display: block;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
@@ -174,13 +184,17 @@ button {
   transform: scale(1.02);
 }
 
-/* DESKTOP NAVIGATION LINKS (FOR LAPTOP) */
+/* DESKTOP NAVIGATION LINKS (FOR LAPTOP & DESKTOP) */
 .desktop-nav-links {
   display: none;
 }
 
 @media (min-width: 768px) {
   .menu-toggle {
+    display: none !important;
+  }
+
+  .mobile-search-btn {
     display: none !important;
   }
 
@@ -191,43 +205,69 @@ button {
 
   .dungeons-navbar-logo,
   .postgenz-logo-img {
-    height: 48px;
-    max-width: 210px;
+    height: 32px;
+    max-width: 140px;
   }
 
   .desktop-nav-links {
     display: flex;
     align-items: center;
-    gap: 28px;
+    gap: clamp(10px, 1.2vw, 16px);
+    height: 60px;
+    margin: 0;
+    padding: 0;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    transform: translateY(7.5px); /* Centers HOME, POSTERS... text with center of logo letter 's' */
   }
 }
 
-@media (min-width: 1024px) {
-  .dungeons-navbar-logo,
-  .postgenz-logo-img {
-    height: 52px;
-    max-width: 240px;
-  }
-}
-
-.desktop-nav-item {
-  font-size: 13.5px;
+.desktop-nav-item,
+button.desktop-nav-item {
+  font-family: inherit;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #1f2937;
+  letter-spacing: 0.05em;
+  color: #282c3f;
   text-transform: uppercase;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  transition: color 0.15s ease;
+  justify-content: center;
+  gap: 4px;
+  height: 60px;
+  line-height: 1;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  background: transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0 2px;
+  margin: 0;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 
-.desktop-nav-item:hover {
-  color: #0284c7;
+.desktop-nav-item:hover,
+button.desktop-nav-item:hover {
+  color: #0f2e5a;
+  border-bottom-color: #0f2e5a;
+}
+
+.dropdown-chevron-icon {
+  transition: transform 0.2s ease;
+}
+
+.desktop-categories-dropdown:hover .dropdown-chevron-icon {
+  transform: rotate(180deg);
 }
 
 .desktop-categories-dropdown {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 60px;
 }
 
 .desktop-categories-dropdown:hover .desktop-dropdown-menu {
@@ -235,7 +275,9 @@ button {
 }
 
 .categories-dropdown-trigger {
-  padding: 6px 0;
+  padding: 0;
+  background: transparent;
+  border: none;
 }
 
 .desktop-dropdown-menu {
@@ -245,45 +287,325 @@ button {
   left: 0;
   min-width: 220px;
   background-color: #ffffff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
   flex-direction: column;
   padding: 8px;
-  z-index: 50;
+  z-index: 100;
   animation: fadeIn 0.15s ease-out;
 }
 
 .desktop-dropdown-menu a {
-  padding: 10px 14px;
-  font-size: 13.5px;
+  padding: 8px 12px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: #374151;
+  color: #334155;
   border-radius: 8px;
   transition: background-color 0.15s ease, color 0.15s ease;
+  text-decoration: none;
 }
 
 .desktop-dropdown-menu a:hover {
-  background-color: #f3f4f6;
-  color: #0284c7;
+  background-color: #f1f5f9;
+  color: #0f2e5a;
 }
 
 .desktop-dropdown-menu a.dropdown-view-all {
   color: #0284c7;
   font-weight: 700;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid #f1f5f9;
   margin-top: 4px;
-  padding-top: 10px;
+  padding-top: 8px;
 }
 
+/* RIGHT ACTIONS (MYNTRA & FLIPKART E-COMMERCE STRUCTURE) */
 .header-actions-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .header-actions-right {
+    gap: clamp(4px, 0.8vw, 12px);
+  }
+}
+
+/* Myntra-style Desktop Search Input Box */
+.header-center-search {
+  display: none;
+}
+
+.desktop-header-search-bar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .header-center-search {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    max-width: 440px;
+    min-width: 220px;
+    margin: 0 clamp(8px, 1.5vw, 24px);
+    transform: translateY(2px);
+  }
+
+  .desktop-header-search-bar {
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    height: 40px;
+    background-color: #f5f5f6;
+    border: 1px solid #eaeaec;
+    border-radius: 4px;
+    padding: 0 14px 0 38px;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .desktop-header-search-bar:hover {
+    background-color: #f0f0f2;
+    border-color: #dfdfe2;
+  }
+
+  .desktop-header-search-bar:focus-within {
+    background-color: #ffffff;
+    border-color: #282c3f;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  .desktop-search-icon {
+    position: absolute;
+    left: 12px;
+    color: #696e79;
+    pointer-events: none;
+  }
+
+  .desktop-search-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 13px;
+    font-weight: 400;
+    color: #282c3f;
+    letter-spacing: 0.01em;
+  }
+
+  .desktop-search-input::placeholder {
+    color: #94969f;
+    font-size: 13px;
+    font-weight: 400;
+  }
+}
+
+/* Myntra / Flipkart Vertical Action Items (Profile, Support, Wishlist, Bag) */
+.desktop-header-action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 6px;
+  color: #282c3f;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  border-radius: 6px;
+  min-width: 50px;
+  height: 52px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.desktop-header-action-item:hover {
+  color: #0f2e5a;
+  background-color: rgba(15, 46, 90, 0.04);
+}
+
+.action-icon-rel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-item-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: inherit;
+  white-space: nowrap;
+  line-height: 1.1;
+  text-align: center;
+  margin-top: 1px;
+}
+
+@media (min-width: 768px) {
+  .header-actions-right .md\:desktop-header-action-item,
+  .desktop-header-action-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    padding: 4px 6px !important;
+    min-width: 50px !important;
+    height: 52px !important;
+    color: #282c3f !important;
+    border-radius: 6px !important;
+    width: auto !important;
+  }
+
+  .header-actions-right .md\:desktop-header-action-item .action-item-label,
+  .desktop-header-action-item .action-item-label {
+    display: block !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em !important;
+    color: inherit !important;
+    white-space: nowrap !important;
+    line-height: 1.1 !important;
+    text-align: center !important;
+    margin-top: 1px !important;
+  }
+
+  .header-actions-right .md\:desktop-header-action-item svg,
+  .desktop-header-action-item svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+
+/* Responsive visibility and Mobile Alignments - STRICT 3 ICONS ONLY */
+@media (max-width: 767px) {
+  .header-center-search,
+  .desktop-support-action,
+  .desktop-account-dropdown,
+  .desktop-header-search-bar {
+    display: none !important;
+  }
+
+  /* Exact earlier mobile layout & gap: only Search, Wishlist, Bag */
+  .header-actions-right {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    transform: translateY(2.5px); /* Perfectly aligns the 3 icons with center of DUNGEONS letter 's' */
+  }
+
+  .header-actions-right .header-icon-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 8px !important;
+    color: #1f2937 !important;
+    background: transparent !important;
+  }
+
+  .header-actions-right .header-icon-btn:hover {
+    background-color: #f3f4f6 !important;
+  }
+
+  .header-actions-right .action-item-label {
+    display: none !important;
+  }
+
+  .header-actions-right .header-icon-btn svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+}
+
+/* Myntra / Flipkart Profile Dropdown */
+.desktop-account-dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.desktop-account-dropdown:hover .desktop-account-menu,
+.desktop-account-dropdown:focus-within .desktop-account-menu {
+  display: flex;
+}
+
+.desktop-account-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: -10px;
+  width: 230px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  padding: 12px;
+  flex-direction: column;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.account-menu-header {
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 6px;
+}
+
+.account-menu-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f2e5a;
+  margin: 0;
+}
+
+.account-menu-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  margin: 2px 0 0 0;
+}
+
+.account-menu-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.account-dropdown-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  text-decoration: none;
+  transition: all 0.12s ease;
+}
+
+.account-dropdown-row:hover {
+  background-color: #f8fafc;
+  color: #0284c7;
+  transform: translateX(2px);
 }
 
 .cart-btn-wrap {
   position: relative;
+  flex-shrink: 0;
 }
 
 .cart-badge-count {
@@ -518,7 +840,7 @@ button {
   margin-left: -50vw;
   margin-right: -50vw;
   padding: 0;
-  margin-top: 10px; /* Elegant breathing space between navbar and hero slider */
+  margin-top: 0 !important; /* Seamlessly flush against navbar */
   margin-bottom: 24px;
   overflow: hidden;
   box-sizing: border-box;
@@ -529,7 +851,7 @@ button {
     width: 100vw;
     margin-left: -50vw;
     margin-right: -50vw;
-    margin-top: 14px; /* Space between fixed navbar and hero banner on desktop */
+    margin-top: 0 !important; /* Seamlessly flush against navbar on desktop */
     margin-bottom: 28px;
     padding: 0;
   }
@@ -755,7 +1077,7 @@ button {
 .categories-scroll-track {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 10px;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 4px 4px 2px;
@@ -785,7 +1107,7 @@ button {
 @media (min-width: 1024px) {
   .categories-scroll-track {
     justify-content: center;
-    gap: 22px;
+    gap: 16px;
   }
 }
 
@@ -796,7 +1118,7 @@ button {
   text-align: center;
   position: relative;
   flex-shrink: 0;
-  width: 86px;
+  width: 78px;
   text-decoration: none;
   scroll-snap-align: start;
   transition: transform 0.2s ease;
@@ -804,7 +1126,7 @@ button {
 
 @media (min-width: 768px) {
   .cat-icon-card {
-    width: 94px;
+    width: 86px;
   }
 }
 
@@ -843,35 +1165,36 @@ button {
 /* Authentic Instagram Story Gradient Ring (Default / Coming Soon) */
 .cat-img-wrap.insta-story-ring {
   background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-  padding: 3px;
-  box-shadow: 0 4px 14px rgba(220, 39, 67, 0.22);
+  padding: 2.5px;
+  box-shadow: 0 3px 10px rgba(220, 39, 67, 0.22);
   overflow: visible;
   border: none;
 }
 
 @media (min-width: 768px) {
   .cat-img-wrap.insta-story-ring {
-    padding: 3.5px;
+    padding: 3px;
   }
 }
 
-/* Instagram Close Friends Story Green Ring for Available Items */
+/* Instagram Close Friends Story Green Ring for Available Items (First Circle) */
 .cat-img-wrap.available-ring,
 .cat-img-wrap.insta-story-ring.available-ring {
-  background: linear-gradient(135deg, #1cd14f 0%, #10d644 40%, #00e676 75%, #00c853 100%) !important;
-  box-shadow: 0 4px 14px rgba(16, 214, 68, 0.35) !important;
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%) !important;
+  padding: 2.5px !important;
+  box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35) !important;
 }
 
 .cat-clickable:hover .cat-img-wrap.available-ring,
 .cat-clickable:hover .cat-img-wrap.insta-story-ring.available-ring {
-  transform: scale(1.06);
-  box-shadow: 0 6px 18px rgba(16, 214, 68, 0.52) !important;
+  transform: scale(1.05);
+  box-shadow: 0 5px 16px rgba(16, 185, 129, 0.45) !important;
 }
 
 .cat-clickable:hover .cat-img-wrap.insta-story-ring,
 .cat-soon-card:hover .cat-img-wrap.insta-story-ring {
   transform: scale(1.05);
-  box-shadow: 0 6px 18px rgba(220, 39, 67, 0.38);
+  box-shadow: 0 5px 16px rgba(220, 39, 67, 0.35);
 }
 
 /* White space ring between gradient ring and inner photo */
@@ -880,7 +1203,7 @@ button {
   height: 100%;
   border-radius: 50%;
   background-color: #ffffff;
-  padding: 2px;
+  padding: 2.5px;
   overflow: hidden;
   position: relative;
   display: flex;
@@ -1287,6 +1610,24 @@ button {
   align-items: center;
   gap: 3px;
   box-shadow: 0 3px 8px rgba(99, 102, 241, 0.4);
+}
+
+.badge-trending {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 5;
+  background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 3px 8px rgba(239, 68, 68, 0.4);
 }
 
 .badge-icon {
@@ -2348,6 +2689,16 @@ button {
   box-shadow: 0 4px 10px rgba(249, 115, 22, 0.4);
 }
 
+.product-badge-overlay.product-badge-new {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
+}
+
+.product-badge-overlay.product-badge-trending {
+  background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%);
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+}
+
 .product-hero-real-img {
   width: 100%;
   height: 100%;
@@ -2597,33 +2948,18 @@ button {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
+  max-width: 480px;
+  margin: auto;
+  padding: 20px;
+  transform: translateY(-6vh);
+  text-align: center;
   background: transparent;
   border: none;
   box-shadow: none;
 }
 
-.dungeons-splash-mobile-exact-img {
-  display: block;
-  width: 100vw;
-  height: 100vh;
-  max-width: 100vw;
-  max-height: 100vh;
-  object-fit: contain;
-  background-color: #ffffff;
-  animation: none !important;
-  opacity: 1 !important;
-  transform: none !important;
-}
-
-.dungeons-splash-desktop-wrap {
-  display: none;
-}
-
 .dungeons-splash-logo-img {
-  width: 220px;
+  width: 215px;
   max-width: 65vw;
   height: auto;
   object-fit: contain;
@@ -2635,14 +2971,16 @@ button {
   opacity: 1 !important;
   transform: none !important;
   filter: none !important;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 .dungeons-splash-tagline {
-  margin: 14px 0 0 0;
-  font-family: 'Comic Sans MS', 'Comfortaa', 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: clamp(13px, 3.6vw, 16px);
+  margin: 12px 0 0 0;
+  font-family: 'Comic Sans MS', 'Comfortaa', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: clamp(14px, 3.8vw, 16px);
   font-weight: 700;
-  color: #0b2545;
+  color: #0f2e5a;
   letter-spacing: 0.01em;
   text-transform: none !important;
   white-space: nowrap !important;
@@ -2650,25 +2988,20 @@ button {
   opacity: 1 !important;
   transform: none !important;
   line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 @media (min-width: 640px) {
-  .dungeons-splash-mobile-exact-img {
-    display: none;
-  }
-  .dungeons-splash-desktop-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transform: translateY(-6vh);
+  .dungeons-splash-logo-container {
+    transform: translateY(-7vh);
   }
   .dungeons-splash-logo-img {
     width: 260px;
-    max-width: 300px;
+    max-width: 320px;
   }
   .dungeons-splash-tagline {
-    font-size: 16px;
+    font-size: 16.5px;
     margin-top: 14px;
     letter-spacing: 0.02em;
   }
@@ -10736,6 +11069,7 @@ button {
 
 /* ============================================================
    MYNTRA AUTHENTIC COUPONS & BANK OFFERS SYSTEM
+   (Matching Price Details Card typography, font style & radius)
    ============================================================ */
 
 .myntra-coupon-wrapper {
@@ -10747,48 +11081,56 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
-  padding: 0 4px;
+  margin-bottom: 10px;
+  padding: 0 2px;
 }
 
 .myntra-coupon-header-title {
-  font-size: 14px;
+  font-size: 15.5px;
   font-weight: 700;
-  color: #282c3f;
+  color: #334155;
   letter-spacing: -0.01em;
 }
 
 .myntra-coupon-view-all-link {
   font-size: 13px;
   font-weight: 600;
-  color: #282c3f;
+  color: #0284c7;
   background: transparent;
   border: none;
-  border-bottom: 1.5px dotted #94a3b8;
+  border-bottom: 1px dotted #0284c7;
   padding: 0 0 1px 0;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .myntra-coupon-view-all-link:hover {
-  color: #0f172a;
-  border-bottom-color: #0f172a;
+  color: #0369a1;
+  border-bottom-color: #0369a1;
 }
 
-/* Authentic Myntra Card Container */
+/* Authentic Myntra Card Container - Matches Price Details Box */
 .myntra-coupon-card {
-  background: #ffffff;
-  background-image: radial-gradient(circle at 92% 12%, rgba(254, 243, 199, 0.45) 0%, rgba(255, 255, 255, 1) 60%);
+  background-color: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 16px 18px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border-radius: 14px;
+  padding: 16px 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
   transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .myntra-coupon-card {
+    border-radius: 16px;
+    padding: 18px 20px;
+  }
 }
 
 .myntra-coupon-card.is-applied {
   border-color: #10b981;
-  background: #f0fdf4;
+  background-color: #f0fdf4;
 }
 
 /* Card Top Row */
@@ -10808,12 +11150,12 @@ button {
 
 /* Realistic 3D Indian Rupee Coin */
 .myntra-gold-coin {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #fffbeb 0%, #fde68a 32%, #f59e0b 70%, #d97706 100%);
-  border: 2px solid #fbbf24;
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 3px 6px rgba(217, 119, 6, 0.3);
+  border: 1.5px solid #fbbf24;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 2px 5px rgba(217, 119, 6, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10821,22 +11163,11 @@ button {
   position: relative;
 }
 
-.myntra-gold-coin::after {
-  content: '';
-  position: absolute;
-  inset: 2.5px;
-  border-radius: 50%;
-  border: 1px dashed rgba(180, 83, 9, 0.4);
-  pointer-events: none;
-}
-
 .myntra-gold-coin-symbol {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 900;
   color: #78350f;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
   line-height: 1;
-  margin-top: -1px;
 }
 
 .myntra-coupon-top-text {
@@ -10845,27 +11176,26 @@ button {
 }
 
 .myntra-coupon-save-headline {
-  font-size: 16px;
+  font-size: 13.5px;
   font-weight: 700;
   color: #059669;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
+  line-height: 1.35;
 }
 
 .myntra-coupon-count-subtext {
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: 13.5px;
+  font-weight: 400;
   color: #64748b;
-  margin-top: 2px;
-  line-height: 1.2;
+  margin-top: 1px;
+  line-height: 1.35;
 }
 
 .myntra-coupon-chevron-btn {
   background: transparent;
   border: none;
-  color: #1e293b;
-  width: 32px;
-  height: 32px;
+  color: #334155;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10888,12 +11218,12 @@ button {
 .myntra-coupon-item-left {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
 }
 
 .myntra-purple-tag {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 6px;
   background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
   display: flex;
@@ -10902,7 +11232,7 @@ button {
   color: #ffffff;
   flex-shrink: 0;
   margin-top: 2px;
-  box-shadow: 0 2px 5px rgba(124, 58, 237, 0.28);
+  box-shadow: 0 2px 5px rgba(124, 58, 237, 0.25);
 }
 
 .myntra-coupon-item-details {
@@ -10911,48 +11241,48 @@ button {
 }
 
 .myntra-coupon-code-text {
-  font-size: 15px;
-  font-weight: 800;
-  color: #1e293b;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
+  letter-spacing: 0.03em;
+  line-height: 1.35;
 }
 
 .myntra-coupon-discount-text {
   font-size: 13.5px;
-  font-weight: 700;
-  color: #374151;
-  margin-top: 3px;
-  line-height: 1.2;
+  font-weight: 500;
+  color: #334155;
+  margin-top: 1px;
+  line-height: 1.35;
 }
 
 .myntra-coupon-sub-text {
   font-size: 12px;
-  font-weight: 500;
-  color: #94a3b8;
-  margin-top: 2px;
-  line-height: 1.2;
+  font-weight: 400;
+  color: #64748b;
+  margin-top: 1px;
+  line-height: 1.35;
 }
 
 /* Myntra Outline Apply Button */
 .myntra-card-apply-btn {
   background: #ffffff;
-  border: 1.5px solid #d1d5db;
-  border-radius: 10px;
-  padding: 8px 22px;
-  font-size: 13.5px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 18px;
+  font-size: 13px;
   font-weight: 700;
-  color: #1e293b;
+  color: #0f172a;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   flex-shrink: 0;
 }
 
 .myntra-card-apply-btn:hover {
-  border-color: #111827;
-  color: #111827;
+  border-color: #0f172a;
+  color: #0f172a;
   background: #f8fafc;
 }
 
@@ -10978,8 +11308,8 @@ button {
 }
 
 .myntra-coupon-check-circle {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: #059669;
   color: #ffffff;
@@ -10990,16 +11320,16 @@ button {
 }
 
 .myntra-coupon-applied-code {
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 13.5px;
+  font-weight: 700;
   color: #065f46;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
 .myntra-coupon-applied-desc {
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 500;
   color: #047857;
   margin-top: 1px;
 }
@@ -11008,9 +11338,9 @@ button {
   background: #ffffff;
   border: 1.5px solid #fca5a5;
   color: #dc2626;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 700;
-  padding: 6px 14px;
+  padding: 6px 16px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;

@@ -37,6 +37,7 @@ export type Product = {
   featured: boolean;
   bestseller: boolean;
   newArrival: boolean;
+  trending?: boolean;
   tags: string[];
   rating: number;
   reviewsCount?: number;
@@ -988,6 +989,11 @@ export function transformDbProductToFrontend(p: any): Product {
     featured: Boolean(p.isStaffPick || p.isBestSeller),
     bestseller: Boolean(p.isBestSeller),
     newArrival: Boolean(p.isNewRelease),
+    trending: Boolean(
+      (p as any).isTrending ||
+      (p.isStaffPick && !p.isBestSeller && !p.isNewRelease) ||
+      (Array.isArray(p.tags) && p.tags.some((t: any) => typeof t === 'string' && (t.toLowerCase().includes('trending') || t.toLowerCase().includes('popular') || t.toLowerCase().includes('hot'))))
+    ),
     tags: Array.isArray(p.tags) ? p.tags : [],
     rating,
     reviewsCount,
@@ -1024,7 +1030,34 @@ export function getProductSizeComparePrice(product: Product, size: PosterSize = 
   return baseCompare;
 }
 
-const STORAGE_KEY = 'dungeons_catalog_products';
+export function getProductTierRank(p: Product): number {
+  // 1. BEST SELLER
+  if (
+    p.bestseller ||
+    (Array.isArray(p.tags) && p.tags.some((t) => typeof t === 'string' && (t.toLowerCase().includes('bestseller') || t.toLowerCase().includes('best seller'))))
+  ) {
+    return 1;
+  }
+  // 2. NEW ARRIVALS
+  if (
+    p.newArrival ||
+    (Array.isArray(p.tags) && p.tags.some((t) => typeof t === 'string' && (t.toLowerCase().includes('new arrival') || t.toLowerCase() === 'new' || t.toLowerCase().includes('new release'))))
+  ) {
+    return 2;
+  }
+  // 3. TRENDING
+  if (
+    p.trending ||
+    p.featured ||
+    (Array.isArray(p.tags) && p.tags.some((t) => typeof t === 'string' && (t.toLowerCase().includes('trending') || t.toLowerCase().includes('popular') || t.toLowerCase().includes('hot'))))
+  ) {
+    return 3;
+  }
+  // 4. OTHER
+  return 4;
+}
+
+const STORAGE_KEY = 'dungeons_catalog_products_v4';
 const IDB_NAME = 'dungeons_store_db';
 const IDB_STORE = 'catalog_products';
 

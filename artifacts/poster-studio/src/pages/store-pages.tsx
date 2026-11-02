@@ -45,7 +45,7 @@ import {
   FileText,
   Search,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, products, searchProducts, storeCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, ProductCardSkeleton, Toast } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
@@ -759,7 +759,15 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     if (selectedSort === 'low') return [...list].sort((a, b) => a.price - b.price);
     if (selectedSort === 'high') return [...list].sort((a, b) => b.price - a.price);
     if (selectedSort === 'rating') return [...list].sort((a, b) => b.rating - a.rating);
-    return list;
+
+    // Default category view: 1) Best Seller -> 2) New Arrivals -> 3) Trending -> 4) Other
+    return [...list].sort((a, b) => {
+      const rankA = getProductTierRank(a);
+      const rankB = getProductTierRank(b);
+      if (rankA !== rankB) return rankA - rankB;
+      if (b.rating !== a.rating) return b.rating - a.rating;
+      return a.id.localeCompare(b.id);
+    });
   }, [liveProducts, isPostersActive, activePosterSubSlug, minPrice, maxPrice, selectedSort]);
 
   const handleVipSubmit = (e: React.FormEvent) => {
@@ -1211,11 +1219,19 @@ export function ProductPage() {
       <div className="product-page-laptop-container">
         {/* 1. MAIN PRODUCT IMAGE WITH BADGE */}
       <section className="product-hero-media-wrap">
-        {product.bestseller && (
+        {product.bestseller ? (
           <div className="product-badge-overlay">
             <span className="badge-icon">⚡</span> BEST SELLER
           </div>
-        )}
+        ) : product.newArrival ? (
+          <div className="product-badge-overlay product-badge-new">
+            <span className="badge-icon">⚡</span> NEW ARRIVALS
+          </div>
+        ) : (product.trending || product.featured) ? (
+          <div className="product-badge-overlay product-badge-trending">
+            <span className="badge-icon">🔥</span> TRENDING
+          </div>
+        ) : null}
         <img
           src={optimizeCloudinary(heroImageSrc, 800, 85)}
           alt={product.title}
@@ -2660,16 +2676,19 @@ export function WishlistPage() {
                 <article key={product.id} className="postgenz-product-card" data-testid={`card-product-${product.id}`}>
                   <div className="product-media-wrap">
                     <Link href={`/products/${product.slug}`} className="product-media-link">
-                      {product.bestseller && (
+                      {product.bestseller ? (
                         <div className="badge-best-seller">
                           <span className="badge-icon">⚡</span> BEST SELLER
                         </div>
-                      )}
-                      {product.newArrival && !product.bestseller && (
+                      ) : product.newArrival ? (
                         <div className="badge-new-arrival">
                           <span className="badge-icon">⚡</span> NEW ARRIVALS
                         </div>
-                      )}
+                      ) : (product.trending || product.featured) ? (
+                        <div className="badge-trending">
+                          <span className="badge-icon">🔥</span> TRENDING
+                        </div>
+                      ) : null}
                       <PosterArt src={imageSrc} treatment={product.artTreatment} title={product.title} />
                     </Link>
 
