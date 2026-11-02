@@ -818,16 +818,76 @@ export const storeCategories: StoreCategory[] = [
 export const posterCategories = [
   { id: 'cat-marvel-dc', slug: 'marvel-dc', title: 'Marvel & DC', name: 'Marvel & DC', description: 'Cinematic superheroes, comic art, and collector editions.' },
   { id: 'cat-anime', slug: 'anime', title: 'Anime', name: 'Anime', description: 'Legendary anime heroes, wanted bounty posters, and epic fights.' },
-  { id: 'cat-diva', slug: 'diva', title: 'Diva', name: 'Diva', description: 'Aesthetic icons, pop idols, and trendsetting style portraits.' },
-  { id: 'cat-landscapes', slug: 'landscapes', title: 'Landscapes', name: 'Landscapes', description: 'Breathtaking scenic vistas, nature escapes, and wanderlust photography.' },
-  { id: 'cat-automative', slug: 'automative', title: 'Automative', name: 'Automative', description: 'Supercars, hypercars, drift icons, and motorsport speed art.' },
   { id: 'cat-movies-web-series', slug: 'movies-web-series', title: 'Movies & Web Series', name: 'Movies & Web Series', description: 'Cult classics, blockbuster cinema, and binge-worthy drama posters.' },
   { id: 'cat-music-artists', slug: 'music-artists', title: 'Music Artists', name: 'Music Artists', description: 'Rap titans, rock legends, pop sensation album covers and portraits.' },
   { id: 'cat-video-games', slug: 'video-games', title: 'Video Games', name: 'Video Games', description: 'Gaming icons, retro arcade, esports glory, and pixel art.' },
   { id: 'cat-sports', slug: 'sports', title: 'Sports', name: 'Sports', description: 'Pitch legends, football, basketball, cricket, and UFC championship glory.' },
+  { id: 'cat-landscapes', slug: 'landscapes', title: 'Landscapes', name: 'Landscapes', description: 'Breathtaking scenic vistas, nature escapes, and wanderlust photography.' },
+  { id: 'cat-diva', slug: 'diva', title: 'Diva', name: 'Diva', description: 'Aesthetic icons, pop idols, and trendsetting style portraits.' },
+  { id: 'cat-automative', slug: 'automative', title: 'Automative', name: 'Automative', description: 'Supercars, hypercars, drift icons, and motorsport speed art.' },
   { id: 'cat-motivational', slug: 'motivational', title: 'Motivational', name: 'Motivational', description: 'Hustle mindset, gym ambition, discipline, and daily inspiration.' },
   { id: 'cat-devotional', slug: 'devotional', title: 'Devotional', name: 'Devotional', description: 'Serene spiritual deities, divine vibes, and eternal blessings.' },
 ];
+
+export const DYNAMIC_CATEGORIES_KEY = 'dungeons_dynamic_poster_categories_v2';
+
+export interface DynamicPosterCategory {
+  id?: string;
+  slug: string;
+  title: string;
+  name?: string;
+  description?: string;
+}
+
+export function getDynamicPosterCategories(): DynamicPosterCategory[] {
+  const baseList: DynamicPosterCategory[] = [...posterCategories];
+  if (typeof window === 'undefined') return baseList;
+  try {
+    const raw = localStorage.getItem(DYNAMIC_CATEGORIES_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const seen = new Set(baseList.map((c) => c.slug));
+        parsed.forEach((item) => {
+          if (item && item.slug && !seen.has(item.slug)) {
+            baseList.push(item);
+            seen.add(item.slug);
+          }
+        });
+      }
+    }
+  } catch (e) {}
+  return baseList;
+}
+
+export function addDynamicPosterCategory(name: string): DynamicPosterCategory {
+  const trimmed = name.trim();
+  const slug = trimmed
+    .toLowerCase()
+    .replace(/ & /g, '-')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  const title = trimmed.toUpperCase();
+  const newCat: DynamicPosterCategory = {
+    id: `cat-${slug}`,
+    slug,
+    title,
+    name: trimmed,
+    description: `Curated ${trimmed} poster prints and artwork.`,
+  };
+
+  if (typeof window !== 'undefined') {
+    try {
+      const existing = getDynamicPosterCategories();
+      if (!existing.some((c) => c.slug === slug)) {
+        existing.push(newCat);
+        localStorage.setItem(DYNAMIC_CATEGORIES_KEY, JSON.stringify(existing));
+        window.dispatchEvent(new CustomEvent('dungeons:categories-updated', { detail: existing }));
+      }
+    } catch (e) {}
+  }
+  return newCat;
+}
 
 export const collections = [
   { slug: 'all', title: 'ALL POSTERS', description: 'Complete collection of premium archival matte posters.', treatment: 'art-aurora' },

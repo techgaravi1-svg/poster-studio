@@ -45,7 +45,7 @@ import {
   FileText,
   Search,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, products, searchProducts, storeCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, products, searchProducts, storeCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, ProductCardSkeleton, Toast } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
@@ -684,19 +684,36 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     window.setTimeout(() => setToast(''), 2400);
   };
 
-  const posterSubCategories = [
-    { slug: 'all', label: 'ALL POSTERS' },
-    { slug: 'marvel-dc', label: 'MARVEL & DC' },
-    { slug: 'anime', label: 'ANIME' },
-    { slug: 'sports', label: 'SPORTS' },
-    { slug: 'landscapes', label: 'LANDSCAPES' },
-    { slug: 'diva', label: 'DIVA' },
-    { slug: 'automative', label: 'AUTOMATIVE' },
-    { slug: 'motivational', label: 'MOTIVATIONAL' },
-    { slug: 'devotional', label: 'DEVOTIONAL' },
-  ];
+  const [dynamicCats, setDynamicCats] = useState<DynamicPosterCategory[]>(getDynamicPosterCategories);
+
+  useEffect(() => {
+    const handler = () => {
+      setDynamicCats(getDynamicPosterCategories());
+    };
+    window.addEventListener('dungeons:categories-updated', handler);
+    return () => window.removeEventListener('dungeons:categories-updated', handler);
+  }, []);
 
   const { products: liveProducts, isLoading } = useLiveProductsWithStatus();
+
+  const posterSubCategories = useMemo(() => {
+    const list = [
+      { slug: 'all', label: 'ALL POSTERS' },
+      ...dynamicCats.map((c) => ({ slug: c.slug, label: c.title })),
+    ];
+    const seen = new Set(list.map((c) => c.slug));
+    liveProducts.forEach((p) => {
+      const pCat = p.category?.trim();
+      if (pCat) {
+        const slug = pCat.toLowerCase().replace(/ & /g, '-').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        if (slug && !seen.has(slug)) {
+          list.push({ slug, label: pCat.toUpperCase() });
+          seen.add(slug);
+        }
+      }
+    });
+    return list;
+  }, [dynamicCats, liveProducts]);
 
   const currentCategoryLabel = !isPostersActive
     ? `${activeCategory.name} — COMING SOON`
@@ -1643,9 +1660,9 @@ export function CustomPage() {
   const posterInputRef = useRef<HTMLInputElement>(null);
 
   const posterSizePrices: Record<'A5' | 'A4' | 'A3', number> = {
-    A5: 129,
-    A4: 199,
-    A3: 299,
+    A5: 90,
+    A4: 130,
+    A3: 160,
   };
   const posterUnitCost = posterSizePrices[posterSize];
   const posterTotalPrice = posterUnitCost * posterQuantity;
@@ -2032,7 +2049,7 @@ export function CustomPage() {
                 Your own photos, personal digital art, or wallpaper mural printed with archival quality.
               </p>
               <div className="box-footer-row">
-                <span className="box-price-hint">Starting from Rs. 129</span>
+                <span className="box-price-hint">Starting from Rs. 90</span>
                 <button
                   type="button"
                   className="btn-design-now-highlight"
@@ -2476,21 +2493,21 @@ export function CustomPage() {
                   className={`option-pill ${posterSize === 'A5' ? 'active-pill' : ''}`}
                   onClick={() => setPosterSize('A5')}
                 >
-                  A5
+                  A5 • ₹90
                 </button>
                 <button
                   type="button"
                   className={`option-pill ${posterSize === 'A4' ? 'active-pill' : ''}`}
                   onClick={() => setPosterSize('A4')}
                 >
-                  A4
+                  A4 • ₹130
                 </button>
                 <button
                   type="button"
                   className={`option-pill ${posterSize === 'A3' ? 'active-pill' : ''}`}
                   onClick={() => setPosterSize('A3')}
                 >
-                  A3
+                  A3 • ₹160
                 </button>
               </div>
             </div>
@@ -2795,11 +2812,10 @@ export function CartPage() {
                 <div className="checkout-card-header">
                   <div className="step-label-group">
                     <div className="flex items-center gap-2">
-                      <Package size={16} className="text-neutral-500" />
-                      <h2 className="step-title-heading">Items In Your Bag ({totalCount})</h2>
+                      <Package size={16} className="text-neutral-500 shrink-0" />
+                      <h2 className="step-title-heading whitespace-nowrap">Items In Your Bag ({totalCount})</h2>
                     </div>
                   </div>
-                  <span className="text-xs text-neutral-500 font-medium">Prices include all taxes</span>
                 </div>
 
                 <div className="flex flex-col gap-2.5">

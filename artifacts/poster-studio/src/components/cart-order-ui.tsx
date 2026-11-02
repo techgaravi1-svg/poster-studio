@@ -16,6 +16,7 @@ import {
   Lock,
   Ruler,
   AlertCircle,
+  Trash2,
 } from 'lucide-react';
 import { formatPrice, getProductSizePrice, getProductSizeComparePrice, products, type PosterSize } from '@/lib/catalog';
 import { store, useStore, fetchLiveCoupons, type CartItem, type ActiveCoupon } from '@/lib/store';
@@ -145,8 +146,10 @@ export function MyntraItemCard({
     setSelectedTempSize(item.size === 'A3' || item.size === 'A4' || item.size === 'A5' ? item.size : 'A5');
   }, [item.size]);
 
+  const isBagPage = Boolean(onSaveForLater);
+
   return (
-    <div className="myntra-item-card" data-testid={`cart-item-${item.key}`}>
+    <div className={`myntra-item-card ${isBagPage ? 'is-bag-item' : 'is-checkout-item'}`} data-testid={`cart-item-${item.key}`}>
       {/* Left Column: Product Thumbnail with Pink Checkmark Badge */}
       <div className="myntra-thumb-container">
         <Link href={item.slug ? `/products/${item.slug}` : '#'}>
@@ -170,27 +173,14 @@ export function MyntraItemCard({
 
       {/* Right Column: Item Information & Details */}
       <div className="myntra-details-col">
-        {/* Top Meta Line: Remove Button / Order Status (Aligned to Opposite / Right Side) */}
-        <div className="myntra-card-top-row" style={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
-          {!isOrderMode && onRemove && (
-            <button
-              type="button"
-              onClick={onRemove}
-              className="myntra-btn-remove"
-              style={{ marginLeft: 'auto' }}
-              aria-label={`Remove ${item.title} from bag`}
-              title="Remove item"
-            >
-              <X size={16} />
-            </button>
-          )}
-
-          {isOrderMode && orderStatus && (
+        {/* Order Status Badge if in order history mode */}
+        {isOrderMode && orderStatus && (
+          <div className="myntra-card-top-row" style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', marginBottom: '4px' }}>
             <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200" style={{ marginLeft: 'auto' }}>
               {orderStatus}
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Product Title / Description */}
         <Link
@@ -289,17 +279,32 @@ export function MyntraItemCard({
           </div>
         )}
 
-        {/* Bottom Actions (Save for later) */}
-        {!isOrderMode && onSaveForLater && (
+        {/* Bottom Actions (Save for later & Remove in red) */}
+        {!isOrderMode && (onSaveForLater || onRemove) && (
           <div className="myntra-card-actions-footer">
-            <button
-              type="button"
-              onClick={onSaveForLater}
-              className="myntra-btn-save-later"
-            >
-              <Bookmark size={13} />
-              <span>Move to Wishlist</span>
-            </button>
+            {onSaveForLater && (
+              <button
+                type="button"
+                onClick={onSaveForLater}
+                className="myntra-btn-save-later"
+              >
+                <Bookmark size={13} />
+                <span>Move to Wishlist</span>
+              </button>
+            )}
+            {onRemove && (
+              <>
+                {onSaveForLater && <span className="myntra-actions-divider text-slate-300 mx-2 select-none">•</span>}
+                <button
+                  type="button"
+                  onClick={onRemove}
+                  className="myntra-btn-remove-red"
+                >
+                  <Trash2 size={13} />
+                  <span>Remove</span>
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -817,6 +822,15 @@ export function MyntraPriceDetails({
   disabled = false,
 }: MyntraPriceDetailsProps) {
   const discountOnMRP = Math.max(0, totalMRP - subtotal);
+  const [showMinOrderModal, setShowMinOrderModal] = useState(false);
+
+  const handleProceedClick = () => {
+    if (total < 300 && total > 0) {
+      setShowMinOrderModal(true);
+      return;
+    }
+    if (onProceed) onProceed();
+  };
 
   return (
     <div className="myntra-price-card">
@@ -862,50 +876,7 @@ export function MyntraPriceDetails({
         </div>
       </div>
 
-      {/* Minimum Order Value Alert (Modern E-Commerce Progress Bar Card) */}
-      {total < 300 && total > 0 && (() => {
-        const shortfall = Math.max(0, 300 - total);
-        const progressPct = Math.min(100, Math.max(8, Math.round((total / 300) * 100)));
-        return (
-          <div className="min-order-highlight-card">
-            {/* Top row: Label & Shortfall Badge */}
-            <div className="min-order-card-header">
-              <div className="min-order-title-group">
-                <span className="min-order-icon-badge" aria-hidden="true">
-                  ₹
-                </span>
-                <span className="min-order-title-text">
-                  Minimum Order ₹300
-                </span>
-              </div>
-              <span className="min-order-chip-shortfall">
-                Add ₹{shortfall} More
-              </span>
-            </div>
-
-            {/* Visual Progress Bar */}
-            <div className="min-order-track-bg">
-              <div
-                className="min-order-track-fill"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-
-            {/* Amount Progress Labels */}
-            <div className="min-order-stats-row">
-              <span>Current: ₹{total}</span>
-              <span>Target: ₹300</span>
-            </div>
-
-            {/* Microcopy message */}
-            <p className="min-order-notice-text">
-              Add posters worth <strong>₹{shortfall}</strong> more to your bag to place this order.
-            </p>
-          </div>
-        );
-      })()}
-
-      {/* Green Savings Banner like in Screenshot 1 */}
+      {/* Green Savings Banner */}
       {totalSavings > 0 && (
         <div className="myntra-savings-green-banner">
           <div className="myntra-savings-percent-badge" aria-hidden="true">
@@ -925,8 +896,8 @@ export function MyntraPriceDetails({
         <div className="w-full flex flex-col gap-2 myntra-checkout-action-wrap">
           <button
             type="button"
-            disabled={disabled || (total < 300 && total > 0)}
-            onClick={onProceed}
+            disabled={disabled}
+            onClick={handleProceedClick}
             className="btn-myntra-checkout-black"
             style={{
               display: 'flex',
@@ -935,7 +906,7 @@ export function MyntraPriceDetails({
               gap: '8px',
               width: '100%',
               minHeight: '48px',
-              backgroundColor: (total < 300 && total > 0) ? '#94a3b8' : '#0f172a',
+              backgroundColor: '#0f172a',
               color: '#ffffff',
               borderRadius: '12px',
               fontSize: '13px',
@@ -943,21 +914,91 @@ export function MyntraPriceDetails({
               letterSpacing: '0.04em',
               textTransform: 'uppercase',
               border: 'none',
-              cursor: (disabled || (total < 300 && total > 0)) ? 'not-allowed' : 'pointer',
-              opacity: (disabled || (total < 300 && total > 0)) ? 0.75 : 1,
-              boxShadow: (total < 300 && total > 0) ? 'none' : '0 4px 14px rgba(15, 23, 42, 0.25)',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              opacity: disabled ? 0.75 : 1,
+              boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
               margin: '0',
               padding: '12px 16px',
             }}
           >
             <Lock size={15} className="shrink-0" />
-            <span>
-              {total < 300 && total > 0
-                ? `ADD ₹${300 - total} MORE TO ORDER`
-                : proceedLabel}
-            </span>
+            <span>{proceedLabel}</span>
           </button>
           {subtext}
+        </div>
+      )}
+
+      {/* Minimum Order Value Alert Modal (Myntra Reference Style) */}
+      {showMinOrderModal && (
+        <div
+          className="myntra-min-order-backdrop"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowMinOrderModal(false)}
+        >
+          <div
+            className="myntra-min-order-modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Close Button */}
+            <button
+              type="button"
+              onClick={() => setShowMinOrderModal(false)}
+              className="myntra-min-order-close-btn"
+              aria-label="Close"
+            >
+              <X size={15} />
+            </button>
+
+            {/* Pink Branded Bag Badge */}
+            <div className="myntra-min-order-icon-badge">
+              <ShoppingBag size={26} strokeWidth={2.4} />
+            </div>
+
+            <h3 className="myntra-min-order-modal-title">
+              Minimum Order Required
+            </h3>
+
+            <p className="myntra-min-order-modal-desc">
+              To place your order, your cart value must be at least <strong>₹300.00</strong>.
+            </p>
+
+            {/* Amount Summary Breakdown Box */}
+            <div className="myntra-min-order-breakdown-box">
+              <div className="myntra-min-order-row">
+                <span>Current Bag Total:</span>
+                <span className="myntra-min-order-row-val font-semibold">{formatPrice(total)}</span>
+              </div>
+              <div className="myntra-min-order-row">
+                <span>Minimum Target:</span>
+                <span className="myntra-min-order-row-val font-semibold">₹300.00</span>
+              </div>
+              <div className="myntra-min-order-divider" />
+              <div className="myntra-min-order-row myntra-min-order-shortfall-row">
+                <span>Add More Worth:</span>
+                <span className="myntra-min-order-shortfall-val">+{formatPrice(Math.max(0, 300 - total))}</span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="myntra-min-order-actions-wrap">
+              <Link
+                href="/collections/posters"
+                onClick={() => setShowMinOrderModal(false)}
+                className="myntra-min-order-primary-btn"
+              >
+                <Plus size={16} strokeWidth={3} />
+                <span>Add More Posters</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowMinOrderModal(false)}
+                className="myntra-min-order-secondary-btn"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

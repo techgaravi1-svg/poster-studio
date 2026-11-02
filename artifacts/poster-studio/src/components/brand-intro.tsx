@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 const SPLASH_LOGO_URL = 'https://res.cloudinary.com/pyjyrmry/image/upload/e_make_transparent/v1793352216/dungeons_hero_assets/dungeons_splash_logo.png';
 
 export function BrandIntroAnimation({ onComplete }: { onComplete: () => void }) {
-  const [phase, setPhase] = useState<'enter' | 'show' | 'exit' | 'done'>('enter');
+  const [phase, setPhase] = useState<'show' | 'exit' | 'done'>('show');
   const timerRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
@@ -13,13 +13,12 @@ export function BrandIntroAnimation({ onComplete }: { onComplete: () => void }) 
       return t;
     };
 
-    // Exactly 4.0 seconds cinematic logo animation centered for all screen sizes
-    schedule(() => setPhase('show'), 200);
-    schedule(() => setPhase('exit'), 3200);
+    // Instant static logo + text with zero animation (as per user reference images), then smooth exit
+    schedule(() => setPhase('exit'), 2000);
     schedule(() => {
       setPhase('done');
       onComplete();
-    }, 4000);
+    }, 2500);
 
     return () => timerRefs.current.forEach(clearTimeout);
   }, [onComplete]);
@@ -36,8 +35,8 @@ export function BrandIntroAnimation({ onComplete }: { onComplete: () => void }) 
         <img
           src={SPLASH_LOGO_URL}
           alt="DUNGEONS"
-          width="220"
-          height="220"
+          width="260"
+          height="260"
           fetchPriority="high"
           className="dungeons-splash-logo-img"
         />

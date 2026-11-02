@@ -2567,10 +2567,7 @@ button {
 }
 
 /* ============================================================
-   DUNGEONS CINEMATIC LOGO INTRO SPLASH (4s CENTERED LOGO)
-   ============================================================ */
-/* ============================================================
-   DUNGEONS CINEMATIC LOGO INTRO SPLASH (UPPER OF CENTER + TAGLINE)
+   DUNGEONS STATIC INTRO SPLASH (MOBILE & DESKTOP MATCHING USER IMAGES)
    ============================================================ */
 .dungeons-splash-intro-overlay {
   position: fixed;
@@ -2584,7 +2581,7 @@ button {
   justify-content: center;
   overflow: hidden;
   opacity: 1;
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s ease;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
   pointer-events: all;
 }
 
@@ -2602,9 +2599,9 @@ button {
   width: 100%;
   max-width: 520px;
   margin: auto;
-  padding: 24px 20px;
-  /* Positioned a little upper of center as requested */
-  transform: translateY(-9vh);
+  padding: 20px;
+  /* Exactly positioned slightly above center matching mobile and desktop images */
+  transform: translateY(-7vh);
   text-align: center;
   background: transparent;
   border: none;
@@ -2612,92 +2609,49 @@ button {
 }
 
 .dungeons-splash-logo-img {
-  width: 100%;
-  max-width: 250px;
+  width: 220px;
+  max-width: 65vw;
   height: auto;
   object-fit: contain;
   background: transparent;
   border: none;
   outline: none;
   box-shadow: none;
-  animation: dungeons-logo-cinematic 3.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* NO animation: immediate static crisp display */
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
 }
 
 .dungeons-splash-tagline {
-  margin: 18px 0 0 0;
-  font-family: 'Cinzel', 'Playfair Display', 'Cinzel Decorative', Georgia, serif;
-  font-size: clamp(10px, 3.2vw, 15px);
+  margin: 14px 0 0 0;
+  font-family: 'Comfortaa', 'Quicksand', 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: clamp(13px, 3.6vw, 16px);
   font-weight: 600;
-  color: #1e293b;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  color: #0b2545;
+  letter-spacing: 0.01em;
+  text-transform: none !important;
   white-space: nowrap !important;
-  animation: dungeons-tagline-cinematic 3.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  opacity: 0;
-  line-height: 1.5;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  /* NO animation: immediate static crisp display */
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  line-height: 1.4;
 }
 
 @media (min-width: 640px) {
   .dungeons-splash-logo-container {
-    transform: translateY(-10vh);
+    transform: translateY(-8vh);
   }
   .dungeons-splash-logo-img {
-    max-width: 280px;
+    width: 270px;
+    max-width: 320px;
   }
   .dungeons-splash-tagline {
-    font-size: 15px;
-    letter-spacing: 0.26em;
-    margin-top: 22px;
-  }
-}
-
-@keyframes dungeons-logo-cinematic {
-  0% {
-    opacity: 0;
-    transform: scale(0.78);
-    filter: blur(8px);
-  }
-  18% {
-    opacity: 1;
-    transform: scale(1);
-    filter: blur(0px);
-  }
-  80% {
-    opacity: 1;
-    transform: scale(1.04);
-    filter: blur(0px);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.07);
-    filter: blur(5px);
-  }
-}
-
-@keyframes dungeons-tagline-cinematic {
-  0%, 15% {
-    opacity: 0;
-    transform: translateY(14px) scale(0.96);
-    filter: blur(6px);
-    letter-spacing: 0.16em;
-  }
-  32% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0px);
-    letter-spacing: 0.22em;
-  }
-  80% {
-    opacity: 1;
-    transform: translateY(0) scale(1.02);
-    filter: blur(0px);
-    letter-spacing: 0.24em;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-4px) scale(1.04);
-    filter: blur(4px);
+    font-size: 16px;
+    margin-top: 16px;
+    letter-spacing: 0.02em;
   }
 }
 
@@ -2988,17 +2942,20 @@ button {
 
 .btn-add-to-cart-cyan {
   flex: 1;
+  min-width: 0;
   height: 50px;
   background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
   color: #ffffff;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: clamp(12px, 3.2vw, 14px);
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
+  padding: 0 10px;
+  white-space: nowrap !important;
   box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -3006,6 +2963,35 @@ button {
 .btn-add-to-cart-cyan:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45);
+}
+
+@media (max-width: 480px) {
+  .product-actions-primary-row {
+    gap: 8px !important;
+  }
+  .product-actions-primary-row .stepper-box {
+    height: 46px;
+    padding: 0 2px;
+  }
+  .product-actions-primary-row .stepper-btn {
+    width: 28px;
+    font-size: 15px;
+  }
+  .product-actions-primary-row .stepper-val {
+    min-width: 22px;
+    font-size: 13.5px;
+  }
+  .btn-add-to-cart-cyan {
+    height: 46px;
+    padding: 0 8px;
+    font-size: 12px;
+    gap: 5px;
+    white-space: nowrap !important;
+  }
+  .btn-wishlist-pdp {
+    width: 46px !important;
+    height: 46px !important;
+  }
 }
 
 /* WISHLIST BUTTON IN PDP ACTIONS (PAGE 8) */
@@ -7195,15 +7181,18 @@ button {
 .checkout-trust-badge-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 800;
   color: #047857;
   background-color: #ecfdf5;
   border: 1px solid #a7f3d0;
-  padding: 3px 10px;
+  padding: 6px 18px;
+  min-width: 160px;
+  text-align: center;
   border-radius: 9999px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
 
 .checkout-stepper-card {
@@ -7286,12 +7275,13 @@ button {
 }
 
 .step-title-heading {
-  font-size: 13.5px;
+  font-size: clamp(12.5px, 3.6vw, 14px);
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: #0f172a;
   margin: 0;
+  white-space: nowrap !important;
 }
 
 .step-edit-btn {
@@ -9057,11 +9047,11 @@ button {
 .myntra-item-card {
   background-color: #ffffff;
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   border: 1px solid #e2e8f0;
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center; /* Vertically center poster box and description like Flipkart and Myntra */
+  gap: 14px;
   position: relative;
   margin-bottom: 10px;
   transition: all 0.2s ease;
@@ -9084,7 +9074,6 @@ button {
   overflow: hidden;
   background-color: #f3f4f6;
   flex-shrink: 0;
-  align-self: flex-start;
 }
 
 .myntra-thumb-img {
@@ -9715,15 +9704,16 @@ button {
 }
 
 .myntra-card-actions-footer {
-  margin-top: 2.5px;
+  margin-top: 6px;
   display: flex;
   align-items: center;
+  gap: 2px;
 }
 
 .myntra-btn-save-later {
   background: transparent;
   border: none;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   color: #2563eb;
   display: inline-flex;
@@ -9736,6 +9726,29 @@ button {
 
 .myntra-btn-save-later:hover {
   opacity: 0.8;
+}
+
+.myntra-btn-remove-red {
+  background: transparent;
+  border: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #ef4444;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.myntra-btn-remove-red:hover {
+  color: #dc2626;
+}
+
+.myntra-actions-divider {
+  color: #cbd5e1;
+  font-size: 11px;
 }
 
 /* 2. SWIGGY STYLE COUPON ACCORDION BOX */
@@ -10171,100 +10184,188 @@ button {
   color: #0f172a;
 }
 
-/* Premium E-Commerce Minimum Order Box (Swiggy / Zepto / Myntra Style) */
-.min-order-highlight-card {
-  margin: 18px 0 16px !important;
-  padding: 16px 18px !important;
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
-  border: 1.5px solid #fde68a !important;
-  border-radius: 16px !important;
-  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.08) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 12px !important;
-  box-sizing: border-box !important;
+/* MYNTRA MINIMUM ORDER POPUP MODAL */
+.myntra-min-order-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background-color: rgba(15, 23, 42, 0.68);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease-out forwards;
 }
 
-.min-order-card-header {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 10px !important;
+.myntra-min-order-modal-card {
+  position: relative;
+  background-color: #ffffff;
+  border-radius: 20px;
+  padding: 26px 20px 22px;
+  max-width: 340px;
+  width: 100%;
+  box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-sizing: border-box;
 }
 
-.min-order-title-group {
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
+.myntra-min-order-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #f1f5f9;
+  border: none;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.min-order-icon-badge {
-  width: 26px !important;
-  height: 26px !important;
-  border-radius: 50% !important;
-  background-color: #f59e0b !important;
-  color: #ffffff !important;
+.myntra-min-order-close-btn:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+}
+
+.myntra-min-order-icon-badge {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background-color: #fff1f2;
+  border: 1.5px solid #ffe4e6;
+  color: #ff3f6c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.myntra-min-order-modal-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px 0;
+}
+
+.myntra-min-order-modal-desc {
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+  padding: 0 6px;
+}
+
+.myntra-min-order-breakdown-box {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  width: 100%;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+.myntra-min-order-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #475569;
+}
+
+.myntra-min-order-row-val {
+  color: #0f172a;
+}
+
+.myntra-min-order-divider {
+  border-top: 1px dashed #cbd5e1;
+  margin: 4px 0;
+}
+
+.myntra-min-order-shortfall-row {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #ff3f6c;
+}
+
+.myntra-min-order-shortfall-val {
+  font-size: 14px;
+  font-weight: 800;
+  color: #ff3f6c;
+}
+
+.myntra-min-order-actions-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.myntra-min-order-primary-btn {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 13px !important;
-  font-weight: 900 !important;
-  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35) !important;
-  flex-shrink: 0 !important;
-}
-
-.min-order-title-text {
-  font-size: 13px !important;
+  gap: 8px;
+  width: 100%;
+  height: 46px;
+  border-radius: 12px;
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  font-size: 12.5px !important;
   font-weight: 800 !important;
-  color: #78350f !important;
-  letter-spacing: 0.03em !important;
+  letter-spacing: 0.04em !important;
   text-transform: uppercase !important;
+  text-decoration: none !important;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+  transition: all 0.15s ease;
+  box-sizing: border-box;
 }
 
-.min-order-chip-shortfall {
-  background-color: #fef3c7 !important;
-  border: 1px solid #f59e0b !important;
-  color: #92400e !important;
-  font-size: 11px !important;
-  font-weight: 800 !important;
-  padding: 4px 10px !important;
-  border-radius: 9999px !important;
-  white-space: nowrap !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+.myntra-min-order-primary-btn span {
+  color: #ffffff !important;
 }
 
-.min-order-track-bg {
-  width: 100% !important;
-  height: 8px !important;
-  background-color: #fde68a !important;
-  border-radius: 9999px !important;
-  overflow: hidden !important;
-  position: relative !important;
+.myntra-min-order-primary-btn:hover {
+  background-color: #1e293b !important;
+  transform: translateY(-1px);
 }
 
-.min-order-track-fill {
-  height: 100% !important;
-  background: linear-gradient(90deg, #f59e0b, #d97706) !important;
-  border-radius: 9999px !important;
-  transition: width 0.4s ease !important;
+.myntra-min-order-secondary-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 38px;
+  border-radius: 12px;
+  background-color: transparent;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.min-order-stats-row {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  font-size: 11.5px !important;
-  font-weight: 700 !important;
-  color: #92400e !important;
-}
-
-.min-order-notice-text {
-  font-size: 12px !important;
-  color: #78350f !important;
-  line-height: 1.4 !important;
-  margin: 0 !important;
-  padding-top: 6px !important;
-  border-top: 1px dashed rgba(217, 119, 6, 0.25) !important;
+.myntra-min-order-secondary-btn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
 }
 
 .myntra-savings-green-banner {
