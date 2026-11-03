@@ -118,51 +118,59 @@ export function HomePage() {
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const { products: liveProducts, isLoading } = useLiveProductsWithStatus();
 
-  // Distinct curated sections on HomePage with zero overlapping posters (5 posters each, single row):
+  // Distinct curated sections on HomePage with zero mixed badges:
+  // 1. Best Sellers: STRICTLY Bestseller posters with BEST SELLER badge only
   const bestSellers = useMemo(() => {
     if (!liveProducts || liveProducts.length === 0) return [];
-    const curated = liveProducts.filter((p) => p.bestseller || p.featured);
-    if (curated.length >= 5) return curated.slice(0, 5);
-    return liveProducts.slice(0, 5);
+    const filtered = liveProducts.filter((p) => Boolean(p.bestseller || (p as any).isBestSeller));
+    const pool = filtered.length >= 5 ? filtered : liveProducts;
+    return pool.slice(0, 10).map((p) => ({
+      ...p,
+      bestseller: true,
+      newArrival: false,
+      trending: false,
+    }));
   }, [liveProducts]);
 
+  // 2. Trending: STRICTLY Trending posters with 🔥 TRENDING badge only
   const trending = useMemo(() => {
     if (!liveProducts || liveProducts.length === 0) return [];
     const bestSellerIds = new Set(bestSellers.map((p) => p.id));
-    const trendingMatches = liveProducts.filter(
+    const filtered = liveProducts.filter(
       (p) =>
         !bestSellerIds.has(p.id) &&
-        (p.collection === 'football' ||
-          p.collection === 'sports' ||
-          p.category === 'SPORTS' ||
-          p.category === 'ANIME' ||
-          p.tags?.some((t) => typeof t === 'string' && (t.toLowerCase().includes('football') || t.toLowerCase().includes('sport') || t.toLowerCase().includes('trending'))))
+        Boolean(
+          p.trending ||
+          (p as any).isStaffPick ||
+          p.featured ||
+          p.tags?.some((t) => typeof t === 'string' && t.toLowerCase().includes('trending'))
+        )
     );
-    if (trendingMatches.length >= 5) {
-      return trendingMatches.slice(0, 5);
-    }
-    const leftovers = liveProducts.filter((p) => !bestSellerIds.has(p.id));
-    return [...trendingMatches, ...leftovers].slice(0, 5);
+    const pool = filtered.length >= 5 ? filtered : liveProducts.filter((p) => !bestSellerIds.has(p.id));
+    return pool.slice(0, 10).map((p) => ({
+      ...p,
+      bestseller: false,
+      newArrival: false,
+      trending: true,
+    }));
   }, [liveProducts, bestSellers]);
 
+  // 3. New Arrivals: STRICTLY New Arrival posters with ⚡ NEW ARRIVALS badge only
   const newArrivals = useMemo(() => {
     if (!liveProducts || liveProducts.length === 0) return [];
     const usedIds = new Set([...bestSellers.map((p) => p.id), ...trending.map((p) => p.id)]);
-    const arrivalMatches = liveProducts.filter(
+    const filtered = liveProducts.filter(
       (p) =>
         !usedIds.has(p.id) &&
-        (p.collection === 'marvel-dc' ||
-          p.category === 'MARVEL-DC' ||
-          p.category === 'MOVIES' ||
-          p.category === 'AESTHETIC' ||
-          p.tags?.some((t) => typeof t === 'string' && (t.toLowerCase().includes('marvel') || t.toLowerCase().includes('dc') || t.toLowerCase().includes('spider') || t.toLowerCase().includes('batman'))) ||
-          p.newArrival)
+        Boolean(p.newArrival || (p as any).isNewRelease || p.tags?.some((t) => typeof t === 'string' && t.toLowerCase().includes('new')))
     );
-    if (arrivalMatches.length >= 5) {
-      return arrivalMatches.slice(0, 5);
-    }
-    const leftovers = liveProducts.filter((p) => !usedIds.has(p.id));
-    return [...arrivalMatches, ...leftovers].slice(0, 5);
+    const pool = filtered.length >= 5 ? filtered : liveProducts.filter((p) => !usedIds.has(p.id));
+    return pool.slice(0, 10).map((p) => ({
+      ...p,
+      bestseller: false,
+      newArrival: true,
+      trending: false,
+    }));
   }, [liveProducts, bestSellers, trending]);
 
   const customCategories = [

@@ -1164,9 +1164,10 @@ button.desktop-nav-item:hover {
 
 /* Authentic Instagram Story Gradient Ring (Default / Coming Soon) */
 .cat-img-wrap.insta-story-ring {
-  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 22%, #dc2743 45%, #cc2366 70%, #bc1888 88%, #8a3ab9 100%);
   padding: 2.5px;
-  box-shadow: 0 3px 10px rgba(220, 39, 67, 0.22);
+  border-radius: 50%;
+  box-shadow: 0 3px 12px rgba(220, 39, 67, 0.28);
   overflow: visible;
   border: none;
 }
@@ -1180,21 +1181,22 @@ button.desktop-nav-item:hover {
 /* Instagram Close Friends Story Green Ring for Available Items (First Circle) */
 .cat-img-wrap.available-ring,
 .cat-img-wrap.insta-story-ring.available-ring {
-  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%) !important;
+  background: linear-gradient(135deg, #00ba34 0%, #10b981 50%, #059669 100%) !important;
   padding: 2.5px !important;
-  box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35) !important;
+  border-radius: 50%;
+  box-shadow: 0 3px 12px rgba(0, 186, 52, 0.38) !important;
 }
 
 .cat-clickable:hover .cat-img-wrap.available-ring,
 .cat-clickable:hover .cat-img-wrap.insta-story-ring.available-ring {
   transform: scale(1.05);
-  box-shadow: 0 5px 16px rgba(16, 185, 129, 0.45) !important;
+  box-shadow: 0 5px 16px rgba(0, 186, 52, 0.5) !important;
 }
 
 .cat-clickable:hover .cat-img-wrap.insta-story-ring,
 .cat-soon-card:hover .cat-img-wrap.insta-story-ring {
   transform: scale(1.05);
-  box-shadow: 0 5px 16px rgba(220, 39, 67, 0.35);
+  box-shadow: 0 5px 16px rgba(220, 39, 67, 0.4);
 }
 
 /* White space ring between gradient ring and inner photo */
@@ -2950,8 +2952,8 @@ button.desktop-nav-item:hover {
   align-items: center;
   justify-content: flex-start;
   width: 100%;
-  margin-top: 25.8vh;
-  margin-top: 25.8dvh; /* EXACT 25.8% from top as in user's 472x1024 reference image */
+  margin-top: 18.5vh;
+  margin-top: 18.5dvh; /* Positioned slightly higher on screen as requested */
   padding: 0;
   text-align: center;
   background: transparent;
