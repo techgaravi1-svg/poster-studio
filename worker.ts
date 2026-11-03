@@ -1,5 +1,5 @@
 interface Env {
-  ASSETS: {
+  ASSETS?: {
     fetch: (request: Request | string) => Promise<Response>;
   };
   VERCEL_API_URL?: string;
@@ -42,7 +42,11 @@ export default {
     }
 
     // Serve static assets with single-page-application routing via Cloudflare Assets
-    return env.ASSETS.fetch(request);
+    if (env.ASSETS && typeof env.ASSETS.fetch === 'function') {
+      return env.ASSETS.fetch(request);
+    }
+
+    return fetch(request);
   },
 };
 
