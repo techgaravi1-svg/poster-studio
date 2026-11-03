@@ -28625,6 +28625,15 @@ if (process.env.NODE_ENV !== "production") {
 
 // src/routes/health.ts
 var router = (0, import_express.Router)();
+router.get("/", (_req, res) => {
+  res.json({
+    status: "online",
+    service: "Dungeons Poster Studio Backend API",
+    database: "Prisma PostgreSQL",
+    endpoints: ["/api/products", "/api/orders", "/api/coupons", "/api/healthz"],
+    timestamp: (/* @__PURE__ */ new Date()).toISOString()
+  });
+});
 router.get("/healthz", async (_req, res) => {
   const startTime = Date.now();
   let dbStatus = "disconnected";

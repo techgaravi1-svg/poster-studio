@@ -269,45 +269,39 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     console.log("[vercel-build] Successfully bundled Prisma runtime and generated client for Vercel!");
   }
 
-  // 2d. Copy SPA static files into .vercel/output/static/
-  const spaDistDir = path.resolve(workspaceRoot, "artifacts/poster-studio/dist");
-  if (!existsSync(spaDistDir)) {
-    throw new Error(
-      `[vercel-build] SPA dist not found at ${spaDistDir}. Build poster-studio first.`
-    );
-  }
-  await cp(spaDistDir, vercelStatic, { recursive: true });
-  console.log("[vercel-build] Copied SPA static files to .vercel/output/static/");
+  // 2d. Pure Backend API Mode:
+  // Do NOT copy heavy SPA frontend assets to Vercel so Vercel NEVER consumes Fast Data Transfer.
+  // All static images, JS, CSS, and HTML are served 100% by Cloudflare.
+  await writeFile(
+    path.resolve(vercelStatic, "index.json"),
+    JSON.stringify({
+      status: "online",
+      service: "Dungeons Poster Studio Backend API",
+      provider: "Vercel Serverless Functions",
+      timestamp: new Date().toISOString(),
+    }, null, 2),
+    "utf-8"
+  );
+  console.log("[vercel-build] Configured pure API mode (0 frontend assets on Vercel, 0 Fast Transfer usage)");
 
   // 2e. Write routing config.json
   //     - /api and /api/* → serverless function
-  //     - Static assets served by CDN
-  //     - All other paths → index.html (SPA fallback)
+  //     - Root / → API status JSON
   await writeFile(
     path.resolve(vercelOutput, "config.json"),
     JSON.stringify(
       {
         version: 3,
         routes: [
-          // Static asset cache headers (hashed filenames from Vite)
-          {
-            src: "^/assets/(.+)$",
-            headers: { "cache-control": "public, max-age=31536000, immutable" },
-            continue: true,
-          },
-          // Let Vercel serve static files that exist directly from Edge CDN (0 origin transfer)
-          {
-            handle: "filesystem",
-          },
           // API routes → serverless function at /api.func/
           {
             src: "^/api(/.*)?$",
             dest: "/api",
           },
-          // SPA fallback — any unmatched path (excluding /api) gets index.html
+          // Root or health checks → API status JSON
           {
-            src: "^/(?!api).*$",
-            dest: "/index.html",
+            src: "^/.*$",
+            dest: "/index.json",
           },
         ],
       },

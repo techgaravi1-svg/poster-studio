@@ -3,6 +3,16 @@ import { prisma } from '@workspace/db';
 
 const router: Router = Router();
 
+router.get('/', (_req: Request, res: Response) => {
+  res.json({
+    status: 'online',
+    service: 'Dungeons Poster Studio Backend API',
+    database: 'Prisma PostgreSQL',
+    endpoints: ['/api/products', '/api/orders', '/api/coupons', '/api/healthz'],
+    timestamp: new Date().toISOString(),
+  });
+});
+
 /**
  * Health check endpoint: verifies API server and Prisma PostgreSQL database connection.
  * Never leaks credentials or sensitive internal stack details.
