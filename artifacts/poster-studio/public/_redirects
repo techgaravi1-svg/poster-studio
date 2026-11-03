@@ -1,6 +1,0 @@
-# Cloudflare Pages Proxy Configuration
-# Proxies all /api/* database requests directly to Vercel Serverless Backend
-/api/*  https://dungeons-api.vercel.app/api/:splat  200
-
-# Single Page Application (SPA) routing fallback
-/*  /index.html  200
