@@ -33570,6 +33570,7 @@ var ProductMutationSchema = external_exports.object({
   stock: external_exports.number().int().nonnegative().default(50),
   isBestSeller: external_exports.boolean().default(false),
   isNewRelease: external_exports.boolean().default(false),
+  isTrending: external_exports.boolean().optional(),
   isActive: external_exports.boolean().default(true)
 });
 var CouponMutationSchema = external_exports.object({
@@ -33778,7 +33779,15 @@ router7.post("/admin/products", requireAdminAuth, async (req, res) => {
         details: parsed.error.format()
       });
     }
-    const productData = { ...parsed.data };
+    const { isTrending, ...rawProductData } = parsed.data;
+    const productData = { ...rawProductData };
+    if (isTrending) {
+      productData.isStaffPick = true;
+      if (!Array.isArray(productData.tags)) productData.tags = [];
+      if (!productData.tags.some((t) => t.toLowerCase() === "trending")) {
+        productData.tags.push("trending");
+      }
+    }
     if (Array.isArray(productData.images) && productData.images.length > 0) {
       productData.images = await Promise.all(
         productData.images.map(
@@ -33825,7 +33834,19 @@ router7.put("/admin/products/:id", requireAdminAuth, async (req, res) => {
     if (!existing) {
       return res.status(404).json({ success: false, error: "Product not found" });
     }
-    const productData = { ...parsed.data };
+    const { isTrending, ...rawProductData } = parsed.data;
+    const productData = { ...rawProductData };
+    if (isTrending !== void 0) {
+      if (!Array.isArray(productData.tags)) productData.tags = [];
+      if (isTrending) {
+        productData.isStaffPick = true;
+        if (!productData.tags.some((t) => t.toLowerCase() === "trending")) {
+          productData.tags.push("trending");
+        }
+      } else {
+        productData.tags = productData.tags.filter((t) => t.toLowerCase() !== "trending");
+      }
+    }
     if (Array.isArray(productData.images) && productData.images.length > 0) {
       productData.images = await Promise.all(
         productData.images.map(

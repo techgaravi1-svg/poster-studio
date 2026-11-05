@@ -154,6 +154,7 @@ const ProductMutationSchema = z.object({
   stock: z.number().int().nonnegative().default(50),
   isBestSeller: z.boolean().default(false),
   isNewRelease: z.boolean().default(false),
+  isTrending: z.boolean().optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -407,7 +408,15 @@ router.post('/admin/products', requireAdminAuth, async (req: Request, res: Respo
       });
     }
 
-    const productData = { ...parsed.data } as any;
+    const { isTrending, ...rawProductData } = parsed.data as any;
+    const productData = { ...rawProductData };
+    if (isTrending) {
+      productData.isStaffPick = true;
+      if (!Array.isArray(productData.tags)) productData.tags = [];
+      if (!productData.tags.some((t: string) => t.toLowerCase() === 'trending')) {
+        productData.tags.push('trending');
+      }
+    }
 
     // Automatically convert any base64 images to Cloudinary CDN URLs before DB save
     if (Array.isArray(productData.images) && productData.images.length > 0) {
@@ -465,7 +474,19 @@ router.put('/admin/products/:id', requireAdminAuth, async (req: Request, res: Re
       return res.status(404).json({ success: false, error: 'Product not found' });
     }
 
-    const productData = { ...parsed.data } as any;
+    const { isTrending, ...rawProductData } = parsed.data as any;
+    const productData = { ...rawProductData };
+    if (isTrending !== undefined) {
+      if (!Array.isArray(productData.tags)) productData.tags = [];
+      if (isTrending) {
+        productData.isStaffPick = true;
+        if (!productData.tags.some((t: string) => t.toLowerCase() === 'trending')) {
+          productData.tags.push('trending');
+        }
+      } else {
+        productData.tags = productData.tags.filter((t: string) => t.toLowerCase() !== 'trending');
+      }
+    }
 
     // Automatically convert any base64 images to Cloudinary CDN URLs before DB update
     if (Array.isArray(productData.images) && productData.images.length > 0) {

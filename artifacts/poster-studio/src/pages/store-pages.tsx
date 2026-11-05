@@ -272,21 +272,56 @@ export function HomePage() {
     },
   ];
 
+  const [heroPaused, setHeroPaused] = useState(false);
+  const categoryTrackRef = useRef<HTMLDivElement>(null);
+  const [canScrollCatLeft, setCanScrollCatLeft] = useState(false);
+  const [canScrollCatRight, setCanScrollCatRight] = useState(true);
+
+  const checkCatScroll = () => {
+    const el = categoryTrackRef.current;
+    if (!el) return;
+    const isOverflowing = el.scrollWidth > el.clientWidth + 15;
+    setCanScrollCatLeft(isOverflowing && el.scrollLeft > 10);
+    setCanScrollCatRight(isOverflowing && el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+  };
+
   useEffect(() => {
+    const el = categoryTrackRef.current;
+    if (!el) return;
+    checkCatScroll();
+    el.addEventListener('scroll', checkCatScroll, { passive: true });
+    window.addEventListener('resize', checkCatScroll);
+    return () => {
+      el.removeEventListener('scroll', checkCatScroll);
+      window.removeEventListener('resize', checkCatScroll);
+    };
+  }, []);
+
+  const scrollCat = (direction: 'left' | 'right') => {
+    const el = categoryTrackRef.current;
+    if (!el) return;
+    const amount = direction === 'left' ? -340 : 340;
+    el.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (heroPaused) return;
     const timer = setInterval(() => {
       setBannerSlide((prev) => (prev + 1) % heroSlides.length);
     }, 4500);
     return () => clearInterval(timer);
-  }, [heroSlides.length]);
+  }, [heroSlides.length, heroPaused]);
 
   return (
     <main className="postgenz-home-page">
-      {/* 1. HD HERO BANNER SLIDER OF HERO 1, 2, 3 WITH SMOOTH SLIDING ANIMATION */}
+      {/* 1. PREMIUM HD HERO BANNER SLIDER WITH SMOOTH CUBIC EASING & GLASS CONTROLS */}
       <section className="home-hero-banner-section">
         <div
           className="hd-hero-slider-wrapper"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
+          onMouseEnter={() => setHeroPaused(true)}
+          onMouseLeave={() => setHeroPaused(false)}
         >
           <div
             className="hd-hero-slides-track"
@@ -296,8 +331,8 @@ export function HomePage() {
               <div key={slide.id} className="hd-hero-slide-item">
                 <Link href={slide.link} className="hd-hero-slide-link">
                   <img
-                    src={optimizeCloudinary(slide.image, 1200, 80)}
-                    srcSet={`${optimizeCloudinary(slide.image, 640, 80)} 640w, ${optimizeCloudinary(slide.image, 1200, 80)} 1200w`}
+                    src={optimizeCloudinary(slide.image, 1400, 85)}
+                    srcSet={`${optimizeCloudinary(slide.image, 640, 80)} 640w, ${optimizeCloudinary(slide.image, 1200, 85)} 1200w, ${optimizeCloudinary(slide.image, 1600, 85)} 1600w`}
                     sizes="(max-width: 640px) 100vw, 100vw"
                     alt={slide.title}
                     className="hd-hero-full-img"
@@ -311,14 +346,14 @@ export function HomePage() {
             ))}
           </div>
 
-          {/* Navigation Arrows */}
+          {/* Premium Modern Navigation Chevrons */}
           <button
             type="button"
             className="hd-hero-arrow hd-hero-arrow-prev"
             onClick={() => setBannerSlide((prev) => (prev === 0 ? heroSlides.length - 1 : prev - 1))}
             aria-label="Previous slide"
           >
-            ‹
+            <ChevronLeft size={22} strokeWidth={2.4} />
           </button>
           <button
             type="button"
@@ -326,37 +361,78 @@ export function HomePage() {
             onClick={() => setBannerSlide((prev) => (prev + 1) % heroSlides.length)}
             aria-label="Next slide"
           >
-            ›
+            <ChevronRight size={22} strokeWidth={2.4} />
           </button>
 
-          {/* Dot Indicators */}
-          <div className="hd-slider-dots">
-            {heroSlides.map((_, idx) => (
-              <button
-                type="button"
-                key={idx}
-                className={`hd-dot ${bannerSlide === idx ? 'dot-active' : ''}`}
-                onClick={() => setBannerSlide(idx)}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
+          {/* Premium Floating Dot Indicators */}
+          <div className="hd-slider-dots-wrapper">
+            <div className="hd-slider-dots">
+              {heroSlides.map((_, idx) => (
+                <button
+                  type="button"
+                  key={idx}
+                  className={`hd-dot ${bannerSlide === idx ? 'dot-active' : ''}`}
+                  onClick={() => setBannerSlide(idx)}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 2. CATEGORY ICONS ROW (ALL 9 OFFICIAL CATEGORIES - INSTA STORY RINGS) */}
+      {/* 2. CATEGORY ICONS ROW (ALL 9 OFFICIAL CATEGORIES - INSTA STORY RINGS WITH MYNTRA-STYLE SLIDER) */}
       <section className="home-categories-row-section">
-        <div className="categories-scroll-track">
-          {storeCategories.map((cat) => {
-            if (cat.available) {
+        <div className="categories-slider-container">
+          {canScrollCatLeft && (
+            <button
+              type="button"
+              className="cat-slider-nav-btn cat-slider-nav-prev"
+              onClick={() => scrollCat('left')}
+              aria-label="Scroll categories left"
+            >
+              <ChevronLeft size={20} strokeWidth={2.5} />
+            </button>
+          )}
+
+          <div
+            ref={categoryTrackRef}
+            className="categories-scroll-track"
+          >
+            {storeCategories.map((cat) => {
+              if (cat.available) {
+                return (
+                  <Link key={cat.id} href="/collections/posters" className="cat-icon-card cat-clickable">
+                    <div className="cat-img-wrap insta-story-ring available-ring">
+                      <div className="cat-img-inner">
+                        <img
+                          src={optimizeCloudinary(cat.image, 180, 80)}
+                          alt={cat.name}
+                          className="cat-img"
+                          width="83"
+                          height="83"
+                          loading="lazy"
+                        />
+                      </div>
+                    </div>
+                    <span className="cat-name">{cat.name}</span>
+                    <span className="cat-status-chip active-chip">Available</span>
+                  </Link>
+                );
+              }
               return (
-                <Link key={cat.id} href="/collections/posters" className="cat-icon-card cat-clickable">
-                  <div className="cat-img-wrap insta-story-ring available-ring">
+                <div
+                  key={cat.id}
+                  className="cat-icon-card cat-soon-card not-clickable"
+                  title={`${cat.name} (Coming Soon)`}
+                  aria-disabled="true"
+                >
+                  <div className="cat-img-wrap insta-story-ring disabled-ring">
                     <div className="cat-img-inner">
                       <img
                         src={optimizeCloudinary(cat.image, 180, 80)}
                         alt={cat.name}
-                        className="cat-img"
+                        className="cat-img modern-soon-img"
                         width="83"
                         height="83"
                         loading="lazy"
@@ -364,34 +440,22 @@ export function HomePage() {
                     </div>
                   </div>
                   <span className="cat-name">{cat.name}</span>
-                  <span className="cat-status-chip active-chip">Available</span>
-                </Link>
-              );
-            }
-            return (
-              <div
-                key={cat.id}
-                className="cat-icon-card cat-soon-card not-clickable"
-                title={`${cat.name} (Coming Soon)`}
-                aria-disabled="true"
-              >
-                <div className="cat-img-wrap insta-story-ring disabled-ring">
-                  <div className="cat-img-inner">
-                    <img
-                      src={optimizeCloudinary(cat.image, 180, 80)}
-                      alt={cat.name}
-                      className="cat-img modern-soon-img"
-                      width="83"
-                      height="83"
-                      loading="lazy"
-                    />
-                  </div>
+                  <span className="cat-status-chip soon-chip">Coming Soon</span>
                 </div>
-                <span className="cat-name">{cat.name}</span>
-                <span className="cat-status-chip soon-chip">Coming Soon</span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {canScrollCatRight && (
+            <button
+              type="button"
+              className="cat-slider-nav-btn cat-slider-nav-next"
+              onClick={() => scrollCat('right')}
+              aria-label="Scroll categories right"
+            >
+              <ChevronRight size={20} strokeWidth={2.5} />
+            </button>
+          )}
         </div>
       </section>
 
@@ -694,6 +758,36 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
 
   const [dynamicCats, setDynamicCats] = useState<DynamicPosterCategory[]>(getDynamicPosterCategories);
 
+  const pillsTrackRef = useRef<HTMLDivElement>(null);
+  const [canScrollPillsLeft, setCanScrollPillsLeft] = useState(false);
+  const [canScrollPillsRight, setCanScrollPillsRight] = useState(false);
+
+  const checkPillsScroll = () => {
+    const el = pillsTrackRef.current;
+    if (!el) return;
+    setCanScrollPillsLeft(el.scrollLeft > 10);
+    setCanScrollPillsRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+  };
+
+  useEffect(() => {
+    const el = pillsTrackRef.current;
+    if (!el) return;
+    checkPillsScroll();
+    el.addEventListener('scroll', checkPillsScroll, { passive: true });
+    window.addEventListener('resize', checkPillsScroll);
+    return () => {
+      el.removeEventListener('scroll', checkPillsScroll);
+      window.removeEventListener('resize', checkPillsScroll);
+    };
+  }, [dynamicCats]);
+
+  const scrollPills = (direction: 'left' | 'right') => {
+    const el = pillsTrackRef.current;
+    if (!el) return;
+    const amount = direction === 'left' ? -320 : 320;
+    el.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+
   useEffect(() => {
     const handler = () => {
       setDynamicCats(getDynamicPosterCategories());
@@ -706,7 +800,7 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
 
   const posterSubCategories = useMemo(() => {
     const list = [
-      { slug: 'all', label: 'ALL POSTERS' },
+      { slug: 'all', label: 'All Posters' },
       ...dynamicCats.map((c) => ({ slug: c.slug, label: c.title })),
     ];
     const seen = new Set(list.map((c) => c.slug));
@@ -715,7 +809,7 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
       if (pCat) {
         const slug = pCat.toLowerCase().replace(/ & /g, '-').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         if (slug && !seen.has(slug)) {
-          list.push({ slug, label: pCat.toUpperCase() });
+          list.push({ slug, label: pCat });
           seen.add(slug);
         }
       }
@@ -740,10 +834,16 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
       const targetSlug = activePosterSubSlug.toLowerCase();
       
       const normalizeCat = (val: string) => {
-        const s = (val || '').toLowerCase().trim().replace(/[\s_]+/g, '-');
+        const s = (val || '')
+          .toLowerCase()
+          .trim()
+          .replace(/ & /g, '-')
+          .replace(/[&]/g, '')
+          .replace(/[\s_]+/g, '-')
+          .replace(/-+/g, '-');
         if (s === 'football' || s === 'cricket') return 'sports';
-        if (s === 'automotive') return 'automative';
-        if (s === 'marvel' || s === 'dc') return 'marvel-dc';
+        if (s === 'automotive' || s === 'automative') return 'automative';
+        if (s === 'marvel' || s === 'dc' || s === 'marvel-dc' || s === 'marvel--dc') return 'marvel-dc';
         return s;
       };
 
@@ -808,12 +908,22 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
         <>
           {/* POSTER SUB-CATEGORY FILTER TABS */}
           <div className="category-pills-bar">
-            <div className="category-pills-scroll">
+            {canScrollPillsLeft && (
+              <button
+                type="button"
+                className="pills-scroll-arrow pills-scroll-prev"
+                onClick={() => scrollPills('left')}
+                aria-label="Scroll left"
+              >
+                <ChevronLeft size={18} strokeWidth={2.5} />
+              </button>
+            )}
+
+            <div ref={pillsTrackRef} className="category-pills-scroll">
               {posterSubCategories.map((sub) => {
                 const isActive =
                   sub.slug === activePosterSubSlug ||
-                  (sub.slug === 'all' && activePosterSubSlug === '') ||
-                  (sub.slug === 'devotional' && !params.slug && !bestsellers);
+                  (sub.slug === 'all' && (activePosterSubSlug === 'all' || !activePosterSubSlug));
                 const href = sub.slug === 'all' ? '/collections/posters' : `/collections/${sub.slug}`;
                 return (
                   <Link
@@ -826,6 +936,17 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
                 );
               })}
             </div>
+
+            {canScrollPillsRight && (
+              <button
+                type="button"
+                className="pills-scroll-arrow pills-scroll-next"
+                onClick={() => scrollPills('right')}
+                aria-label="Scroll right"
+              >
+                <ChevronRight size={18} strokeWidth={2.5} />
+              </button>
+            )}
           </div>
 
           {/* FILTER & VIEW TOOLBAR */}
@@ -2677,69 +2798,78 @@ export function WishlistPage() {
             </Link>
           </div>
         ) : (
-          <div className="four-col-laptop-grid mt-6">
-            {wishlistProducts.map((product) => {
-              const imageSrc = product.images?.[0];
-              return (
-                <article key={product.id} className="postgenz-product-card" data-testid={`card-product-${product.id}`}>
-                  <div className="product-media-wrap">
-                    <Link href={`/products/${product.slug}`} className="product-media-link">
-                      {product.bestseller ? (
-                        <div className="badge-best-seller">
-                          <span className="badge-icon">⚡</span> BEST SELLER
-                        </div>
-                      ) : product.newArrival ? (
-                        <div className="badge-new-arrival">
-                          <span className="badge-icon">⚡</span> NEW ARRIVALS
-                        </div>
-                      ) : (product.trending || product.featured) ? (
-                        <div className="badge-trending">
-                          <span className="badge-icon">🔥</span> TRENDING
-                        </div>
-                      ) : null}
-                      <PosterArt src={imageSrc} treatment={product.artTreatment} title={product.title} />
-                    </Link>
+          <>
+            <div className="four-col-laptop-grid mt-6">
+              {wishlistProducts.map((product) => {
+                const imageSrc = product.images?.[0];
+                return (
+                  <article key={product.id} className="postgenz-product-card" data-testid={`card-product-${product.id}`}>
+                    <div className="product-media-wrap">
+                      <Link href={`/products/${product.slug}`} className="product-media-link">
+                        {product.bestseller ? (
+                          <div className="badge-best-seller">
+                            <span className="badge-icon">⚡</span> BEST SELLER
+                          </div>
+                        ) : product.newArrival ? (
+                          <div className="badge-new-arrival">
+                            <span className="badge-icon">⚡</span> NEW ARRIVALS
+                          </div>
+                        ) : (product.trending || product.featured) ? (
+                          <div className="badge-trending">
+                            <span className="badge-icon">🔥</span> TRENDING
+                          </div>
+                        ) : null}
+                        <PosterArt src={imageSrc} treatment={product.artTreatment} title={product.title} />
+                      </Link>
 
-                    <button
-                      type="button"
-                      className="quick-cart-btn quick-wishlist-btn wishlist-active"
-                      aria-label={`Remove ${product.title} from Wishlist`}
-                      title="Remove from Wishlist"
-                      onClick={() => handleRemove(product)}
-                    >
-                      <Heart
-                        size={18}
-                        strokeWidth={2.2}
-                        fill="#ef4444"
-                        color="#ef4444"
-                      />
-                    </button>
-                  </div>
-
-                  <div className="product-info-block">
-                    <Link href={`/products/${product.slug}`} className="product-card-title">
-                      {product.title}
-                    </Link>
-                    <div className="product-price-row">
-                      <span className="current-price">{formatPrice(product.price)}</span>
-                      {product.compareAtPrice > product.price && (
-                        <del className="compare-price">{formatPrice(product.compareAtPrice)}</del>
-                      )}
+                      <button
+                        type="button"
+                        className="quick-cart-btn quick-wishlist-btn wishlist-active"
+                        aria-label={`Remove ${product.title} from Wishlist`}
+                        title="Remove from Wishlist"
+                        onClick={() => handleRemove(product)}
+                      >
+                        <Heart
+                          size={18}
+                          strokeWidth={2.2}
+                          fill="#ef4444"
+                          color="#ef4444"
+                        />
+                      </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleMoveToBag(product)}
-                      className="wishlist-bag-cta"
-                    >
-                      <ShoppingBag size={14} />
-                      <span>MOVE TO BAG</span>
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                    <div className="product-info-block">
+                      <Link href={`/products/${product.slug}`} className="product-card-title">
+                        {product.title}
+                      </Link>
+                      <div className="product-price-row">
+                        <span className="current-price">{formatPrice(product.price)}</span>
+                        {product.compareAtPrice > product.price && (
+                          <del className="compare-price">{formatPrice(product.compareAtPrice)}</del>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleMoveToBag(product)}
+                        className="wishlist-bag-cta"
+                      >
+                        <ShoppingBag size={14} />
+                        <span>MOVE TO BAG</span>
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            {/* Clean Spacing & Explore Button to match Homepage */}
+            <div className="explore-more-wrap wishlist-explore-more">
+              <Link href="/collections/posters" className="btn-explore-more">
+                EXPLORE MORE POSTERS
+              </Link>
+            </div>
+          </>
         )}
       </section>
       <Toast message={toast} />
@@ -4142,8 +4272,8 @@ export function OrderDetailPage() {
                 </span>
               </div>
               <div className="invoice-company-details">
-                <strong className="text-neutral-900 block font-bold">
-                  DUNGEONS CREATIVE STUDIO PRIVATE LIMITED
+                <strong className="text-neutral-900 block font-bold text-sm">
+                  Dungeons PVT LTD
                 </strong>
                 <span>Fulfillment Studio: 417, Satyamev Eminence, Science City Road, Sola</span><br />
                 <span>Ahmedabad, Gujarat - 380060, India</span><br />
@@ -4325,8 +4455,8 @@ export function OrderDetailPage() {
             </div>
 
             <div className="invoice-signatory-block">
-              <div>For <strong>DUNGEONS CREATIVE STUDIO PVT. LTD.</strong></div>
-              <div className="invoice-sign-signature">Dungeons Studio</div>
+              <div>For <strong>Dungeons PVT LTD</strong></div>
+              <div className="invoice-sign-signature">Dungeons PVT LTD</div>
               <div className="text-[9px] uppercase font-bold text-neutral-500">Authorized Signatory</div>
             </div>
           </div>

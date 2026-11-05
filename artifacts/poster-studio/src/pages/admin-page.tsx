@@ -113,6 +113,7 @@ interface AdminProduct {
   stock: number;
   isBestSeller: boolean;
   isNewRelease: boolean;
+  isTrending?: boolean;
   isActive: boolean;
   rating?: number;
   reviewsCount?: number;
@@ -325,8 +326,9 @@ export function AdminDashboardPage() {
       images: p.images,
       tags: p.tags,
       stock: p.stock || 50,
-      isBestSeller: Boolean(p.bestseller),
-      isNewRelease: Boolean(p.newArrival),
+      isBestSeller: Boolean(p.bestseller || (p as any).isBestSeller),
+      isNewRelease: Boolean(p.newArrival || (p as any).isNewRelease),
+      isTrending: Boolean((p as any).trending || (p as any).isTrending || (Array.isArray(p.tags) && p.tags.some((t: any) => typeof t === 'string' && t.toLowerCase() === 'trending'))),
       isActive: true,
     }));
   });
@@ -403,6 +405,7 @@ export function AdminDashboardPage() {
     stock: 50,
     isBestSeller: true,
     isNewRelease: false,
+    isTrending: false,
     rating: 4.9,
     reviewsCount: 148,
   };
@@ -817,6 +820,9 @@ export function AdminDashboardPage() {
     const reviewsVal = Number(productFormData.reviewsCount) >= 0 ? Number(productFormData.reviewsCount) : 148;
     cleanTags.push(`rating:${ratingVal}`);
     cleanTags.push(`reviews:${reviewsVal}`);
+    if (productFormData.isTrending && !cleanTags.some((t: string) => t.toLowerCase() === 'trending')) {
+      cleanTags.push('trending');
+    }
 
     let finalCategory = productFormData.category;
     if (isCustomCategoryMode && customCategoryInput.trim()) {
@@ -839,6 +845,7 @@ export function AdminDashboardPage() {
       tags: cleanTags,
       rating: ratingVal,
       reviewsCount: reviewsVal,
+      isTrending: Boolean(productFormData.isTrending),
       isActive: true,
     };
 
@@ -857,6 +864,7 @@ export function AdminDashboardPage() {
       stock: payload.stock,
       isBestSeller: Boolean(payload.isBestSeller),
       isNewRelease: Boolean(payload.isNewRelease),
+      isTrending: Boolean(payload.isTrending),
       isActive: true,
     };
 
@@ -919,6 +927,7 @@ export function AdminDashboardPage() {
         reviewsCount: payload.reviewsCount,
         bestseller: savedProduct.isBestSeller,
         newArrival: savedProduct.isNewRelease,
+        trending: Boolean(savedProduct.isTrending || payload.isTrending),
       });
 
       // Update React Admin state
@@ -2045,6 +2054,11 @@ export function AdminDashboardPage() {
                             Bestseller
                           </span>
                         )}
+                        {prod.isTrending && !prod.isBestSeller && (
+                          <span style={{ position: 'absolute', top: '8px', right: '8px', background: '#fb923c', color: '#000000', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase' }}>
+                            Trending
+                          </span>
+                        )}
                       </div>
 
                       <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
@@ -2120,6 +2134,7 @@ export function AdminDashboardPage() {
                                   stock: prod.stock,
                                   isBestSeller: prod.isBestSeller,
                                   isNewRelease: prod.isNewRelease,
+                                  isTrending: Boolean(prod.isTrending || (Array.isArray(prod.tags) && prod.tags.some((t: any) => typeof t === 'string' && t.toLowerCase() === 'trending'))),
                                   rating: prodRating,
                                   reviewsCount: prodReviews,
                                 });
@@ -2828,7 +2843,7 @@ export function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '20px', marginTop: '12px' }}>
+              <div style={{ display: 'flex', gap: '20px', marginTop: '12px', flexWrap: 'wrap' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px' }}>
                   <input
                     type="checkbox"
@@ -2844,6 +2859,14 @@ export function AdminDashboardPage() {
                     onChange={(e) => setProductFormData({ ...productFormData, isNewRelease: e.target.checked })}
                   />
                   <span>Mark as New Release</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px' }}>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(productFormData.isTrending)}
+                    onChange={(e) => setProductFormData({ ...productFormData, isTrending: e.target.checked })}
+                  />
+                  <span style={{ color: '#fb923c', fontWeight: 700 }}>🔥 Mark as Trending</span>
                 </label>
               </div>
 
@@ -2966,6 +2989,7 @@ export function AdminDashboardPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e5e7eb', paddingBottom: '20px' }}>
               <div>
                 <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349678/dungeons_store_assets/dungeons-logo_a828e3.png" alt="DUNGEONS" style={{ height: '32px', width: 'auto', marginBottom: '4px' }} />
+                <p style={{ fontSize: '13px', fontWeight: 800, color: '#111827', margin: '4px 0 2px' }}>Dungeons PVT LTD</p>
                 <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>Premium Archival Poster Prints</p>
                 <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0 0' }}>support@dungeons.com</p>
               </div>
@@ -3043,6 +3067,22 @@ export function AdminDashboardPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: '14px', borderTop: '1px solid #e5e7eb', paddingTop: '8px' }}>
                   <span>Total Amount Paid</span>
                   <span>{formatPrice(selectedInvoiceOrder.total)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '1px solid #e5e7eb', marginTop: '20px', paddingTop: '16px' }}>
+              <div style={{ fontSize: '10px', color: '#6b7280', maxWidth: '320px', lineHeight: 1.4 }}>
+                1. Computer-generated tax invoice issued by <strong>Dungeons PVT LTD</strong>.<br />
+                2. Goods covered under the 100% Quality &amp; Transit Defect Guarantee.
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '11px', color: '#374151' }}>For <strong>Dungeons PVT LTD</strong></div>
+                <div style={{ fontFamily: "'Dancing Script', cursive, serif", fontSize: '18px', fontWeight: 700, color: '#1e293b', margin: '4px 0' }}>
+                  Dungeons PVT LTD
+                </div>
+                <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', color: '#6b7280' }}>
+                  Authorized Signatory
                 </div>
               </div>
             </div>
