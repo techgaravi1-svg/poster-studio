@@ -45,7 +45,7 @@ import {
   FileText,
   Search,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, isPosterCategory, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, ProductCardSkeleton, Toast } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
@@ -1319,14 +1319,23 @@ export function ProductPage() {
     setOpenAccordion(openAccordion === name ? null : name);
   };
 
+  const isPoster = isPosterCategory(product.category);
+
   const availableStock = typeof product.stock === 'number' && !isNaN(product.stock)
     ? Math.max(0, product.stock)
     : 50;
   const isOutOfStock = availableStock <= 0;
 
+  const currentSizePrice = isPoster ? getProductSizePrice(product, selectedSize) : (product.price || 999);
+  const currentSizeCompare = isPoster ? getProductSizeComparePrice(product, selectedSize) : (product.compareAtPrice || Math.round((product.price || 999) * 2));
+  const currentSavings = Math.max(0, currentSizeCompare - currentSizePrice);
+  const discountPct = currentSizeCompare > currentSizePrice
+    ? Math.round(((currentSizeCompare - currentSizePrice) / currentSizeCompare) * 100)
+    : 0;
+
   const handleAddToCart = (buyNow = false) => {
     if (isOutOfStock) {
-      setToast('Sorry, this poster is currently out of stock.');
+      setToast(`Sorry, this ${isPoster ? 'poster' : 'product'} is currently out of stock.`);
       window.setTimeout(() => setToast(''), 3000);
       return;
     }
@@ -1342,33 +1351,25 @@ export function ProductPage() {
 
     const addQty = Math.min(quantity, availableStock - currentQty);
 
-    const currentSizePrice = getProductSizePrice(product, selectedSize);
-
     store.addToCart({
       productId: product.id,
       slug: product.slug,
       title: product.title,
       price: currentSizePrice,
-      size: selectedSize,
+      size: isPoster ? selectedSize : ('Standard' as any),
       quantity: addQty,
-      orientation: product.orientation,
-      artTreatment: product.artTreatment,
+      orientation: product.orientation || 'portrait',
+      artTreatment: product.artTreatment || 'default',
     });
     if (buyNow) {
       navigate('/checkout');
     } else {
-      setToast(`${product.title} (${selectedSize}) added to bag!`);
+      setToast(isPoster ? `${product.title} (${selectedSize}) added to bag!` : `${product.title} added to bag!`);
       window.setTimeout(() => setToast(''), 3800);
     }
   };
 
   const heroImageSrc = product.images?.[0] || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349713/dungeons_store_assets/spiderman-product-hero_bafa79.jpg';
-  const currentSizePrice = getProductSizePrice(product, selectedSize);
-  const currentSizeCompare = getProductSizeComparePrice(product, selectedSize);
-  const currentSavings = Math.max(0, currentSizeCompare - currentSizePrice);
-  const discountPct = currentSizeCompare > currentSizePrice
-    ? Math.round(((currentSizeCompare - currentSizePrice) / currentSizeCompare) * 100)
-    : 0;
 
   return (
     <main className="postgenz-product-page">
@@ -1421,7 +1422,7 @@ export function ProductPage() {
             {(product.rating || 4.9).toFixed(1)}
           </span>
           <span style={{ fontSize: '12px', color: '#64748b' }}>
-            ({product.reviewsCount !== undefined ? product.reviewsCount : 148} verified ratings)
+            ({product.reviewsCount !== undefined ? product.reviewsCount : (isPoster ? 148 : 48)} verified ratings)
           </span>
         </div>
 
@@ -1435,48 +1436,66 @@ export function ProductPage() {
           )}
         </div>
 
-        {/* OPTIONAL ARTWORK DESCRIPTION FROM ADMIN */}
+        {/* OPTIONAL ARTWORK / PRODUCT DESCRIPTION FROM ADMIN */}
         {product.description && product.description.trim().length > 0 && (
           <div className="product-custom-description-card">
             <div className="product-custom-description-heading">
-              <span>ARTWORK DESCRIPTION</span>
+              <span>{isPoster ? 'ARTWORK DESCRIPTION' : 'PRODUCT DESCRIPTION & SPECS'}</span>
             </div>
             <p className="product-custom-description-body">{product.description}</p>
           </div>
         )}
 
-        {/* SIZE HEADER WITH SIZE CHART TRIGGER BUTTON */}
-        <div className="product-size-header-bar">
-          <span className="product-size-heading-title">CHOOSE POSTER SIZE</span>
-          <button
-            type="button"
-            onClick={() => setSizeChartOpen(true)}
-            className="view-size-chart-link-ecommerce"
-            title="Click to view size guide and dimensions"
-          >
-            <Ruler size={13} />
-            <span>Size Chart</span>
-          </button>
-        </div>
-
-        {/* 3. SIZE SELECTOR BOXES (A3, A4, A5 - ONLY SIZE TEXT) */}
-        <div className="product-size-boxes-row" role="radiogroup" aria-label="Select poster size">
-          {(['A3', 'A4', 'A5'] as PosterSize[]).map((sz) => {
-            const isSelected = selectedSize === sz;
-            return (
+        {/* SIZE SELECTOR OR STANDARD PRODUCT BADGE */}
+        {isPoster ? (
+          <>
+            {/* SIZE HEADER WITH SIZE CHART TRIGGER BUTTON */}
+            <div className="product-size-header-bar">
+              <span className="product-size-heading-title">CHOOSE POSTER SIZE</span>
               <button
                 type="button"
-                key={sz}
-                role="radio"
-                aria-checked={isSelected}
-                className={`product-size-box-btn ${isSelected ? 'active-size-box' : ''}`}
-                onClick={() => setSelectedSize(sz)}
+                onClick={() => setSizeChartOpen(true)}
+                className="view-size-chart-link-ecommerce"
+                title="Click to view size guide and dimensions"
               >
-                {sz}
+                <Ruler size={13} />
+                <span>Size Chart</span>
               </button>
-            );
-          })}
-        </div>
+            </div>
+
+            {/* 3. SIZE SELECTOR BOXES (A3, A4, A5 - ONLY SIZE TEXT) */}
+            <div className="product-size-boxes-row" role="radiogroup" aria-label="Select poster size">
+              {(['A3', 'A4', 'A5'] as PosterSize[]).map((sz) => {
+                const isSelected = selectedSize === sz;
+                return (
+                  <button
+                    type="button"
+                    key={sz}
+                    role="radio"
+                    aria-checked={isSelected}
+                    className={`product-size-box-btn ${isSelected ? 'active-size-box' : ''}`}
+                    onClick={() => setSelectedSize(sz)}
+                  >
+                    {sz}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', margin: '14px 0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '18px' }}>✨</span>
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>Standard Product Unit</div>
+                <div style={{ fontSize: '11px', color: '#64748b' }}>Crafted to design specifications • Ready to ship across India</div>
+              </div>
+            </div>
+            <span style={{ fontSize: '11px', fontWeight: 800, background: '#ecfdf5', color: '#059669', padding: '3px 9px', borderRadius: '9999px', border: '1px solid #a7f3d0' }}>
+              IN STOCK
+            </span>
+          </div>
+        )}
 
         {/* 4. QUANTITY STEPPER & ADD TO CART & WISHLIST */}
         <div className="quantity-and-add-row">
@@ -1560,37 +1579,60 @@ export function ProductPage() {
               className="accordion-toggle-btn"
               onClick={() => toggleAccordion('features')}
             >
-              <span>PRODUCT FEATURES</span>
+              <span>{isPoster ? 'PRODUCT FEATURES' : 'CRAFTSMANSHIP & SPECIFICATIONS'}</span>
               <span className="accordion-indicator">{openAccordion === 'features' ? '−' : '+'}</span>
             </button>
             {openAccordion === 'features' && (
               <div className="accordion-inner-content">
                 {product.description && product.description.trim().length > 0 && (
                   <div className="feature-item">
-                    <strong>Artwork Details &amp; Story</strong>
+                    <strong>{isPoster ? 'Artwork Details & Story' : 'Product Story & Materials'}</strong>
                     <p>{product.description}</p>
                   </div>
                 )}
-                <div className="feature-item">
-                  <strong>Premium Matte Finish</strong>
-                  <p>Sharp, vibrant, and stunning under any light, perfect for showcasing every detail.</p>
-                </div>
-                <div className="feature-item">
-                  <strong>Archival Matte Paper</strong>
-                  <p>Extra-thick, durable, and premium-grade for a high-quality, luxury feel.</p>
-                </div>
-                <div className="feature-item">
-                  <strong>Vivid Colors</strong>
-                  <p>High-quality printing ensures rich tones, crisp details, and long-lasting vibrancy.</p>
-                </div>
-                <div className="feature-item">
-                  <strong>Made to Last</strong>
-                  <p>Designed for luxury, style, and durability so your poster stays looking new for years.</p>
-                </div>
-                <div className="feature-item">
-                  <strong>Ready for Framing</strong>
-                  <p>Sized to fit standard frames perfectly, giving you a clean, professional display.</p>
-                </div>
+                {isPoster ? (
+                  <>
+                    <div className="feature-item">
+                      <strong>Premium Matte Finish</strong>
+                      <p>Sharp, vibrant, and stunning under any light, perfect for showcasing every detail.</p>
+                    </div>
+                    <div className="feature-item">
+                      <strong>Archival Matte Paper</strong>
+                      <p>Extra-thick, durable, and premium-grade for a high-quality, luxury feel.</p>
+                    </div>
+                    <div className="feature-item">
+                      <strong>Vivid Colors</strong>
+                      <p>High-quality printing ensures rich tones, crisp details, and long-lasting vibrancy.</p>
+                    </div>
+                    <div className="feature-item">
+                      <strong>Made to Last</strong>
+                      <p>Designed for luxury, style, and durability so your poster stays looking new for years.</p>
+                    </div>
+                    <div className="feature-item">
+                      <strong>Ready for Framing</strong>
+                      <p>Sized to fit standard frames perfectly, giving you a clean, professional display.</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="feature-item">
+                      <strong>Artisanal Luxury Craftsmanship</strong>
+                      <p>Engineered using premium grade materials, built to elevate any room or living space.</p>
+                    </div>
+                    <div className="feature-item">
+                      <strong>Quality Inspected &amp; Tested</strong>
+                      <p>Individually inspected for flawless structural integrity, seamless joints, and premium finish.</p>
+                    </div>
+                    <div className="feature-item">
+                      <strong>Ready to Display &amp; Setup</strong>
+                      <p>Arrives with required mounting hardware, anchors, or fixtures where applicable for quick installation.</p>
+                    </div>
+                    <div className="feature-item">
+                      <strong>Eco-Conscious Durability</strong>
+                      <p>Built for long-lasting everyday enjoyment with fade-resistant and scratch-resistant surfaces.</p>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -1607,14 +1649,29 @@ export function ProductPage() {
             </button>
             {openAccordion === 'notes' && (
               <div className="accordion-inner-content">
-                <div className="feature-item">
-                  <strong>No Adhesive Included</strong>
-                  <p>Posters do not come with stickers or glue. Please use your own double-sided tape, poster glue, or wall-safe mounting solution.</p>
-                </div>
-                <div className="feature-item">
-                  <strong>Frames Not Included</strong>
-                  <p>Posters are sold unframed, but they are fully ready for framing for a polished, gallery-style finish.</p>
-                </div>
+                {isPoster ? (
+                  <>
+                    <div className="feature-item">
+                      <strong>No Adhesive Included</strong>
+                      <p>Posters do not come with stickers or glue. Please use your own double-sided tape, poster glue, or wall-safe mounting solution.</p>
+                    </div>
+                    <div className="feature-item">
+                      <strong>Frames Not Included</strong>
+                      <p>Posters are sold unframed, but they are fully ready for framing for a polished, gallery-style finish.</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="feature-item">
+                      <strong>Transit Protection Guarantee</strong>
+                      <p>All items are securely boxed and transit-insured. In the rare event of transit damage, we provide an immediate free replacement.</p>
+                    </div>
+                    <div className="feature-item">
+                      <strong>Natural Finishing &amp; Color</strong>
+                      <p>Crafted finishes and ambient display lighting may introduce subtle, beautiful artisanal variations.</p>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

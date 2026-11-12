@@ -47,7 +47,10 @@ import {
   setActiveCategorySlug,
   getDynamicPosterCategories,
   addDynamicPosterCategory,
+  CIRCLE_PRODUCT_CATEGORIES,
+  isPosterCategory,
   type DynamicPosterCategory,
+  type CircleProductMeta,
 } from '@/lib/catalog';
 
 interface AdminStats {
@@ -395,10 +398,42 @@ export function AdminDashboardPage() {
     return () => window.removeEventListener('dungeons:categories-updated', handler);
   }, []);
 
+  const [productType, setProductType] = useState<'product' | 'poster'>('product');
+
   const defaultProductFormData = {
     title: '',
     slug: '',
-    description: '',
+    description: 'Crafted with premium high-definition silver float glass and a modern curved wavy frame. Includes dual heavy-duty wall anchors.',
+    category: 'mirrors',
+    orientation: 'portrait',
+    price: 1499,
+    compareAtPrice: 2999,
+    sizePrices: {
+      Standard: 1499,
+      A5: 79,
+      A4: 119,
+      A3: 179,
+    } as Record<string, number>,
+    sizeComparePrices: {
+      Standard: 2999,
+      A5: 159,
+      A4: 239,
+      A3: 359,
+    } as Record<string, number>,
+    images: ['https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-6_71a8b7.jpg'],
+    tags: 'mirrors, aesthetic, home decor',
+    stock: 25,
+    isBestSeller: true,
+    isNewRelease: false,
+    isTrending: false,
+    rating: 4.9,
+    reviewsCount: 48,
+  };
+
+  const defaultPosterFormData = {
+    title: '',
+    slug: '',
+    description: 'Printed on 300 GSM Archival Matte Paper with vivid fade-resistant inks. Perfect for bedroom walls and gaming setups.',
     category: 'anime',
     orientation: 'portrait',
     price: 79,
@@ -796,11 +831,20 @@ export function AdminDashboardPage() {
     setSavingProduct(true);
     setProductModalError(null);
 
+    let finalCategory = productFormData.category;
+    if (isCustomCategoryMode && customCategoryInput.trim()) {
+      const added = addDynamicPosterCategory(customCategoryInput.trim());
+      finalCategory = added.slug;
+      setDynamicCats(getDynamicPosterCategories());
+    }
+
+    const isCurrentProduct = productType === 'product' || !isPosterCategory(finalCategory);
+
     // 1. Validation
     if (!productFormData.title || productFormData.title.trim().length < 2) {
       setProductModalError({
         title: 'Error 400 (Bad Request)',
-        message: 'Poster title must be at least 2 characters.',
+        message: `${isCurrentProduct ? 'Product' : 'Poster'} title must be at least 2 characters.`,
         statusCode: 400,
       });
       setSavingProduct(false);
@@ -810,7 +854,7 @@ export function AdminDashboardPage() {
     if (!productFormData.images || !productFormData.images[0] || !productFormData.images[0].trim()) {
       setProductModalError({
         title: 'Error 400 (Bad Request)',
-        message: 'Please provide or upload a poster artwork image.',
+        message: `Please provide or upload a ${isCurrentProduct ? 'product' : 'poster'} image.`,
         statusCode: 400,
       });
       setSavingProduct(false);
@@ -830,22 +874,31 @@ export function AdminDashboardPage() {
       .filter((t) => !t.startsWith('rating:') && !t.startsWith('reviews:'));
 
     const ratingVal = Number(productFormData.rating) || 4.9;
-    const reviewsVal = Number(productFormData.reviewsCount) >= 0 ? Number(productFormData.reviewsCount) : 148;
+    const reviewsVal = Number(productFormData.reviewsCount) >= 0 ? Number(productFormData.reviewsCount) : (isCurrentProduct ? 48 : 148);
     cleanTags.push(`rating:${ratingVal}`);
     cleanTags.push(`reviews:${reviewsVal}`);
     if (productFormData.isTrending && !cleanTags.some((t: string) => t.toLowerCase() === 'trending')) {
       cleanTags.push('trending');
     }
 
-    let finalCategory = productFormData.category;
-    if (isCustomCategoryMode && customCategoryInput.trim()) {
-      const added = addDynamicPosterCategory(customCategoryInput.trim());
-      finalCategory = added.slug;
-      setDynamicCats(getDynamicPosterCategories());
-    }
-
     // Automatically activate circle category if product belongs to it
     setActiveCategorySlug(finalCategory, true);
+
+    const sellingPrice = isCurrentProduct
+      ? (Number(productFormData.price) || 999)
+      : (Number(productFormData.sizePrices?.A5) || Number(productFormData.price) || 79);
+
+    const comparePrice = isCurrentProduct
+      ? (Number(productFormData.compareAtPrice) || Math.round(sellingPrice * 2))
+      : (Number(productFormData.sizeComparePrices?.A5) || Number(productFormData.compareAtPrice) || Math.round(sellingPrice * 2));
+
+    const effectiveSizePrices = isCurrentProduct
+      ? { Standard: sellingPrice }
+      : (productFormData.sizePrices || { A5: 79, A4: 119, A3: 179 });
+
+    const effectiveSizeComparePrices = isCurrentProduct
+      ? { Standard: comparePrice }
+      : (productFormData.sizeComparePrices || { A5: 159, A4: 239, A3: 359 });
 
     const payload: AdminProduct = {
       id: editingProduct ? editingProduct.id : `prod-custom-${Date.now()}`,
@@ -853,11 +906,11 @@ export function AdminDashboardPage() {
       category: finalCategory,
       slug: safeSlug,
       description: productFormData.description?.trim() || '',
-      price: Number(productFormData.sizePrices?.A5) || Number(productFormData.price) || 79,
-      compareAtPrice: Number(productFormData.sizeComparePrices?.A5) || Number(productFormData.compareAtPrice) || null,
-      sizePrices: productFormData.sizePrices,
-      sizeComparePrices: productFormData.sizeComparePrices,
-      stock: Number(productFormData.stock) >= 0 ? Number(productFormData.stock) : 50,
+      price: sellingPrice,
+      compareAtPrice: comparePrice,
+      sizePrices: effectiveSizePrices,
+      sizeComparePrices: effectiveSizeComparePrices,
+      stock: Number(productFormData.stock) >= 0 ? Number(productFormData.stock) : (isCurrentProduct ? 25 : 50),
       tags: cleanTags,
       rating: ratingVal,
       reviewsCount: reviewsVal,
@@ -947,12 +1000,13 @@ export function AdminDashboardPage() {
       });
 
       // Update React Admin state
+      const itemLabel = isCurrentProduct ? 'Product' : 'Poster';
       if (editingProduct) {
         setProducts((prev) => prev.map((p) => (p.id === editingProduct.id ? savedProduct : p)));
-        showToast(`Poster "${savedProduct.title}" updated successfully!`);
+        showToast(`${itemLabel} "${savedProduct.title}" updated successfully!`);
       } else {
         setProducts((prev) => [savedProduct, ...prev]);
-        showToast(`New poster "${savedProduct.title}" saved successfully!`);
+        showToast(`New ${itemLabel.toLowerCase()} "${savedProduct.title}" saved successfully!`);
       }
 
       setIsProductModalOpen(false);
@@ -1455,6 +1509,7 @@ export function AdminDashboardPage() {
                 onClick={() => {
                   setEditingProduct(null);
                   setProductModalError(null);
+                  setProductType('product');
                   setProductFormData(defaultProductFormData);
                   setIsProductModalOpen(true);
                 }}
@@ -2116,13 +2171,18 @@ export function AdminDashboardPage() {
                               onClick={() => {
                                 setEditingProduct(prod);
                                 setProductModalError(null);
+                                const isProdPoster = isPosterCategory(prod.category);
+                                setProductType(isProdPoster ? 'poster' : 'product');
+
                                 const prodSizePrices = (prod as any).sizePrices || {};
                                 const prodSizeCompare = (prod as any).sizeComparePrices || {};
-                                const a5p = prodSizePrices.A5 || prod.price || 79;
-                                const a5c = prodSizeCompare.A5 || prod.compareAtPrice || Math.round(a5p * 2);
+                                const baseSellingPrice = prod.price || (isProdPoster ? 79 : 999);
+                                const baseComparePrice = prod.compareAtPrice || Math.round(baseSellingPrice * 2);
+                                const a5p = prodSizePrices.A5 || baseSellingPrice;
+                                const a5c = prodSizeCompare.A5 || baseComparePrice;
 
                                 let prodRating = (prod as any).rating || 4.9;
-                                let prodReviews = (prod as any).reviewsCount !== undefined ? (prod as any).reviewsCount : 148;
+                                let prodReviews = (prod as any).reviewsCount !== undefined ? (prod as any).reviewsCount : (isProdPoster ? 148 : 48);
                                 if (Array.isArray(prod.tags)) {
                                   for (const t of prod.tags) {
                                     if (typeof t === 'string') {
@@ -2143,19 +2203,19 @@ export function AdminDashboardPage() {
                                   slug: prod.slug,
                                   description: prod.description || '',
                                   category: prod.category,
-                                  orientation: prod.orientation,
-                                  price: a5p,
-                                  compareAtPrice: a5c,
-                                  sizePrices: {
+                                  orientation: prod.orientation || 'portrait',
+                                  price: isProdPoster ? a5p : baseSellingPrice,
+                                  compareAtPrice: isProdPoster ? a5c : baseComparePrice,
+                                  sizePrices: isProdPoster ? {
                                     A5: a5p,
                                     A4: prodSizePrices.A4 || Math.round(a5p * 1.5),
                                     A3: prodSizePrices.A3 || Math.round(a5p * 2.2),
-                                  },
-                                  sizeComparePrices: {
+                                  } : { Standard: baseSellingPrice },
+                                  sizeComparePrices: isProdPoster ? {
                                     A5: a5c,
                                     A4: prodSizeCompare.A4 || Math.round(a5c * 1.5),
                                     A3: prodSizeCompare.A3 || Math.round(a5c * 2.2),
-                                  },
+                                  } : { Standard: baseComparePrice },
                                   images: prod.images,
                                   tags: Array.isArray(prod.tags) ? prod.tags.join(', ') : '',
                                   stock: prod.stock,
@@ -2366,11 +2426,14 @@ export function AdminDashboardPage() {
           <div style={{ background: '#0e1424', border: '1px solid #1e2638', borderRadius: '20px', maxWidth: '540px', width: '100%', padding: '24px', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e2638', paddingBottom: '12px' }}>
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                  {editingProduct ? 'Edit Product / Poster' : 'Add New Product / Poster'}
+                <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>{productType === 'product' ? '🪞' : '🎨'}</span>
+                  <span>{editingProduct ? (productType === 'product' ? 'Edit Product' : 'Edit Poster') : (productType === 'product' ? 'Add New Product' : 'Add New Poster')}</span>
                 </h3>
                 <p style={{ fontSize: '11px', color: '#94a3b8', margin: '2px 0 0 0' }}>
-                  {editingProduct ? 'Update product details, pricing, and artwork' : 'Publish a new product or poster to the live storefront catalog'}
+                  {productType === 'product'
+                    ? 'Publish mirrors, wall art, bean bags, flags, couches & decor to the live storefront'
+                    : 'Publish high-resolution art posters with A5/A4/A3 multi-size pricing'}
                 </p>
               </div>
               <button
@@ -2382,6 +2445,82 @@ export function AdminDashboardPage() {
                 style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
               >
                 <X size={18} />
+              </button>
+            </div>
+
+            {/* Department Switcher Tabs (Product vs Poster) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', background: '#090e1a', padding: '4px', borderRadius: '12px', border: '1px solid #1e293b' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setProductType('product');
+                  if (isPosterCategory(productFormData.category)) {
+                    const defMirror = CIRCLE_PRODUCT_CATEGORIES[0];
+                    setProductFormData((prev) => ({
+                      ...prev,
+                      category: 'mirrors',
+                      title: prev.title === 'ASTA POSTER | BLACK CLOVER' || !prev.title ? defMirror.placeholderTitle : prev.title,
+                      price: prev.price === 79 || !prev.price ? defMirror.defaultPrice : prev.price,
+                      compareAtPrice: prev.compareAtPrice === 159 || !prev.compareAtPrice ? defMirror.defaultCompare : prev.compareAtPrice,
+                      description: prev.description.includes('300 GSM') || !prev.description ? defMirror.defaultDescription : prev.description,
+                    }));
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '9px 12px',
+                  borderRadius: '9px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: 800,
+                  fontSize: '11.5px',
+                  transition: 'all 0.15s ease',
+                  background: productType === 'product' ? 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)' : 'transparent',
+                  color: productType === 'product' ? '#000000' : '#94a3b8',
+                  boxShadow: productType === 'product' ? '0 2px 8px rgba(56, 189, 248, 0.35)' : 'none',
+                }}
+              >
+                <span style={{ fontSize: '15px' }}>🪞</span>
+                <span>Home &amp; Decor Product</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setProductType('poster');
+                  if (!isPosterCategory(productFormData.category)) {
+                    setProductFormData((prev) => ({
+                      ...prev,
+                      category: 'anime',
+                      title: prev.title.includes('Mirror') || !prev.title ? 'ASTA POSTER | BLACK CLOVER' : prev.title,
+                      price: 79,
+                      compareAtPrice: 159,
+                      description: 'Printed on 300 GSM Archival Matte Paper with vivid fade-resistant inks.',
+                    }));
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '9px 12px',
+                  borderRadius: '9px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: 800,
+                  fontSize: '11.5px',
+                  transition: 'all 0.15s ease',
+                  background: productType === 'poster' ? 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)' : 'transparent',
+                  color: productType === 'poster' ? '#000000' : '#94a3b8',
+                  boxShadow: productType === 'poster' ? '0 2px 8px rgba(56, 189, 248, 0.35)' : 'none',
+                }}
+              >
+                <span style={{ fontSize: '15px' }}>🎨</span>
+                <span>Art Poster (A5/A4/A3)</span>
               </button>
             </div>
 
@@ -2411,58 +2550,11 @@ export function AdminDashboardPage() {
             )}
 
             <form onSubmit={handleSaveProduct} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label className="admin-input-label">Poster Title</label>
-                <input
-                  type="text"
-                  required
-                  value={productFormData.title}
-                  onChange={(e) => {
-                    const newTitle = e.target.value;
-                    setProductFormData((prev) => {
-                      const autoSlug = newTitle
-                        .toLowerCase()
-                        .trim()
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/(^-|-$)+/g, '');
-                      const isInitialSlug = !prev.slug || prev.slug === prev.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-                      return {
-                        ...prev,
-                        title: newTitle,
-                        slug: isInitialSlug ? autoSlug : prev.slug,
-                      };
-                    });
-                    if (productModalError) setProductModalError(null);
-                  }}
-                  placeholder="ASTA POSTER | BLACK CLOVER"
-                  className="admin-input-field"
-                  style={{ height: '40px' }}
-                />
-              </div>
-
-              <div>
-                <label className="admin-input-label">URL Slug (Web-safe unique identifier)</label>
-                <input
-                  type="text"
-                  required
-                  value={productFormData.slug}
-                  onChange={(e) => {
-                    setProductFormData({
-                      ...productFormData,
-                      slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
-                    });
-                    if (productModalError) setProductModalError(null);
-                  }}
-                  placeholder="asta-black-clover-anime-poster"
-                  className="admin-input-field"
-                  style={{ height: '40px', fontFamily: 'monospace' }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {/* Product Mode: Quick Visual Story Circle Categories */}
+              {productType === 'product' ? (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                    <label className="admin-input-label" style={{ margin: 0 }}>Category</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label className="admin-input-label" style={{ margin: 0 }}>Category (Story Circle)</label>
                     <button
                       type="button"
                       onClick={() => setIsCustomCategoryMode(!isCustomCategoryMode)}
@@ -2476,7 +2568,7 @@ export function AdminDashboardPage() {
                         padding: 0,
                       }}
                     >
-                      {isCustomCategoryMode ? '← Choose Existing' : '+ Add New Category'}
+                      {isCustomCategoryMode ? '← Choose Circles' : '+ Custom Category'}
                     </button>
                   </div>
 
@@ -2486,7 +2578,7 @@ export function AdminDashboardPage() {
                         type="text"
                         value={customCategoryInput}
                         onChange={(e) => setCustomCategoryInput(e.target.value)}
-                        placeholder="e.g. Movies & Web Series"
+                        placeholder="e.g. Sculptures or Neon Signs"
                         className="admin-input-field"
                         style={{ height: '40px', flex: 1 }}
                         autoFocus
@@ -2519,198 +2611,429 @@ export function AdminDashboardPage() {
                       </button>
                     </div>
                   ) : (
-                    <select
-                      value={productFormData.category}
-                      onChange={(e) => {
-                        if (e.target.value === '__add_new__') {
-                          setIsCustomCategoryMode(true);
-                        } else {
-                          setProductFormData({ ...productFormData, category: e.target.value });
-                        }
-                      }}
-                      className="admin-input-field"
-                      style={{ height: '40px' }}
-                    >
-                      <optgroup label="🌟 Product Categories (Homepage Story Circles)">
-                        {storeCategories.map((c) => (
-                          <option key={c.slug} value={c.slug}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="🎨 Poster Themes & Genres">
-                        {dynamicCats
-                          .filter((d) => !storeCategories.some((s) => s.slug === d.slug))
-                          .map((cat) => (
+                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', scrollbarWidth: 'thin' }}>
+                      {CIRCLE_PRODUCT_CATEGORIES.map((cat) => {
+                        const isSelected = productFormData.category === cat.slug;
+                        return (
+                          <button
+                            key={cat.slug}
+                            type="button"
+                            onClick={() => {
+                              setProductFormData((prev) => {
+                                const isDefaultTitle = !prev.title || CIRCLE_PRODUCT_CATEGORIES.some((c) => c.placeholderTitle === prev.title);
+                                const isDefaultPrice = prev.price === 79 || prev.price === 1499 || CIRCLE_PRODUCT_CATEGORIES.some((c) => c.defaultPrice === prev.price);
+                                const isDefaultCompare = prev.compareAtPrice === 159 || prev.compareAtPrice === 2999 || CIRCLE_PRODUCT_CATEGORIES.some((c) => c.defaultCompare === prev.compareAtPrice);
+                                const isDefaultDesc = !prev.description || prev.description.includes('300 GSM') || CIRCLE_PRODUCT_CATEGORIES.some((c) => c.defaultDescription === prev.description);
+                                return {
+                                  ...prev,
+                                  category: cat.slug,
+                                  title: isDefaultTitle ? cat.placeholderTitle : prev.title,
+                                  price: isDefaultPrice ? cat.defaultPrice : prev.price,
+                                  compareAtPrice: isDefaultCompare ? cat.defaultCompare : prev.compareAtPrice,
+                                  description: isDefaultDesc ? cat.defaultDescription : prev.description,
+                                };
+                              });
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '6px 12px',
+                              borderRadius: '9999px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              whiteSpace: 'nowrap',
+                              cursor: 'pointer',
+                              border: isSelected ? '1px solid #38bdf8' : '1px solid #1e2638',
+                              background: isSelected ? 'rgba(56, 189, 248, 0.15)' : '#0f172a',
+                              color: isSelected ? '#38bdf8' : '#cbd5e1',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <span>{cat.icon}</span>
+                            <span>{cat.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              <div>
+                <label className="admin-input-label">
+                  {productType === 'product' ? 'Product Name / Title' : 'Poster Title'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={productFormData.title}
+                  onChange={(e) => {
+                    const newTitle = e.target.value;
+                    setProductFormData((prev) => {
+                      const autoSlug = newTitle
+                        .toLowerCase()
+                        .trim()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/(^-|-$)+/g, '');
+                      const isInitialSlug = !prev.slug || prev.slug === prev.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+                      return {
+                        ...prev,
+                        title: newTitle,
+                        slug: isInitialSlug ? autoSlug : prev.slug,
+                      };
+                    });
+                    if (productModalError) setProductModalError(null);
+                  }}
+                  placeholder={
+                    productType === 'product'
+                      ? (CIRCLE_PRODUCT_CATEGORIES.find((c) => c.slug === productFormData.category)?.placeholderTitle || 'Aesthetic Full Length Vanity Mirror')
+                      : 'ASTA POSTER | BLACK CLOVER'
+                  }
+                  className="admin-input-field"
+                  style={{ height: '40px' }}
+                />
+              </div>
+
+              <div>
+                <label className="admin-input-label">URL Slug (Web-safe unique identifier)</label>
+                <input
+                  type="text"
+                  required
+                  value={productFormData.slug}
+                  onChange={(e) => {
+                    setProductFormData({
+                      ...productFormData,
+                      slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+                    });
+                    if (productModalError) setProductModalError(null);
+                  }}
+                  placeholder={
+                    productType === 'product'
+                      ? 'aesthetic-full-length-vanity-mirror'
+                      : 'asta-black-clover-anime-poster'
+                  }
+                  className="admin-input-field"
+                  style={{ height: '40px', fontFamily: 'monospace' }}
+                />
+              </div>
+
+              {/* Poster Mode: Category & Orientation row */}
+              {productType === 'poster' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <label className="admin-input-label" style={{ margin: 0 }}>Category / Theme</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsCustomCategoryMode(!isCustomCategoryMode)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#38bdf8',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                      >
+                        {isCustomCategoryMode ? '← Choose Existing' : '+ Add New'}
+                      </button>
+                    </div>
+
+                    {isCustomCategoryMode ? (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <input
+                          type="text"
+                          value={customCategoryInput}
+                          onChange={(e) => setCustomCategoryInput(e.target.value)}
+                          placeholder="e.g. Movies & Web Series"
+                          className="admin-input-field"
+                          style={{ height: '40px', flex: 1 }}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (customCategoryInput.trim()) {
+                              const added = addDynamicPosterCategory(customCategoryInput.trim());
+                              setProductFormData({ ...productFormData, category: added.slug });
+                              setDynamicCats(getDynamicPosterCategories());
+                              setIsCustomCategoryMode(false);
+                              setCustomCategoryInput('');
+                            }
+                          }}
+                          style={{
+                            padding: '0 12px',
+                            height: '40px',
+                            background: '#38bdf8',
+                            color: '#000000',
+                            fontWeight: 800,
+                            fontSize: '11px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          Add
+                        </button>
+                      </div>
+                    ) : (
+                      <select
+                        value={productFormData.category}
+                        onChange={(e) => {
+                          if (e.target.value === '__add_new__') {
+                            setIsCustomCategoryMode(true);
+                          } else {
+                            setProductFormData({ ...productFormData, category: e.target.value });
+                          }
+                        }}
+                        className="admin-input-field"
+                        style={{ height: '40px' }}
+                      >
+                        <optgroup label="🎨 Poster Themes & Genres">
+                          {dynamicCats.map((cat) => (
                             <option key={cat.slug} value={cat.slug}>
                               {cat.name || cat.title}
                             </option>
                           ))}
-                      </optgroup>
-                      <option value="__add_new__">+ Add New Category...</option>
-                    </select>
-                  )}
-                </div>
+                        </optgroup>
+                        <option value="__add_new__">+ Add New Category...</option>
+                      </select>
+                    )}
+                  </div>
 
-                <div>
-                  <label className="admin-input-label">Orientation</label>
-                  <select
-                    value={productFormData.orientation}
-                    onChange={(e) => setProductFormData({ ...productFormData, orientation: e.target.value })}
-                    className="admin-input-field"
-                    style={{ height: '40px' }}
-                  >
-                    <option value="portrait">Portrait</option>
-                    <option value="landscape">Landscape</option>
-                    <option value="square">Square</option>
-                  </select>
+                  <div>
+                    <label className="admin-input-label">Orientation</label>
+                    <select
+                      value={productFormData.orientation}
+                      onChange={(e) => setProductFormData({ ...productFormData, orientation: e.target.value })}
+                      className="admin-input-field"
+                      style={{ height: '40px' }}
+                    >
+                      <option value="portrait">Portrait</option>
+                      <option value="landscape">Landscape</option>
+                      <option value="square">Square</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Pricing section: adapts between Product Pricing (Selling & MRP) and Poster Pricing (A5, A4, A3) */}
+              {productType === 'product' ? (
+                <div style={{ background: '#0b1120', border: '1px solid #1e293b', borderRadius: '12px', padding: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <label className="admin-input-label" style={{ margin: 0, color: '#38bdf8', fontWeight: 800 }}>
+                      🏷️ Product Pricing &amp; MRP (₹)
+                    </label>
+                    {productFormData.compareAtPrice > productFormData.price && (
+                      <span style={{ fontSize: '10.5px', color: '#10b981', fontWeight: 800, background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: '6px' }}>
+                        {Math.round(((productFormData.compareAtPrice - productFormData.price) / productFormData.compareAtPrice) * 100)}% OFF DISCOUNT
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '10px', color: '#94a3b8', display: 'block', marginBottom: '3px', fontWeight: 700 }}>
+                        Selling Price (₹) <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        value={productFormData.price}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setProductFormData({
+                            ...productFormData,
+                            price: val,
+                            sizePrices: { ...productFormData.sizePrices, Standard: val },
+                          });
+                        }}
+                        placeholder="1499"
+                        className="admin-input-field"
+                        style={{ height: '40px', fontSize: '14px', fontWeight: 800, color: '#38bdf8' }}
+                      />
+                      <span style={{ fontSize: '9.5px', color: '#64748b' }}>Customer pays this price at checkout</span>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '10px', color: '#94a3b8', display: 'block', marginBottom: '3px', fontWeight: 700 }}>
+                        MRP / Strike Price (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={productFormData.compareAtPrice}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setProductFormData({
+                            ...productFormData,
+                            compareAtPrice: val,
+                            sizeComparePrices: { ...productFormData.sizeComparePrices, Standard: val },
+                          });
+                        }}
+                        placeholder="2999"
+                        className="admin-input-field"
+                        style={{ height: '40px', fontSize: '14px', fontWeight: 800 }}
+                      />
+                      <span style={{ fontSize: '9.5px', color: '#64748b' }}>Original strikethrough price shown crossed out</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ background: '#0b1120', border: '1px solid #1e293b', borderRadius: '12px', padding: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <label className="admin-input-label" style={{ margin: 0, color: '#60a5fa', fontWeight: 800 }}>
+                      📏 Poster Pricing by Size (₹)
+                    </label>
+                    <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>
+                      Front-end updates price automatically when customer picks size
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                    {/* A5 Size */}
+                    <div style={{ background: '#0f172a', border: '1px solid #1e2638', borderRadius: '8px', padding: '10px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px' }}>
+                        A5 (14.8 × 21 cm)
+                      </div>
+                      <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>Selling Price (₹)</label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        value={productFormData.sizePrices?.A5 ?? productFormData.price}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setProductFormData({
+                            ...productFormData,
+                            price: val,
+                            sizePrices: { ...productFormData.sizePrices, A5: val },
+                          });
+                        }}
+                        className="admin-input-field"
+                        style={{ height: '36px', marginBottom: '6px' }}
+                      />
+                      <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>MRP / Strike (₹)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={productFormData.sizeComparePrices?.A5 ?? productFormData.compareAtPrice}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setProductFormData({
+                            ...productFormData,
+                            compareAtPrice: val,
+                            sizeComparePrices: { ...productFormData.sizeComparePrices, A5: val },
+                          });
+                        }}
+                        className="admin-input-field"
+                        style={{ height: '36px' }}
+                      />
+                    </div>
+
+                    {/* A4 Size */}
+                    <div style={{ background: '#0f172a', border: '1px solid #1e2638', borderRadius: '8px', padding: '10px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span>A4 (21 × 29.7 cm)</span>
+                        <span style={{ fontSize: '9px', background: '#f59e0b', color: '#000', padding: '1px 5px', borderRadius: '9999px', fontWeight: 800 }}>POPULAR</span>
+                      </div>
+                      <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>Selling Price (₹)</label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        value={productFormData.sizePrices?.A4 ?? 119}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setProductFormData({
+                            ...productFormData,
+                            sizePrices: { ...productFormData.sizePrices, A4: val },
+                          });
+                        }}
+                        className="admin-input-field"
+                        style={{ height: '36px', marginBottom: '6px' }}
+                      />
+                      <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>MRP / Strike (₹)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={productFormData.sizeComparePrices?.A4 ?? 239}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setProductFormData({
+                            ...productFormData,
+                            sizeComparePrices: { ...productFormData.sizeComparePrices, A4: val },
+                          });
+                        }}
+                        className="admin-input-field"
+                        style={{ height: '36px' }}
+                      />
+                    </div>
+
+                    {/* A3 Size */}
+                    <div style={{ background: '#0f172a', border: '1px solid #1e2638', borderRadius: '8px', padding: '10px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px' }}>
+                        A3 (29.7 × 42 cm)
+                      </div>
+                      <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>Selling Price (₹)</label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        value={productFormData.sizePrices?.A3 ?? 179}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setProductFormData({
+                            ...productFormData,
+                            sizePrices: { ...productFormData.sizePrices, A3: val },
+                          });
+                        }}
+                        className="admin-input-field"
+                        style={{ height: '36px', marginBottom: '6px' }}
+                      />
+                      <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>MRP / Strike (₹)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={productFormData.sizeComparePrices?.A3 ?? 359}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setProductFormData({
+                            ...productFormData,
+                            sizeComparePrices: { ...productFormData.sizeComparePrices, A3: val },
+                          });
+                        }}
+                        className="admin-input-field"
+                        style={{ height: '36px' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label className="admin-input-label">Product Description (Optional)</label>
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>Displayed on storefront poster page</span>
+                  <label className="admin-input-label">
+                    {productType === 'product' ? 'Product Description & Specifications' : 'Poster Description (Optional)'}
+                  </label>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>Displayed on storefront page</span>
                 </div>
                 <textarea
                   rows={3}
                   value={productFormData.description}
                   onChange={(e) => setProductFormData({ ...productFormData, description: e.target.value })}
-                  placeholder="e.g. Printed on 300 GSM Archival Matte Paper with vivid fade-resistant inks. Perfect for anime fans, bedroom walls, and gaming setups."
+                  placeholder={
+                    productType === 'product'
+                      ? 'e.g. Dimensions: 160cm x 60cm. Solid wood curved wavy frame with high-definition float glass. Back hook included for easy mounting.'
+                      : 'e.g. Printed on 300 GSM Archival Matte Paper with vivid fade-resistant inks. Perfect for anime fans, bedroom walls, and gaming setups.'
+                  }
                   className="admin-input-field"
                   style={{ width: '100%', padding: '10px 12px', resize: 'vertical', minHeight: '65px', lineHeight: '1.4' }}
                 />
-              </div>
-
-              {/* Poster Pricing by Size (A5, A4, A3) */}
-              <div style={{ background: '#0b1120', border: '1px solid #1e293b', borderRadius: '12px', padding: '14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <label className="admin-input-label" style={{ margin: 0, color: '#60a5fa', fontWeight: 800 }}>
-                    📏 Poster Pricing by Size (₹)
-                  </label>
-                  <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>
-                    Front-end updates price automatically when customer picks size
-                  </span>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                  {/* A5 Size */}
-                  <div style={{ background: '#0f172a', border: '1px solid #1e2638', borderRadius: '8px', padding: '10px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px' }}>
-                      A5 (14.8 × 21 cm)
-                    </div>
-                    <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>Selling Price (₹)</label>
-                    <input
-                      type="number"
-                      required
-                      min={1}
-                      value={productFormData.sizePrices?.A5 ?? productFormData.price}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setProductFormData({
-                          ...productFormData,
-                          price: val,
-                          sizePrices: { ...productFormData.sizePrices, A5: val },
-                        });
-                      }}
-                      className="admin-input-field"
-                      style={{ height: '36px', marginBottom: '6px' }}
-                    />
-                    <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>MRP / Strike (₹)</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={productFormData.sizeComparePrices?.A5 ?? productFormData.compareAtPrice}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setProductFormData({
-                          ...productFormData,
-                          compareAtPrice: val,
-                          sizeComparePrices: { ...productFormData.sizeComparePrices, A5: val },
-                        });
-                      }}
-                      className="admin-input-field"
-                      style={{ height: '36px' }}
-                    />
-                  </div>
-
-                  {/* A4 Size */}
-                  <div style={{ background: '#0f172a', border: '1px solid #1e2638', borderRadius: '8px', padding: '10px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span>A4 (21 × 29.7 cm)</span>
-                      <span style={{ fontSize: '9px', background: '#f59e0b', color: '#000', padding: '1px 5px', borderRadius: '9999px', fontWeight: 800 }}>POPULAR</span>
-                    </div>
-                    <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>Selling Price (₹)</label>
-                    <input
-                      type="number"
-                      required
-                      min={1}
-                      value={productFormData.sizePrices?.A4 ?? 119}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setProductFormData({
-                          ...productFormData,
-                          sizePrices: { ...productFormData.sizePrices, A4: val },
-                        });
-                      }}
-                      className="admin-input-field"
-                      style={{ height: '36px', marginBottom: '6px' }}
-                    />
-                    <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>MRP / Strike (₹)</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={productFormData.sizeComparePrices?.A4 ?? 239}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setProductFormData({
-                          ...productFormData,
-                          sizeComparePrices: { ...productFormData.sizeComparePrices, A4: val },
-                        });
-                      }}
-                      className="admin-input-field"
-                      style={{ height: '36px' }}
-                    />
-                  </div>
-
-                  {/* A3 Size */}
-                  <div style={{ background: '#0f172a', border: '1px solid #1e2638', borderRadius: '8px', padding: '10px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px' }}>
-                      A3 (29.7 × 42 cm)
-                    </div>
-                    <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>Selling Price (₹)</label>
-                    <input
-                      type="number"
-                      required
-                      min={1}
-                      value={productFormData.sizePrices?.A3 ?? 179}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setProductFormData({
-                          ...productFormData,
-                          sizePrices: { ...productFormData.sizePrices, A3: val },
-                        });
-                      }}
-                      className="admin-input-field"
-                      style={{ height: '36px', marginBottom: '6px' }}
-                    />
-                    <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>MRP / Strike (₹)</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={productFormData.sizeComparePrices?.A3 ?? 359}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setProductFormData({
-                          ...productFormData,
-                          sizeComparePrices: { ...productFormData.sizeComparePrices, A3: val },
-                        });
-                      }}
-                      className="admin-input-field"
-                      style={{ height: '36px' }}
-                    />
-                  </div>
-                </div>
               </div>
 
               {/* Stock and Tags */}
@@ -2740,7 +3063,9 @@ export function AdminDashboardPage() {
               </div>
 
               <div>
-                <label className="admin-input-label">Poster Artwork Image (JPG, PNG, WEBP)</label>
+                <label className="admin-input-label">
+                  {productType === 'product' ? 'Product Photo / Image (JPG, PNG, WEBP)' : 'Poster Artwork Image (JPG, PNG, WEBP)'}
+                </label>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {/* File upload picker / drag & drop zone */}
@@ -2781,7 +3106,7 @@ export function AdminDashboardPage() {
                     />
                     <Upload size={22} style={{ color: '#38bdf8' }} />
                     <div style={{ fontSize: '13px', fontWeight: 700, color: '#f1f5f9' }}>
-                      {imageCompressing ? '⚡ Compressing & Optimizing Image...' : 'Click to Choose JPG / PNG from Computer'}
+                      {imageCompressing ? '⚡ Compressing & Optimizing Image...' : (productType === 'product' ? 'Click to Choose Product Photo from Computer' : 'Click to Choose JPG / PNG from Computer')}
                     </div>
                     <div style={{ fontSize: '11px', color: '#64748b' }}>
                       {imageCompressing ? 'Resizing and preparing high-speed payload' : 'Supports High-Resolution JPG, PNG, WEBP (Auto-optimized on upload)'}
@@ -2793,7 +3118,7 @@ export function AdminDashboardPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#0e1628', border: '1px solid #1e293b', borderRadius: '12px', padding: '10px' }}>
                       <img
                         src={productFormData.images[0]}
-                        alt="Poster Preview"
+                        alt={productType === 'product' ? 'Product Preview' : 'Poster Preview'}
                         style={{ width: '56px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #334155' }}
                       />
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -2824,7 +3149,7 @@ export function AdminDashboardPage() {
                         setProductFormData({ ...productFormData, images: [e.target.value] });
                         if (productModalError) setProductModalError(null);
                       }}
-                      placeholder="Or enter image URL (e.g. https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg)"
+                      placeholder={productType === 'product' ? "Or enter product image URL..." : "Or enter poster image URL (e.g. https://...)"}
                       className="admin-input-field"
                       style={{ height: '36px', fontSize: '11px', fontFamily: 'monospace' }}
                     />
@@ -2926,7 +3251,11 @@ export function AdminDashboardPage() {
                   className="admin-btn-accent"
                   style={{ opacity: savingProduct || imageCompressing ? 0.7 : 1 }}
                 >
-                  {savingProduct ? 'Saving Poster to Server...' : (imageCompressing ? 'Optimizing Image...' : 'Save Poster to Catalog')}
+                  {savingProduct
+                    ? (productType === 'product' ? 'Saving Product to Server...' : 'Saving Poster to Server...')
+                    : (imageCompressing
+                      ? 'Optimizing Image...'
+                      : (productType === 'product' ? 'Save Product to Catalog' : 'Save Poster to Catalog'))}
                 </button>
               </div>
             </form>

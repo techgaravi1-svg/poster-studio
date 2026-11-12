@@ -14,7 +14,7 @@ export function optimizeCloudinary(url?: string, width?: number, quality: number
   return url.replace('/image/upload/', `/image/upload/${transforms.join(',')}/`);
 }
 
-export type PosterSize = 'A5' | 'A4' | 'A3';
+export type PosterSize = 'A5' | 'A4' | 'A3' | 'Standard';
 export type Orientation = 'portrait' | 'landscape' | 'square';
 
 export type Product = {
@@ -815,6 +815,118 @@ export const storeCategories: StoreCategory[] = [
   ...comingSoonCategories.map((c) => ({ ...c, available: false })),
 ];
 
+export interface CircleProductMeta {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  defaultPrice: number;
+  defaultCompare: number;
+  placeholderTitle: string;
+  defaultDescription: string;
+}
+
+export const CIRCLE_PRODUCT_CATEGORIES: CircleProductMeta[] = [
+  {
+    id: 'cat-mirrors',
+    name: 'Mirrors',
+    slug: 'mirrors',
+    icon: '🪞',
+    defaultPrice: 1499,
+    defaultCompare: 2999,
+    placeholderTitle: 'Aesthetic Wavy Vanity Wall Mirror | Full Length',
+    defaultDescription: 'Premium high-definition silver float glass with a modern curved wavy frame. Includes dual heavy-duty wall anchors.',
+  },
+  {
+    id: 'cat-wallart',
+    name: 'Wall Art',
+    slug: 'wall-art',
+    icon: '🖼️',
+    defaultPrice: 999,
+    defaultCompare: 1999,
+    placeholderTitle: 'Textured Canvas Wall Art | Golden Horizon Landscape',
+    defaultDescription: 'Handcrafted gallery-wrapped canvas with rich textured acrylic accents. UV-resistant fade-proof finish.',
+  },
+  {
+    id: 'cat-wallmounts',
+    name: 'Wall Mounts',
+    slug: 'wall-mounts',
+    icon: '🪵',
+    defaultPrice: 799,
+    defaultCompare: 1599,
+    placeholderTitle: 'Solid Oak Floating Display Bracket & Wall Shelf',
+    defaultDescription: 'Precision-crafted solid seasoned oak wood. Pre-drilled hidden mounting brackets with wall anchors included.',
+  },
+  {
+    id: 'cat-beanbags',
+    name: 'Bean Bags',
+    slug: 'bean-bags',
+    icon: '🛋️',
+    defaultPrice: 1999,
+    defaultCompare: 3999,
+    placeholderTitle: 'Luxury Corduroy Lounger Bean Bag (XL)',
+    defaultDescription: 'Plush ribbed corduroy fabric with reinforced double-stitched seams. Dual child-safety zipper closure.',
+  },
+  {
+    id: 'cat-flags',
+    name: 'Flags',
+    slug: 'flags',
+    icon: '🚩',
+    defaultPrice: 499,
+    defaultCompare: 999,
+    placeholderTitle: 'Vintage Motorsport Wall Tapestry Flag | 5ft x 3ft',
+    defaultDescription: 'High-density 100D polyester with brass grommets on all four corners. Vivid double-sided print, wrinkle-resistant.',
+  },
+  {
+    id: 'cat-couches',
+    name: 'Couches',
+    slug: 'couches',
+    icon: '🛋️',
+    defaultPrice: 14999,
+    defaultCompare: 24999,
+    placeholderTitle: 'Curved Bouclé Modern Statement 2-Seater Couch',
+    defaultDescription: 'Ultra-soft textured bouclé upholstery over high-resilience foam and a solid hardwood frame.',
+  },
+  {
+    id: 'cat-tables-chairs',
+    name: 'Tables & Chairs',
+    slug: 'tables-chairs',
+    icon: '🪑',
+    defaultPrice: 4999,
+    defaultCompare: 8999,
+    placeholderTitle: 'Minimalist Walnut Coffee Table & Accent Chair Set',
+    defaultDescription: 'Solid natural walnut veneer with powder-coated matte black steel legs. Scratch-resistant matte lacquer finish.',
+  },
+  {
+    id: 'cat-curtains',
+    name: 'Curtains',
+    slug: 'curtains',
+    icon: '🪟',
+    defaultPrice: 899,
+    defaultCompare: 1799,
+    placeholderTitle: 'Luxury Linen Sheer Blackout Window Drapes (Set of 2)',
+    defaultDescription: 'Premium textured linen-blend fabric with 85% thermal blackout lining. Rust-proof stainless steel eyelets.',
+  },
+  {
+    id: 'cat-rugs',
+    name: 'Rugs & Carpets',
+    slug: 'rugs-carpets',
+    icon: '🧶',
+    defaultPrice: 2499,
+    defaultCompare: 4999,
+    placeholderTitle: 'Hand-Tufted Berber Wool Geometric Floor Rug (4x6 ft)',
+    defaultDescription: '100% natural wool pile hand-tufted by master artisans. Non-slip cotton canvas backing with reinforced edges.',
+  },
+];
+
+export function isPosterCategory(cat?: string): boolean {
+  if (!cat) return true;
+  const norm = cat.toLowerCase().trim().replace(/[\s_]+/g, '-');
+  if (norm === 'posters') return true;
+  const isCircleProduct = CIRCLE_PRODUCT_CATEGORIES.some((c) => c.slug === norm);
+  return !isCircleProduct;
+}
+
 export const ACTIVE_CATEGORIES_KEY = 'dungeons_active_circle_categories_v2';
 
 export function getActiveCategorySlugs(): Set<string> {
@@ -1048,31 +1160,38 @@ export function transformDbProductToFrontend(p: any): Product {
   if (typeof p.rating === 'number' && !isNaN(p.rating) && p.rating > 0) rating = p.rating;
   if (typeof p.reviewsCount === 'number' && !isNaN(p.reviewsCount) && p.reviewsCount >= 0) reviewsCount = p.reviewsCount;
 
-  const basePrice = Number(p.price) || 79;
-  if (!sizePrices.A5) sizePrices.A5 = basePrice;
-  if (!sizePrices.A4) sizePrices.A4 = Math.round(basePrice * 1.5);
-  if (!sizePrices.A3) sizePrices.A3 = Math.round(basePrice * 2.2);
-
+  const isPoster = isPosterCategory(p.category);
+  const basePrice = Number(p.price) || (isPoster ? 79 : 999);
   const baseCompare = Number(compareAt) || Math.round(basePrice * 2);
-  if (!sizeComparePrices.A5) sizeComparePrices.A5 = baseCompare;
-  if (!sizeComparePrices.A4) sizeComparePrices.A4 = Math.round(baseCompare * 1.5);
-  if (!sizeComparePrices.A3) sizeComparePrices.A3 = Math.round(baseCompare * 2.2);
+
+  if (isPoster) {
+    if (!sizePrices.A5) sizePrices.A5 = basePrice;
+    if (!sizePrices.A4) sizePrices.A4 = Math.round(basePrice * 1.5);
+    if (!sizePrices.A3) sizePrices.A3 = Math.round(basePrice * 2.2);
+
+    if (!sizeComparePrices.A5) sizeComparePrices.A5 = baseCompare;
+    if (!sizeComparePrices.A4) sizeComparePrices.A4 = Math.round(baseCompare * 1.5);
+    if (!sizeComparePrices.A3) sizeComparePrices.A3 = Math.round(baseCompare * 2.2);
+  } else {
+    sizePrices.Standard = basePrice;
+    sizeComparePrices.Standard = baseCompare;
+  }
 
   return {
     id: p.id,
     slug: p.slug,
     title: p.title,
     description: p.description || '',
-    category: (p.category || 'POSTERS').toUpperCase(),
-    collection: (p.category || 'posters').toLowerCase(),
+    category: (p.category || (isPoster ? 'POSTERS' : 'PRODUCTS')).toUpperCase(),
+    collection: (p.category || (isPoster ? 'posters' : 'products')).toLowerCase(),
     images: Array.isArray(p.images) && p.images.some((img: any) => typeof img === 'string' && img.trim().length > 0)
       ? p.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0)
       : ['https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg'],
     artTreatment: 'art-signal',
-    price: sizePrices.A5 || basePrice,
-    compareAtPrice: sizeComparePrices.A5 || baseCompare,
+    price: isPoster ? (sizePrices.A5 || basePrice) : basePrice,
+    compareAtPrice: isPoster ? (sizeComparePrices.A5 || baseCompare) : baseCompare,
     discount,
-    sizes: ['A5', 'A4', 'A3'],
+    sizes: isPoster ? (['A5', 'A4', 'A3'] as PosterSize[]) : (['Standard'] as PosterSize[]),
     sizePrices,
     sizeComparePrices,
     orientation: (p.orientation as Orientation) || 'portrait',
@@ -1088,7 +1207,7 @@ export function transformDbProductToFrontend(p: any): Product {
     tags: Array.isArray(p.tags) ? p.tags : [],
     rating,
     reviewsCount,
-    subtitle: `${(p.category || 'PREMIUM').toUpperCase()} ARCHIVAL POSTER`,
+    subtitle: isPoster ? `${(p.category || 'PREMIUM').toUpperCase()} ARCHIVAL POSTER` : `${(p.category || 'PREMIUM').toUpperCase()} COLLECTION`,
     features: defaultFeatures,
     notes: defaultNotes,
     shipping: defaultShipping,
@@ -1103,6 +1222,10 @@ export function getProductSizePrice(product: Product, size: PosterSize = 'A5'): 
   if (product.sizePrices && typeof product.sizePrices[size] === 'number' && product.sizePrices[size]! > 0) {
     return product.sizePrices[size]!;
   }
+  const isPoster = isPosterCategory(product.category);
+  if (!isPoster) {
+    return product.price || 999;
+  }
   const base = product.price || 79;
   if (size === 'A5') return base;
   if (size === 'A4') return Math.round(base * 1.5);
@@ -1113,6 +1236,10 @@ export function getProductSizePrice(product: Product, size: PosterSize = 'A5'): 
 export function getProductSizeComparePrice(product: Product, size: PosterSize = 'A5'): number {
   if (product.sizeComparePrices && typeof product.sizeComparePrices[size] === 'number' && product.sizeComparePrices[size]! > 0) {
     return product.sizeComparePrices[size]!;
+  }
+  const isPoster = isPosterCategory(product.category);
+  if (!isPoster) {
+    return product.compareAtPrice || Math.round((product.price || 999) * 2);
   }
   const baseCompare = product.compareAtPrice || Math.round((product.price || 79) * 2);
   if (size === 'A5') return baseCompare;
