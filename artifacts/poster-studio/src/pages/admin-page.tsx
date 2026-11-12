@@ -1353,7 +1353,7 @@ export function AdminDashboardPage() {
             >
               <span className="admin-nav-link-left">
                 <Layers size={16} />
-                <span>Posters Catalog</span>
+                <span>Products Catalog</span>
               </span>
               <span className="admin-nav-badge">
                 {products.length}
@@ -1452,6 +1452,28 @@ export function AdminDashboardPage() {
             <div className="admin-header-actions">
               <button
                 type="button"
+                onClick={() => {
+                  setEditingProduct(null);
+                  setProductModalError(null);
+                  setProductFormData(defaultProductFormData);
+                  setIsProductModalOpen(true);
+                }}
+                className="admin-btn-accent"
+                style={{
+                  background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
+                  color: '#000000',
+                  fontWeight: 800,
+                  fontSize: '12px',
+                  padding: '8px 16px',
+                  boxShadow: '0 2px 10px rgba(56, 189, 248, 0.35)',
+                }}
+              >
+                <Plus size={15} strokeWidth={3} />
+                <span>+ Add Product</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={loadAdminData}
                 disabled={refreshing}
                 className="admin-btn-secondary"
@@ -1459,22 +1481,6 @@ export function AdminDashboardPage() {
                 <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
                 <span>{refreshing ? 'Syncing...' : 'Sync DB'}</span>
               </button>
-
-              {activeTab === 'products' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingProduct(null);
-                    setProductModalError(null);
-                    setProductFormData(defaultProductFormData);
-                    setIsProductModalOpen(true);
-                  }}
-                  className="admin-btn-accent"
-                >
-                  <Plus size={14} />
-                  <span>Add Product</span>
-                </button>
-              )}
 
               <Link
                 href="/"
@@ -1526,17 +1532,22 @@ export function AdminDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="admin-kpi-card">
+                  <div
+                    className="admin-kpi-card"
+                    onClick={() => setActiveTab('products')}
+                    style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
+                    title="Click to view & add products in catalog"
+                  >
                     <div className="admin-kpi-top">
-                      <span className="admin-kpi-label">Catalog Posters</span>
+                      <span className="admin-kpi-label">Catalog Products</span>
                       <div className="admin-kpi-icon-box" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>
                         <Layers size={16} />
                       </div>
                     </div>
                     <div className="admin-kpi-val">{products.length}</div>
-                    <div className="admin-kpi-sub" style={{ color: '#c084fc' }}>
-                      <Tag size={12} />
-                      <span>Across 11 Categories</span>
+                    <div className="admin-kpi-sub" style={{ color: '#38bdf8', fontWeight: 700 }}>
+                      <Plus size={12} />
+                      <span>Click to view catalog & add products →</span>
                     </div>
                   </div>
 
