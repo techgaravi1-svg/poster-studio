@@ -42,6 +42,9 @@ import {
   loadCatalogFromStorage,
   saveSingleProduct,
   deleteSingleProduct,
+  storeCategories,
+  getStoreCategories,
+  setActiveCategorySlug,
   getDynamicPosterCategories,
   addDynamicPosterCategory,
   type DynamicPosterCategory,
@@ -371,6 +374,16 @@ export function AdminDashboardPage() {
 
   // Dynamic Categories state
   const [dynamicCats, setDynamicCats] = useState<DynamicPosterCategory[]>(getDynamicPosterCategories);
+
+  const allAdminCategoryFilters = useMemo(() => {
+    return [
+      { slug: 'all', label: 'All' },
+      ...storeCategories.map((c) => ({ slug: c.slug, label: c.name })),
+      ...dynamicCats
+        .filter((d) => !storeCategories.some((s) => s.slug === d.slug))
+        .map((c) => ({ slug: c.slug, label: c.name || c.title })),
+    ];
+  }, [dynamicCats]);
   const [isCustomCategoryMode, setIsCustomCategoryMode] = useState(false);
   const [customCategoryInput, setCustomCategoryInput] = useState('');
 
@@ -830,6 +843,9 @@ export function AdminDashboardPage() {
       finalCategory = added.slug;
       setDynamicCats(getDynamicPosterCategories());
     }
+
+    // Automatically activate circle category if product belongs to it
+    setActiveCategorySlug(finalCategory, true);
 
     const payload: AdminProduct = {
       id: editingProduct ? editingProduct.id : `prod-custom-${Date.now()}`,
@@ -1456,7 +1472,7 @@ export function AdminDashboardPage() {
                   className="admin-btn-accent"
                 >
                   <Plus size={14} />
-                  <span>Add Poster</span>
+                  <span>Add Product</span>
                 </button>
               )}
 
@@ -2015,24 +2031,24 @@ export function AdminDashboardPage() {
                   </div>
 
                   <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
-                    {['All', ...dynamicCats.map((c) => c.name || c.title)].map((cat) => (
+                    {allAdminCategoryFilters.map((cat) => (
                       <button
-                        key={cat}
+                        key={cat.slug}
                         type="button"
-                        onClick={() => setProductCategoryFilter(cat.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-'))}
+                        onClick={() => setProductCategoryFilter(cat.slug)}
                         style={{
                           padding: '6px 12px',
                           borderRadius: '8px',
                           fontSize: '11px',
                           fontWeight: 700,
-                          border: productCategoryFilter === cat.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-') ? 'none' : '1px solid #1e2638',
-                          background: productCategoryFilter === cat.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-') ? '#38bdf8' : '#0e1424',
-                          color: productCategoryFilter === cat.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-') ? '#000000' : '#94a3b8',
+                          border: productCategoryFilter === cat.slug ? 'none' : '1px solid #1e2638',
+                          background: productCategoryFilter === cat.slug ? '#38bdf8' : '#0e1424',
+                          color: productCategoryFilter === cat.slug ? '#000000' : '#94a3b8',
                           cursor: 'pointer',
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {cat}
+                        {cat.label}
                       </button>
                     ))}
                   </div>
@@ -2340,10 +2356,10 @@ export function AdminDashboardPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e2638', paddingBottom: '12px' }}>
               <div>
                 <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                  {editingProduct ? 'Edit Poster' : 'Add New Poster'}
+                  {editingProduct ? 'Edit Product / Poster' : 'Add New Product / Poster'}
                 </h3>
                 <p style={{ fontSize: '11px', color: '#94a3b8', margin: '2px 0 0 0' }}>
-                  {editingProduct ? 'Update poster details, pricing, and artwork' : 'Publish a new poster to the live storefront catalog'}
+                  {editingProduct ? 'Update product details, pricing, and artwork' : 'Publish a new product or poster to the live storefront catalog'}
                 </p>
               </div>
               <button
@@ -2504,11 +2520,22 @@ export function AdminDashboardPage() {
                       className="admin-input-field"
                       style={{ height: '40px' }}
                     >
-                      {dynamicCats.map((cat) => (
-                        <option key={cat.slug} value={cat.slug}>
-                          {cat.name || cat.title}
-                        </option>
-                      ))}
+                      <optgroup label="🌟 Product Categories (Homepage Story Circles)">
+                        {storeCategories.map((c) => (
+                          <option key={c.slug} value={c.slug}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="🎨 Poster Themes & Genres">
+                        {dynamicCats
+                          .filter((d) => !storeCategories.some((s) => s.slug === d.slug))
+                          .map((cat) => (
+                            <option key={cat.slug} value={cat.slug}>
+                              {cat.name || cat.title}
+                            </option>
+                          ))}
+                      </optgroup>
                       <option value="__add_new__">+ Add New Category...</option>
                     </select>
                   )}

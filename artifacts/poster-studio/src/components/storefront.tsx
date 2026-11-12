@@ -22,7 +22,7 @@ import {
   Package,
 } from 'lucide-react';
 import type { Product } from '@/lib/catalog';
-import { formatPrice, products, storeCategories, getProductStock, optimizeCloudinary } from '@/lib/catalog';
+import { formatPrice, products, storeCategories, getStoreCategories, getProductStock, optimizeCloudinary } from '@/lib/catalog';
 import { cartTotals, store, useStore } from '@/lib/store';
 
 export function PosterArt({
@@ -382,7 +382,7 @@ function MenuDrawer({
                 </button>
                 {comingSoonOpen && (
                   <div className="categories-sublist">
-                    {storeCategories.filter((c) => !c.available).map((cat) => (
+                    {getStoreCategories(products).filter((c) => !c.available).map((cat) => (
                       <div key={cat.id} className="sublist-cat-item coming-soon disabled" aria-disabled="true">
                         <span>{cat.name}</span>
                         <span className="sublist-soon-badge">Coming Soon</span>
@@ -553,7 +553,7 @@ export function Header() {
                   <div className="desktop-dropdown-menu">
                     <div className="dropdown-section-title">UPCOMING LUXURY COLLECTIONS</div>
                     <div className="dropdown-soon-grid">
-                      {storeCategories.filter((c) => !c.available).map((cat) => (
+                      {getStoreCategories(products).filter((c) => !c.available).map((cat) => (
                         <div key={cat.id} className="dropdown-soon-chip disabled" aria-disabled="true" title={`${cat.name} (Coming Soon)`}>
                           <span>{cat.name}</span>
                           <span className="chip-soon-badge">Coming Soon</span>

@@ -45,7 +45,7 @@ import {
   FileText,
   Search,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, ProductCardSkeleton, Toast } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
@@ -273,6 +273,7 @@ export function HomePage() {
   ];
 
   const [heroPaused, setHeroPaused] = useState(false);
+  const dynamicStoreCategories = useMemo(() => getStoreCategories(liveProducts), [liveProducts]);
   const categoryTrackRef = useRef<HTMLDivElement>(null);
   const [canScrollCatLeft, setCanScrollCatLeft] = useState(false);
   const [canScrollCatRight, setCanScrollCatRight] = useState(true);
@@ -399,10 +400,10 @@ export function HomePage() {
             ref={categoryTrackRef}
             className="categories-scroll-track"
           >
-            {storeCategories.map((cat) => {
+            {dynamicStoreCategories.map((cat) => {
               if (cat.available) {
                 return (
-                  <Link key={cat.id} href="/collections/posters" className="cat-icon-card cat-clickable">
+                  <Link key={cat.id} href={`/collections/${cat.slug}`} className="cat-icon-card cat-clickable">
                     <div className="cat-img-wrap insta-story-ring available-ring">
                       <div className="cat-img-inner">
                         <img
@@ -721,23 +722,20 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
   const [vipDone, setVipDone] = useState(false);
 
   const slugParam = params.slug;
-  const matchedCategory = storeCategories.find((c) => c.slug === slugParam);
-
-  useEffect(() => {
-    if (matchedCategory && !matchedCategory.available) {
-      navigate('/collections/posters', { replace: true });
-    }
-  }, [matchedCategory, navigate]);
-
-  const activeCategory: StoreCategory = matchedCategory && matchedCategory.available
-    ? matchedCategory
-    : storeCategories[0]; // Posters by default
-
-  const isPostersActive = true;
+  const { products: liveProducts, isLoading } = useLiveProductsWithStatus();
+  const computedCategories = useMemo(() => getStoreCategories(liveProducts), [liveProducts]);
 
   // Active sub-slug for posters (handles spaces, hyphens, %20, etc.)
   const rawSlug = slugParam ? decodeURIComponent(slugParam).trim().toLowerCase() : '';
   const normalizedSlug = rawSlug.replace(/[\s_]+/g, '-');
+
+  const matchedCategory = computedCategories.find((c) => c.slug === normalizedSlug || c.slug === rawSlug);
+
+  const isPostersActive = !matchedCategory || matchedCategory.slug === 'posters';
+  const isCategoryAvailable = matchedCategory ? Boolean(matchedCategory.available) : true;
+  const isDisplayingActiveStorefront = isCategoryAvailable || isPostersActive;
+
+  const activeCategory: StoreCategory = matchedCategory || computedCategories[0] || storeCategories[0];
 
   const activePosterSubSlug = bestsellers
     ? 'bestsellers'
@@ -796,8 +794,6 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     return () => window.removeEventListener('dungeons:categories-updated', handler);
   }, []);
 
-  const { products: liveProducts, isLoading } = useLiveProductsWithStatus();
-
   const posterSubCategories = useMemo(() => {
     const list = [
       { slug: 'all', label: 'All Posters' },
@@ -817,8 +813,10 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     return list;
   }, [dynamicCats, liveProducts]);
 
-  const currentCategoryLabel = !isPostersActive
+  const currentCategoryLabel = !isDisplayingActiveStorefront
     ? `${activeCategory.name} — COMING SOON`
+    : !isPostersActive && matchedCategory
+    ? matchedCategory.name.toUpperCase()
     : activePosterSubSlug === 'bestsellers'
     ? 'BEST SELLING POSTERS'
     : activePosterSubSlug === 'all'
@@ -826,49 +824,72 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
     : collections.find((c) => c.slug === activePosterSubSlug)?.title || 'POSTER PRINTS';
 
   const filteredProducts = useMemo(() => {
-    if (!isPostersActive) return [];
+    if (!isDisplayingActiveStorefront) return [];
     let list = liveProducts;
-    if (activePosterSubSlug === 'bestsellers') {
-      list = liveProducts.filter((p) => p.bestseller);
-    } else if (activePosterSubSlug !== 'all') {
-      const targetSlug = activePosterSubSlug.toLowerCase();
-      
-      const normalizeCat = (val: string) => {
-        const s = (val || '')
-          .toLowerCase()
-          .trim()
-          .replace(/ & /g, '-')
-          .replace(/[&]/g, '')
-          .replace(/[\s_]+/g, '-')
-          .replace(/-+/g, '-');
-        if (s === 'football' || s === 'cricket') return 'sports';
-        if (s === 'automotive' || s === 'automative') return 'automative';
-        if (s === 'marvel' || s === 'dc' || s === 'marvel-dc' || s === 'marvel--dc') return 'marvel-dc';
-        return s;
-      };
+
+    const normalizeCat = (val: string) => {
+      const s = (val || '')
+        .toLowerCase()
+        .trim()
+        .replace(/ & /g, '-')
+        .replace(/[&]/g, '')
+        .replace(/[\s_]+/g, '-')
+        .replace(/-+/g, '-');
+      if (s === 'football' || s === 'cricket') return 'sports';
+      if (s === 'automotive' || s === 'automative') return 'automative';
+      if (s === 'marvel' || s === 'dc' || s === 'marvel-dc' || s === 'marvel--dc') return 'marvel-dc';
+      return s;
+    };
+
+    const otherCircleSlugs = new Set([
+      'wall-art', 'wall-mounts', 'bean-bags', 'flags', 'mirrors',
+      'couches', 'tables-chairs', 'curtains', 'rugs-carpets'
+    ]);
+
+    if (!isPostersActive && matchedCategory) {
+      // Dedicated product page for specific circle category e.g. Wall Art, Bean Bags, Wall Mounts
+      const targetSlug = matchedCategory.slug.toLowerCase().replace(/[\s_]+/g, '-');
+      const targetName = matchedCategory.name.toLowerCase().replace(/[\s_]+/g, '-');
 
       list = liveProducts.filter((p) => {
         const cat = normalizeCat(p.category);
         const col = normalizeCat(p.collection);
-
-        // Strict category / collection match
+        if (cat === targetSlug || cat === targetName) return true;
+        if (col === targetSlug || col === targetName) return true;
+        if (Array.isArray(p.tags) && p.tags.some((t) => {
+          const normT = normalizeCat(t);
+          return normT === targetSlug || normT === targetName;
+        })) return true;
+        return false;
+      });
+    } else if (activePosterSubSlug === 'bestsellers') {
+      list = liveProducts.filter((p) => p.bestseller);
+    } else if (activePosterSubSlug !== 'all') {
+      const targetSlug = activePosterSubSlug.toLowerCase();
+      list = liveProducts.filter((p) => {
+        const cat = normalizeCat(p.category);
+        const col = normalizeCat(p.collection);
         if (col === targetSlug || cat === targetSlug) return true;
-
-        // Exact tag match (avoids substring title match bugs e.g. Spider Hunter X Hunter into Marvel)
         if (Array.isArray(p.tags) && p.tags.some((t) => typeof t === 'string' && normalizeCat(t) === targetSlug)) {
           return true;
         }
-
         return false;
       });
+    } else {
+      // "all" posters - exclude other non-poster circle categories
+      list = liveProducts.filter((p) => {
+        const cat = normalizeCat(p.category);
+        const col = normalizeCat(p.collection);
+        return !otherCircleSlugs.has(cat) && !otherCircleSlugs.has(col);
+      });
     }
+
     list = list.filter((p) => p.price >= minPrice && p.price <= maxPrice);
 
     if (selectedSort === 'low') return [...list].sort((a, b) => a.price - b.price);
     if (selectedSort === 'high') return [...list].sort((a, b) => b.price - a.price);
     if (selectedSort === 'rating') return [...list].sort((a, b) => b.rating - a.rating);
 
-    // Default category view: 1) Best Seller -> 2) New Arrivals -> 3) Trending -> 4) Other
     return [...list].sort((a, b) => {
       const rankA = getProductTierRank(a);
       const rankB = getProductTierRank(b);
@@ -876,7 +897,7 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
       if (b.rating !== a.rating) return b.rating - a.rating;
       return a.id.localeCompare(b.id);
     });
-  }, [liveProducts, isPostersActive, activePosterSubSlug, minPrice, maxPrice, selectedSort]);
+  }, [liveProducts, isDisplayingActiveStorefront, isPostersActive, matchedCategory, activePosterSubSlug, minPrice, maxPrice, selectedSort]);
 
   const handleVipSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -896,58 +917,64 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
 
   return (
     <main className="postgenz-collection-page">
-      {/* Show category teaser header only for coming soon categories */}
-      {!isPostersActive && (
-        <div className="collection-top-header">
-          <h1 className="collection-main-title">{currentCategoryLabel}</h1>
-        </div>
-      )}
-
-      {/* 3. CONDITIONAL CONTENT: POSTERS (ACTIVE) VS OTHER CATEGORIES (COMING SOON) */}
-      {isPostersActive ? (
+      {/* 3. CONDITIONAL CONTENT: ACTIVE PRODUCT STOREFRONT VS COMING SOON SHOWCASE */}
+      {isDisplayingActiveStorefront ? (
         <>
-          {/* POSTER SUB-CATEGORY FILTER TABS */}
-          <div className="category-pills-bar">
-            {canScrollPillsLeft && (
-              <button
-                type="button"
-                className="pills-scroll-arrow pills-scroll-prev"
-                onClick={() => scrollPills('left')}
-                aria-label="Scroll left"
-              >
-                <ChevronLeft size={18} strokeWidth={2.5} />
-              </button>
-            )}
+          {/* POSTER SUB-CATEGORY FILTER TABS (FOR POSTERS) OR CATEGORY HEADER (FOR OTHER CIRCLE CATEGORIES) */}
+          {isPostersActive ? (
+            <div className="category-pills-bar">
+              {canScrollPillsLeft && (
+                <button
+                  type="button"
+                  className="pills-scroll-arrow pills-scroll-prev"
+                  onClick={() => scrollPills('left')}
+                  aria-label="Scroll left"
+                >
+                  <ChevronLeft size={18} strokeWidth={2.5} />
+                </button>
+              )}
 
-            <div ref={pillsTrackRef} className="category-pills-scroll">
-              {posterSubCategories.map((sub) => {
-                const isActive =
-                  sub.slug === activePosterSubSlug ||
-                  (sub.slug === 'all' && (activePosterSubSlug === 'all' || !activePosterSubSlug));
-                const href = sub.slug === 'all' ? '/collections/posters' : `/collections/${sub.slug}`;
-                return (
-                  <Link
-                    key={sub.slug}
-                    href={href}
-                    className={`category-filter-pill ${isActive ? 'pill-active' : ''}`}
-                  >
-                    {sub.label}
-                  </Link>
-                );
-              })}
+              <div ref={pillsTrackRef} className="category-pills-scroll">
+                {posterSubCategories.map((sub) => {
+                  const isActive =
+                    sub.slug === activePosterSubSlug ||
+                    (sub.slug === 'all' && (activePosterSubSlug === 'all' || !activePosterSubSlug));
+                  const href = sub.slug === 'all' ? '/collections/posters' : `/collections/${sub.slug}`;
+                  return (
+                    <Link
+                      key={sub.slug}
+                      href={href}
+                      className={`category-filter-pill ${isActive ? 'pill-active' : ''}`}
+                    >
+                      {sub.label}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {canScrollPillsRight && (
+                <button
+                  type="button"
+                  className="pills-scroll-arrow pills-scroll-next"
+                  onClick={() => scrollPills('right')}
+                  aria-label="Scroll right"
+                >
+                  <ChevronRight size={18} strokeWidth={2.5} />
+                </button>
+              )}
             </div>
-
-            {canScrollPillsRight && (
-              <button
-                type="button"
-                className="pills-scroll-arrow pills-scroll-next"
-                onClick={() => scrollPills('right')}
-                aria-label="Scroll right"
-              >
-                <ChevronRight size={18} strokeWidth={2.5} />
-              </button>
-            )}
-          </div>
+          ) : (
+            <div className="collection-top-header" style={{ marginBottom: '16px', textAlign: 'center', paddingTop: '6px' }}>
+              <h1 className="collection-main-title" style={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '24px', fontWeight: 900 }}>
+                {activeCategory.name}
+              </h1>
+              {activeCategory.description && (
+                <p className="collection-sub-text" style={{ marginTop: '4px', color: '#64748b', fontSize: '13px' }}>
+                  {activeCategory.description}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* FILTER & VIEW TOOLBAR */}
           <div className="filter-view-toolbar">
@@ -961,7 +988,7 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
             </button>
 
             <span className="text-xs font-semibold text-gray-500">
-              {isLoading && filteredProducts.length === 0 ? 'LOADING POSTERS...' : `${filteredProducts.length} POSTERS AVAILABLE`}
+              {isLoading && filteredProducts.length === 0 ? 'LOADING...' : `${filteredProducts.length} ${activeCategory.name.toUpperCase()} AVAILABLE`}
             </span>
 
             <div className="view-mode-toggles">
@@ -984,7 +1011,7 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
             </div>
           </div>
 
-          {/* POSTERS PRODUCT GRID */}
+          {/* PRODUCT GRID */}
           <section className="collection-products-section">
             {isLoading && filteredProducts.length === 0 ? (
               <div className={`collection-grid-container ${viewMode === 'single' ? 'single-col-grid' : 'four-col-laptop-grid'}`}>
@@ -994,9 +1021,9 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="empty-state">
-                <p>No posters found matching this filter.</p>
+                <p>No products found in {activeCategory.name} matching this filter.</p>
                 <Link href="/collections/posters" className="button postgenz-btn">
-                  Reset Filters
+                  Explore All Posters
                 </Link>
               </div>
             ) : (

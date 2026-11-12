@@ -815,6 +815,97 @@ export const storeCategories: StoreCategory[] = [
   ...comingSoonCategories.map((c) => ({ ...c, available: false })),
 ];
 
+export const ACTIVE_CATEGORIES_KEY = 'dungeons_active_circle_categories_v2';
+
+export function getActiveCategorySlugs(): Set<string> {
+  const set = new Set<string>(['posters']);
+  if (typeof window === 'undefined') return set;
+  try {
+    const raw = localStorage.getItem(ACTIVE_CATEGORIES_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((s) => typeof s === 'string' && set.add(s.toLowerCase().trim()));
+      }
+    }
+  } catch (e) {}
+  return set;
+}
+
+export function setActiveCategorySlug(slug: string, active = true): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const set = getActiveCategorySlugs();
+    const cleanSlug = slug.toLowerCase().trim().replace(/[\s_]+/g, '-');
+    if (active) set.add(cleanSlug);
+    else if (cleanSlug !== 'posters') set.delete(cleanSlug);
+    localStorage.setItem(ACTIVE_CATEGORIES_KEY, JSON.stringify(Array.from(set)));
+    window.dispatchEvent(new CustomEvent('dungeons:categories-updated'));
+  } catch (e) {}
+}
+
+export function getStoreCategories(liveProducts: Product[] = []): StoreCategory[] {
+  const activeSlugs = getActiveCategorySlugs();
+  const prodList = liveProducts.length > 0 ? liveProducts : products;
+
+  return storeCategories.map((cat) => {
+    if (cat.slug === 'posters') {
+      return { ...cat, available: true };
+    }
+
+    const catSlug = cat.slug.toLowerCase().trim();
+    const catName = cat.name.toLowerCase().trim();
+    const normSlug = catSlug.replace(/[\s_]+/g, '-');
+    const normName = catName.replace(/[\s_]+/g, '-');
+
+    // Check if any product in catalog matches this category
+    const hasProduct = prodList.some((p) => {
+      const pCat = (p.category || '').toLowerCase().trim().replace(/[\s_]+/g, '-');
+      const pCol = (p.collection || '').toLowerCase().trim().replace(/[\s_]+/g, '-');
+
+      if (pCat === normSlug || pCat === normName) return true;
+      if (pCol === normSlug || pCol === normName) return true;
+      if (Array.isArray(p.tags) && p.tags.some((t) => {
+        const normT = (t || '').toLowerCase().trim().replace(/[\s_]+/g, '-');
+        return normT === normSlug || normT === normName;
+      })) {
+        return true;
+      }
+      return false;
+    });
+
+    const isAvailable = hasProduct || activeSlugs.has(normSlug) || activeSlugs.has(normName);
+
+    return {
+      ...cat,
+      available: isAvailable,
+    };
+  });
+}
+
+export function useStoreCategories() {
+  const { products: liveProducts, isLoading } = useLiveProductsWithStatus();
+  const [categories, setCategories] = useState<StoreCategory[]>(() => getStoreCategories(liveProducts));
+
+  useEffect(() => {
+    setCategories(getStoreCategories(liveProducts));
+  }, [liveProducts]);
+
+  useEffect(() => {
+    const handler = () => {
+      setCategories(getStoreCategories(liveProducts));
+    };
+    window.addEventListener('dungeons:categories-updated', handler);
+    window.addEventListener('dungeons:products-updated', handler);
+    return () => {
+      window.removeEventListener('dungeons:categories-updated', handler);
+      window.removeEventListener('dungeons:products-updated', handler);
+    };
+  }, [liveProducts]);
+
+  return { categories, liveProducts, isLoading };
+}
+
 // 11 Official Poster Categories
 export const posterCategories = [
   { id: 'cat-marvel-dc', slug: 'marvel-dc', title: 'Marvel & DC', name: 'Marvel & DC', description: 'Cinematic superheroes, comic art, and collector editions.' },
@@ -1289,6 +1380,12 @@ export function saveSingleProduct(productData: Partial<Product> & { id: string }
   }
 
   saveCatalogToStorage(updatedList);
+
+  if (productData.category) {
+    const rawCat = productData.category.toLowerCase().trim().replace(/[\s_]+/g, '-');
+    setActiveCategorySlug(rawCat, true);
+  }
+
   return updatedList;
 }
 
