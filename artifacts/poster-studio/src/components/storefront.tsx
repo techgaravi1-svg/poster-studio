@@ -20,10 +20,31 @@ import {
   Check,
   User,
   Package,
+  Store,
 } from 'lucide-react';
 import type { Product } from '@/lib/catalog';
 import { formatPrice, products, storeCategories, getStoreCategories, getProductStock, optimizeCloudinary } from '@/lib/catalog';
 import { cartTotals, store, useStore } from '@/lib/store';
+
+export const PARTNER_MAILTO_LINK =
+  'mailto:dungeons.support@gmail.com?subject=' +
+  encodeURIComponent('Partner With Us - Shop & Business Details') +
+  '&body=' +
+  encodeURIComponent(
+    'Hello DUNGEONS Team,\n\n' +
+    'I am interested in partnering with DUNGEONS to sell your posters, wall art, and custom prints in my shop / store.\n\n' +
+    'Here are my shop and business details:\n' +
+    '• Shop / Business Name: \n' +
+    '• Owner / Contact Person: \n' +
+    '• Phone / WhatsApp Number: \n' +
+    '• City & State: \n' +
+    '• Shop Address / Location: \n' +
+    '• Shop Type (e.g. Gift Shop, Bookstore, Anime Store, Decor, Online): \n' +
+    '• Instagram / Website (if any): \n' +
+    '• Expected Monthly Order Volume: \n\n' +
+    'Looking forward to hearing from you.\n\n' +
+    'Thank you!'
+  );
 
 export function PosterArt({
   src,
@@ -405,7 +426,7 @@ function MenuDrawer({
                 <MapPin size={20} className="menu-icon" />
                 <span>Addresses</span>
               </Link>
-              <a href="mailto:blumun.in@gmail.com" className="menu-nav-item with-icon" onClick={onClose}>
+              <a href="mailto:dungeons.support@gmail.com" className="menu-nav-item with-icon" onClick={onClose}>
                 <Headphones size={20} className="menu-icon" />
                 <span>Customer Support</span>
               </a>
@@ -423,6 +444,32 @@ function MenuDrawer({
               Register
             </Link>
           </div>
+          <div className="menu-partner-row">
+            <a
+              href={PARTNER_MAILTO_LINK}
+              className="btn-partner-action"
+              onClick={onClose}
+              title="Partner with us to sell DUNGEONS products in your shop"
+            >
+              <Store size={15} />
+              <span>Partner With Us</span>
+              <span className="partner-chip-new">RETAIL</span>
+            </a>
+          </div>
+        </div>
+
+        <div className="menu-drawer-footer-social">
+          <span className="social-label">Follow Us</span>
+          <a
+            href="https://www.instagram.com/dungeons.in?mdxt=Nnd6MTViOG95d2Uw"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="menu-social-link"
+            aria-label="Instagram"
+            title="Follow DUNGEONS on Instagram"
+          >
+            <Instagram size={18} />
+          </a>
         </div>
       </aside>
     </div>
@@ -598,7 +645,7 @@ export function Header() {
 
               {/* Flipkart / Myntra 24x7 Customer Support Direct Link (DESKTOP ONLY) */}
               <a
-                href="mailto:blumun.in@gmail.com"
+                href="mailto:dungeons.support@gmail.com"
                 className="hidden md:flex desktop-header-action-item desktop-support-action"
                 title="Customer Support"
               >
@@ -634,7 +681,16 @@ export function Header() {
                       <Heart size={16} />
                       <span>Wishlist</span>
                     </Link>
-                    <a href="mailto:blumun.in@gmail.com" className="account-dropdown-row">
+                    <a
+                      href={PARTNER_MAILTO_LINK}
+                      className="account-dropdown-row partner-dropdown-row"
+                      title="Partner with us to sell DUNGEONS products in your shop"
+                    >
+                      <Store size={16} />
+                      <span>Partner With Us</span>
+                      <span className="partner-chip-new">RETAIL</span>
+                    </a>
+                    <a href="mailto:dungeons.support@gmail.com" className="account-dropdown-row">
                       <Headphones size={16} />
                       <span>Customer Support</span>
                     </a>
@@ -860,6 +916,16 @@ export function Footer() {
                   Mail: dungeons.support@gmail.com
                 </a>
               </div>
+              <div className="footer-partner-badge-wrap">
+                <a
+                  href={PARTNER_MAILTO_LINK}
+                  className="footer-partner-pill-btn"
+                  title="Partner with us to sell DUNGEONS products in your shop"
+                >
+                  <Store size={14} />
+                  <span>Partner With Us</span>
+                </a>
+              </div>
             </div>
           </div>
 
@@ -868,6 +934,15 @@ export function Footer() {
             <h4 className="footer-title">Quick links</h4>
             <ul className="footer-links-list">
               <li><Link href="/account/orders">Track your order</Link></li>
+              <li>
+                <a
+                  href={PARTNER_MAILTO_LINK}
+                  className="footer-link-partner"
+                  title="Partner with us to sell DUNGEONS products in your shop"
+                >
+                  Partner With Us
+                </a>
+              </li>
               <li><Link href="/terms">Terms and Conditions</Link></li>
               <li><Link href="/returns">Return &amp; Refund Policy</Link></li>
               <li><Link href="/shipping-policy">Shipping Policy</Link></li>
@@ -930,10 +1005,12 @@ export function Footer() {
 
           <div className="footer-social-row">
             <a
-              href="#"
-              onClick={(e) => e.preventDefault()}
+              href="https://www.instagram.com/dungeons.in?mdxt=Nnd6MTViOG95d2Uw"
+              target="_blank"
+              rel="noopener noreferrer"
               className="social-icon-box"
               aria-label="Instagram"
+              title="Follow DUNGEONS on Instagram"
             >
               <Instagram size={18} />
             </a>

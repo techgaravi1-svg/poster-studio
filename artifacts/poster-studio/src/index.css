@@ -11796,3 +11796,215 @@ button.desktop-nav-item:hover {
     opacity: 1;
   }
 }
+
+/* ======================================================== */
+/* PARTNER WITH US & SOCIAL LINK INTEGRATION */
+/* ======================================================== */
+.partner-chip-new {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+  display: inline-block;
+  line-height: normal;
+}
+
+.partner-dropdown-row {
+  color: #047857 !important;
+  background: #f0fdf4;
+}
+
+.partner-dropdown-row:hover {
+  background: #dcfce7 !important;
+  color: #065f46 !important;
+}
+
+.footer-link-partner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #38bdf8 !important;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.footer-link-partner:hover {
+  color: #7dd3fc !important;
+  transform: translateX(2px);
+}
+
+.footer-partner-badge-wrap {
+  margin-top: 10px;
+}
+
+.footer-partner-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #38bdf8;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  width: fit-content;
+}
+
+.footer-partner-pill-btn:hover {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #38bdf8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+}
+
+.menu-partner-row {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.btn-partner-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: #0f172a;
+  color: #ffffff;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.btn-partner-action:hover {
+  background: #1e293b;
+  color: #38bdf8;
+}
+
+.btn-partner-action .partner-chip-new {
+  background: #065f46;
+  color: #a7f3d0;
+  border-color: #047857;
+}
+
+.menu-drawer-footer-social {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.menu-drawer-footer-social .social-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.menu-social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+  transition: all 0.15s ease;
+}
+
+.menu-social-link:hover {
+  color: #e1306c;
+  border-color: #fbcfe8;
+  background: #fdf2f8;
+}
+
+/* ACCOUNT PAGE PARTNER CARD */
+.account-partner-card {
+  margin: 24px auto 0;
+  max-width: 440px;
+  padding: 20px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.account-partner-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.partner-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.partner-card-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.partner-card-sub {
+  font-size: 12px;
+  color: #64748b;
+  margin: 2px 0 0 0;
+}
+
+.partner-card-body {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.btn-partner-email-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.btn-partner-email-cta:hover {
+  background: #0284c7;
+  color: #ffffff;
+  transform: translateY(-1px);
+}

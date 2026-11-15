@@ -44,10 +44,12 @@ import {
   Download,
   FileText,
   Search,
+  Store,
+  Mail,
 } from 'lucide-react';
 import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, isPosterCategory, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
-import { PosterArt, ProductCard, ProductCardSkeleton, Toast } from '@/components/storefront';
+import { PosterArt, ProductCard, ProductCardSkeleton, Toast, PARTNER_MAILTO_LINK } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
 import { authService } from '@/services/auth';
 import { paymentService } from '@/services/payment';
@@ -175,6 +177,14 @@ export function HomePage() {
 
   const customCategories = [
     {
+      id: 'custom-posters',
+      title: 'Custom Wall Posters',
+      subtitle: 'Ultra-HD custom archival gallery prints of your own art',
+      image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/custom-poster_1640a9.jpg', 600, 80),
+      link: '/custom?type=poster',
+      available: true,
+    },
+    {
       id: 'photo-strip',
       title: 'Custom Photobooth Strip',
       subtitle: 'Turn your camera roll into aesthetic 3-strip & 4-strip prints',
@@ -189,14 +199,6 @@ export function HomePage() {
       image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/minipocket_1d50a9.jpg', 600, 80),
       link: '#',
       available: false,
-    },
-    {
-      id: 'custom-posters',
-      title: 'Custom Wall Posters',
-      subtitle: 'Ultra-HD custom archival gallery prints of your own art',
-      image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/custom-poster_1640a9.jpg', 600, 80),
-      link: '/custom?type=poster',
-      available: true,
     },
   ];
   const [customSlideIndex, setCustomSlideIndex] = useState(0);
@@ -2220,7 +2222,31 @@ export function CustomPage() {
         </div>
 
         <div className="custom-boxes-selection-grid">
-          {/* Box 1: Custom Photobooth Strip (Coming Soon) */}
+          {/* Box 1: Custom Wall Posters / Wallpaper */}
+          <div className="custom-selection-box-card">
+            <div className="box-media-wrap">
+              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/custom-poster_1640a9.jpg" alt="Custom Wall Posters" className="box-thumb-img" />
+              <span className="box-tag-pill">ARCHIVAL MATTE</span>
+            </div>
+            <div className="box-body-wrap">
+              <h2 className="box-title">Custom Wall Posters</h2>
+              <p className="box-desc">
+                Your own photos, personal digital art, or wallpaper mural printed with archival quality.
+              </p>
+              <div className="box-footer-row">
+                <span className="box-price-hint">Starting from Rs. 90</span>
+                <button
+                  type="button"
+                  className="btn-design-now-highlight"
+                  onClick={() => selectFormat('poster')}
+                >
+                  DESIGN NOW →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Box 2: Custom Photobooth Strip (Coming Soon) */}
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
               <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793352215/dungeons_hero_assets/photobooth_strip_new.jpg" alt="Custom Photobooth Strip" className="box-thumb-img" />
@@ -2243,7 +2269,7 @@ export function CustomPage() {
             </div>
           </div>
 
-          {/* Box 2: Mini Pocket Photos (Coming Soon) */}
+          {/* Box 3: Mini Pocket Photos (Coming Soon) */}
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
               <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/minipocket_1d50a9.jpg" alt="Mini Pocket Photos" className="box-thumb-img" />
@@ -2261,30 +2287,6 @@ export function CustomPage() {
                   className="btn-design-now-highlight opacity-50 cursor-not-allowed select-none bg-neutral-200 text-neutral-600 border border-neutral-300 shadow-none"
                 >
                   COMING SOON
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Box 3: Custom Wall Posters / Wallpaper */}
-          <div className="custom-selection-box-card">
-            <div className="box-media-wrap">
-              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/custom-poster_1640a9.jpg" alt="Custom Wall Posters" className="box-thumb-img" />
-              <span className="box-tag-pill">ARCHIVAL MATTE</span>
-            </div>
-            <div className="box-body-wrap">
-              <h2 className="box-title">Custom Wall Posters</h2>
-              <p className="box-desc">
-                Your own photos, personal digital art, or wallpaper mural printed with archival quality.
-              </p>
-              <div className="box-footer-row">
-                <span className="box-price-hint">Starting from Rs. 90</span>
-                <button
-                  type="button"
-                  className="btn-design-now-highlight"
-                  onClick={() => selectFormat('poster')}
-                >
-                  DESIGN NOW →
                 </button>
               </div>
             </div>
@@ -3972,6 +3974,29 @@ export function AccountPage() {
             </div>
           </form>
         )}
+      </div>
+
+      <div className="account-partner-card">
+        <div className="account-partner-header">
+          <div className="partner-icon-circle">
+            <Store size={20} />
+          </div>
+          <div>
+            <h3 className="partner-card-title">Partner With Us</h3>
+            <p className="partner-card-sub">Are you a shop owner, retailer, or distributor?</p>
+          </div>
+        </div>
+        <p className="partner-card-body">
+          Partner with DUNGEONS to stock our premium anime, superhero, sports &amp; luxury wall posters and custom prints in your retail store at bulk wholesale rates.
+        </p>
+        <a
+          href={PARTNER_MAILTO_LINK}
+          className="btn-partner-email-cta"
+          title="Send your shop details to our official email"
+        >
+          <Mail size={16} />
+          <span>Partner With Us — Send Shop Details</span>
+        </a>
       </div>
     </main>
   );
