@@ -344,10 +344,88 @@ router.patch('/admin/orders/:id/status', requireAdminAuth, async (req: Request, 
 router.delete('/admin/orders/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
-    await prisma.order.delete({ where: { id } });
+    const existing = await prisma.order.findFirst({
+      where: { OR: [{ id }, { orderNumber: id }] },
+    });
+    if (existing) {
+      await prisma.order.delete({ where: { id: existing.id } });
+    }
     return res.json({ success: true, message: 'Order deleted successfully' });
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Failed to delete order' });
+  }
+});
+
+router.post('/admin/orders', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const body = req.body;
+    const orderNumber = body.orderNumber || `DNG-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newOrder = await prisma.order.create({
+      data: {
+        orderNumber,
+        customerName: body.customerName || 'Customer',
+        customerEmail: body.customerEmail || 'customer@example.com',
+        customerPhone: body.customerPhone || '9876543210',
+        shippingAddress: body.shippingAddress || {},
+        subtotal: Number(body.subtotal) || 0,
+        shippingFee: Number(body.shippingFee) || 0,
+        discount: Number(body.discount) || 0,
+        total: Number(body.total) || 0,
+        paymentStatus: body.paymentStatus || 'PAID',
+        paymentMethod: body.paymentMethod || 'Manual Admin Order',
+        fulfillmentStatus: body.fulfillmentStatus || 'PENDING',
+        trackingNumber: body.trackingNumber || null,
+        notes: body.notes || null,
+        items: {
+          create: (body.items || []).map((item: any) => ({
+            productId: item.productId || item.id || null,
+            title: item.title || item.productTitle || 'Custom Print',
+            slug: item.slug || null,
+            size: item.size || 'A4',
+            quantity: Number(item.quantity) || 1,
+            price: Number(item.price) || 0,
+            orientation: item.orientation || 'portrait',
+            customUpload: item.customUpload || null,
+          })),
+        },
+      },
+      include: { items: true },
+    });
+    return res.status(201).json({ success: true, order: newOrder });
+  } catch (error: any) {
+    console.error('Create admin order error:', error);
+    return res.status(500).json({ success: false, error: 'Failed to create manual order' });
+  }
+});
+
+router.put('/admin/orders/:id', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.order.findFirst({
+      where: { OR: [{ id }, { orderNumber: id }] },
+    });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+    const body = req.body;
+    const updated = await prisma.order.update({
+      where: { id: existing.id },
+      data: {
+        customerName: body.customerName !== undefined ? body.customerName : existing.customerName,
+        customerEmail: body.customerEmail !== undefined ? body.customerEmail : existing.customerEmail,
+        customerPhone: body.customerPhone !== undefined ? body.customerPhone : existing.customerPhone,
+        shippingAddress: body.shippingAddress !== undefined ? body.shippingAddress : existing.shippingAddress,
+        total: body.total !== undefined ? Number(body.total) : existing.total,
+        paymentStatus: body.paymentStatus !== undefined ? body.paymentStatus : existing.paymentStatus,
+        fulfillmentStatus: body.fulfillmentStatus !== undefined ? body.fulfillmentStatus : existing.fulfillmentStatus,
+        trackingNumber: body.trackingNumber !== undefined ? body.trackingNumber : existing.trackingNumber,
+        notes: body.notes !== undefined ? body.notes : existing.notes,
+      },
+      include: { items: true },
+    });
+    return res.json({ success: true, order: updated });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: 'Failed to update order' });
   }
 });
 
@@ -655,6 +733,38 @@ router.get('/admin/subscribers', requireAdminAuth, async (_req: Request, res: Re
     return res.json({ success: true, subscribers });
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Failed to retrieve subscribers' });
+  }
+});
+
+router.post('/admin/subscribers', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ success: false, error: 'Valid email is required' });
+    }
+    const sub = await prisma.newsletterSubscriber.upsert({
+      where: { email: email.trim().toLowerCase() },
+      create: { email: email.trim().toLowerCase() },
+      update: {},
+    });
+    return res.status(201).json({ success: true, subscriber: sub });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to add subscriber' });
+  }
+});
+
+router.delete('/admin/subscribers/:id', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.newsletterSubscriber.findFirst({
+      where: { OR: [{ id }, { email: id }] },
+    });
+    if (existing) {
+      await prisma.newsletterSubscriber.delete({ where: { id: existing.id } });
+    }
+    return res.json({ success: true, message: 'Subscriber deleted successfully' });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to delete subscriber' });
   }
 });
 

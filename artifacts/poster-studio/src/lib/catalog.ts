@@ -1093,6 +1093,18 @@ export function addDynamicPosterCategory(name: string): DynamicPosterCategory {
   return newCat;
 }
 
+export function deleteDynamicPosterCategory(slug: string): DynamicPosterCategory[] {
+  if (typeof window !== 'undefined') {
+    try {
+      const existing = getDynamicPosterCategories().filter((c) => c.slug !== slug);
+      localStorage.setItem(DYNAMIC_CATEGORIES_KEY, JSON.stringify(existing));
+      window.dispatchEvent(new CustomEvent('dungeons:categories-updated', { detail: existing }));
+      return existing;
+    } catch (e) {}
+  }
+  return [];
+}
+
 export const collections = [
   { slug: 'all', title: 'ALL POSTERS', description: 'Complete collection of premium archival matte posters.', treatment: 'art-aurora' },
   { slug: 'marvel-dc', title: 'MARVEL & DC', description: 'Cinematic superheroes, comic art, and collector editions.', treatment: 'art-signal' },

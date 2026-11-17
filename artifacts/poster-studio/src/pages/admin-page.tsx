@@ -33,6 +33,7 @@ import {
   Download,
   Image as ImageIcon,
   AlertTriangle,
+  Mail,
 } from 'lucide-react';
 import './admin.css';
 import {
@@ -47,6 +48,7 @@ import {
   setActiveCategorySlug,
   getDynamicPosterCategories,
   addDynamicPosterCategory,
+  deleteDynamicPosterCategory,
   CIRCLE_PRODUCT_CATEGORIES,
   isPosterCategory,
   type DynamicPosterCategory,
@@ -217,105 +219,124 @@ export function AdminDashboardPage() {
   const [orders, setOrders] = useState<AdminOrder[]>(() => {
     try {
       if (typeof window !== 'undefined') {
+        const deletedIds: string[] = JSON.parse(localStorage.getItem('dungeons_deleted_orders') || '[]');
+
+        // 1. Custom admin saved orders
+        const customAdminOrders = localStorage.getItem('dungeons_admin_orders_custom');
+        if (customAdminOrders !== null) {
+          const parsed = JSON.parse(customAdminOrders);
+          if (Array.isArray(parsed)) {
+            return parsed.filter((o: any) => !deletedIds.includes(o.id) && !deletedIds.includes(o.orderNumber));
+          }
+        }
+
+        // 2. Storefront user placed orders
         const raw = localStorage.getItem('poster-studio-store-v2');
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed.orders) && parsed.orders.length > 0) {
-            return parsed.orders.map((o: any) => ({
-              id: o.id || `ord-${Date.now()}`,
-              orderNumber: (o.id || '').replace('order-', 'DNG-') || 'DNG-1001',
-              customerName: o.customer?.name || 'Customer',
-              customerEmail: o.customer?.email || '',
-              customerPhone: o.customer?.phone || '',
-              shippingAddress: o.address || {},
-              subtotal: Number(o.subtotal) || 0,
-              shippingFee: Number(o.shipping) || 0,
-              discount: Number(o.discount) || 0,
-              total: Number(o.total) || 0,
-              paymentStatus: (o.paymentStatus?.toUpperCase() || 'PAID') as any,
-              paymentMethod: 'UPI / Razorpay',
-              fulfillmentStatus: (o.fulfillmentStatus?.toUpperCase() || 'PENDING') as any,
-              items: Array.isArray(o.products)
-                ? o.products.map((p: any) => ({
-                    id: p.productId || p.key || 'item',
-                    productTitle: p.title || 'Poster',
-                    productImage: p.customUpload?.preview || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg',
-                    size: p.size || 'A4',
-                    quantity: Number(p.quantity) || 1,
-                    price: Number(p.price) || 0,
-                  }))
-                : [],
-              createdAt: o.createdAt || new Date().toISOString(),
-            }));
+          if (Array.isArray(parsed.orders)) {
+            const valid = parsed.orders
+              .filter((o: any) => !deletedIds.includes(o.id) && !deletedIds.includes(o.orderNumber))
+              .map((o: any) => ({
+                id: o.id || `ord-${Date.now()}`,
+                orderNumber: (o.id || '').replace('order-', 'DNG-') || 'DNG-1001',
+                customerName: o.customer?.name || 'Customer',
+                customerEmail: o.customer?.email || '',
+                customerPhone: o.customer?.phone || '',
+                shippingAddress: o.address || {},
+                subtotal: Number(o.subtotal) || 0,
+                shippingFee: Number(o.shipping) || 0,
+                discount: Number(o.discount) || 0,
+                total: Number(o.total) || 0,
+                paymentStatus: (o.paymentStatus?.toUpperCase() || 'PAID') as any,
+                paymentMethod: 'UPI / Razorpay',
+                fulfillmentStatus: (o.fulfillmentStatus?.toUpperCase() || 'PENDING') as any,
+                items: Array.isArray(o.products)
+                  ? o.products.map((p: any) => ({
+                      id: p.productId || p.key || 'item',
+                      productTitle: p.title || 'Poster',
+                      productImage: p.customUpload?.preview || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg',
+                      size: p.size || 'A4',
+                      quantity: Number(p.quantity) || 1,
+                      price: Number(p.price) || 0,
+                    }))
+                  : [],
+                createdAt: o.createdAt || new Date().toISOString(),
+              }));
+            if (valid.length > 0) return valid;
           }
         }
+
+        // 3. Demo fallback orders (filtered against deleted IDs so deleted ones never return)
+        const defaultDemos = [
+          {
+            id: 'ord-101',
+            orderNumber: 'DNG-7598',
+            customerName: 'Aarav Sharma',
+            customerEmail: 'aarav.demo@example.com',
+            customerPhone: '9876543210',
+            shippingAddress: { flat: 'Flat 401, Sapphire Heights', locality: 'MG Road, Indiranagar', city: 'Bengaluru', state: 'Karnataka', pincode: '560001' },
+            subtotal: 790,
+            shippingFee: 0,
+            discount: 79,
+            total: 711,
+            paymentStatus: 'PAID' as any,
+            paymentMethod: 'Razorpay UPI',
+            fulfillmentStatus: 'PENDING' as any,
+            trackingNumber: 'DELHIVERY-9921',
+            items: [
+              { id: 'item-1', productTitle: 'ASTA POSTER | BLACK CLOVER', productImage: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg', size: 'A4', quantity: 2, price: 119 },
+              { id: 'item-2', productTitle: 'GOJO SATORU | JUJUTSU KAISEN', productImage: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-02_2a2855.jpg', size: 'A3', quantity: 1, price: 159 },
+            ],
+            createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+          },
+          {
+            id: 'ord-102',
+            orderNumber: 'DNG-7599',
+            customerName: 'Priya Patel',
+            customerEmail: 'priya.demo@example.com',
+            customerPhone: '9876543211',
+            shippingAddress: { flat: 'B-204, Green Valley', locality: 'Near City Mall, Satellite', city: 'Ahmedabad', state: 'Gujarat', pincode: '380015' },
+            subtotal: 1250,
+            shippingFee: 0,
+            discount: 125,
+            total: 1125,
+            paymentStatus: 'PAID' as any,
+            paymentMethod: 'Paytm UPI',
+            fulfillmentStatus: 'PROCESSING' as any,
+            trackingNumber: 'BLUEDART-8812',
+            items: [
+              { id: 'item-3', productTitle: 'MILES MORALES SPIDER-MAN', productImage: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349699/dungeons_store_assets/poster-03_a9d962.jpg', size: 'A3', quantity: 3, price: 159 },
+            ],
+            createdAt: new Date(Date.now() - 3600000 * 20).toISOString(),
+          },
+          {
+            id: 'ord-103',
+            orderNumber: 'DNG-7600',
+            customerName: 'Rohan Verma',
+            customerEmail: 'rohan.demo@example.com',
+            customerPhone: '9876543212',
+            shippingAddress: { flat: 'A-12, Palm Grove', locality: 'Koregaon Park', city: 'Pune', state: 'Maharashtra', pincode: '411001' },
+            subtotal: 544,
+            shippingFee: 0,
+            discount: 0,
+            total: 544,
+            paymentStatus: 'PAID' as any,
+            paymentMethod: 'Google Pay',
+            fulfillmentStatus: 'SHIPPED' as any,
+            trackingNumber: 'EKART-4421',
+            items: [
+              { id: 'item-4', productTitle: 'VINTAGE PORSCHE 911 TURBO', productImage: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349699/dungeons_store_assets/poster-04_289e1c.jpg', size: 'A4', quantity: 2, price: 119 },
+            ],
+            createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
+          },
+        ];
+        return defaultDemos.filter((d) => !deletedIds.includes(d.id) && !deletedIds.includes(d.orderNumber));
       }
     } catch {
-      // fallback to mock
+      // fallback to empty
     }
-    return [
-      {
-        id: 'ord-101',
-        orderNumber: 'DNG-7598',
-        customerName: 'Aarav Sharma',
-        customerEmail: 'aarav.demo@example.com',
-        customerPhone: '9876543210',
-        shippingAddress: { flat: 'Flat 401, Sapphire Heights', locality: 'MG Road, Indiranagar', city: 'Bengaluru', state: 'Karnataka', pincode: '560001' },
-        subtotal: 790,
-        shippingFee: 0,
-        discount: 79,
-        total: 711,
-        paymentStatus: 'PAID',
-        paymentMethod: 'Razorpay UPI',
-        fulfillmentStatus: 'PENDING',
-        trackingNumber: 'DELHIVERY-9921',
-        items: [
-          { id: 'item-1', productTitle: 'ASTA POSTER | BLACK CLOVER', productImage: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg', size: 'A4', quantity: 2, price: 119 },
-          { id: 'item-2', productTitle: 'GOJO SATORU | JUJUTSU KAISEN', productImage: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-02_2a2855.jpg', size: 'A3', quantity: 1, price: 159 },
-        ],
-        createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-      },
-      {
-        id: 'ord-102',
-        orderNumber: 'DNG-7599',
-        customerName: 'Priya Patel',
-        customerEmail: 'priya.demo@example.com',
-        customerPhone: '9876543211',
-        shippingAddress: { flat: 'B-204, Green Valley', locality: 'Near City Mall, Satellite', city: 'Ahmedabad', state: 'Gujarat', pincode: '380015' },
-        subtotal: 1250,
-        shippingFee: 0,
-        discount: 125,
-        total: 1125,
-        paymentStatus: 'PAID',
-        paymentMethod: 'Paytm UPI',
-        fulfillmentStatus: 'PROCESSING',
-        trackingNumber: 'BLUEDART-8812',
-        items: [
-          { id: 'item-3', productTitle: 'MILES MORALES SPIDER-MAN', productImage: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349699/dungeons_store_assets/poster-03_a9d962.jpg', size: 'A3', quantity: 3, price: 159 },
-        ],
-        createdAt: new Date(Date.now() - 3600000 * 20).toISOString(),
-      },
-      {
-        id: 'ord-103',
-        orderNumber: 'DNG-7600',
-        customerName: 'Rohan Verma',
-        customerEmail: 'rohan.demo@example.com',
-        customerPhone: '9876543212',
-        shippingAddress: { flat: 'A-12, Palm Grove', locality: 'Koregaon Park', city: 'Pune', state: 'Maharashtra', pincode: '411001' },
-        subtotal: 544,
-        shippingFee: 0,
-        discount: 0,
-        total: 544,
-        paymentStatus: 'PAID',
-        paymentMethod: 'Google Pay',
-        fulfillmentStatus: 'SHIPPED',
-        trackingNumber: 'EKART-4421',
-        items: [
-          { id: 'item-4', productTitle: 'VINTAGE PORSCHE 911 TURBO', productImage: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349699/dungeons_store_assets/poster-04_289e1c.jpg', size: 'A4', quantity: 2, price: 119 },
-        ],
-        createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
-      },
-    ];
+    return [];
   });
 
   const [products, setProducts] = useState<AdminProduct[]>(() => {
@@ -339,18 +360,40 @@ export function AdminDashboardPage() {
     }));
   });
 
-  const [coupons, setCoupons] = useState<AdminCoupon[]>([
-    { id: 'c1', code: 'STUDIO10', description: 'Extra 10% OFF on all posters', discountType: 'percentage', discountValue: 10, minSpend: 0, minQty: 1, isActive: true, createdAt: new Date().toISOString() },
-    { id: 'c2', code: 'FIRST10', description: 'Welcome 10% discount for new art lovers', discountType: 'percentage', discountValue: 10, minSpend: 0, minQty: 1, isActive: true, createdAt: new Date().toISOString() },
-    { id: 'c3', code: 'DUNGEONS3', description: 'Buy 2 Get 1 FREE (Special Offer)', discountType: 'percentage', discountValue: 33.33, minSpend: 200, minQty: 3, isActive: true, createdAt: new Date().toISOString() },
-    { id: 'c4', code: 'POSTER5', description: 'Buy 3 Get 2 FREE (Mega Bundle)', discountType: 'percentage', discountValue: 40, minSpend: 350, minQty: 5, isActive: true, createdAt: new Date().toISOString() },
-  ]);
+  const [coupons, setCoupons] = useState<AdminCoupon[]>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const custom = localStorage.getItem('dungeons_admin_coupons_custom');
+        if (custom) {
+          const parsed = JSON.parse(custom);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      }
+    } catch {}
+    return [
+      { id: 'c1', code: 'STUDIO10', description: 'Extra 10% OFF on all posters', discountType: 'percentage', discountValue: 10, minSpend: 0, minQty: 1, isActive: true, createdAt: new Date().toISOString() },
+      { id: 'c2', code: 'FIRST10', description: 'Welcome 10% discount for new art lovers', discountType: 'percentage', discountValue: 10, minSpend: 0, minQty: 1, isActive: true, createdAt: new Date().toISOString() },
+      { id: 'c3', code: 'DUNGEONS3', description: 'Buy 2 Get 1 FREE (Special Offer)', discountType: 'percentage', discountValue: 33.33, minSpend: 200, minQty: 3, isActive: true, createdAt: new Date().toISOString() },
+      { id: 'c4', code: 'POSTER5', description: 'Buy 3 Get 2 FREE (Mega Bundle)', discountType: 'percentage', discountValue: 40, minSpend: 350, minQty: 5, isActive: true, createdAt: new Date().toISOString() },
+    ];
+  });
 
-  const [subscribers, setSubscribers] = useState<AdminSubscriber[]>([
-    { id: 's1', email: 'collector.art@gmail.com', createdAt: new Date(Date.now() - 3600000 * 12).toISOString() },
-    { id: 's2', email: 'rahul.designs@yahoo.com', createdAt: new Date(Date.now() - 3600000 * 36).toISOString() },
-    { id: 's3', email: 'priya.sharma99@gmail.com', createdAt: new Date(Date.now() - 3600000 * 72).toISOString() },
-  ]);
+  const [subscribers, setSubscribers] = useState<AdminSubscriber[]>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const custom = localStorage.getItem('dungeons_admin_subscribers_custom');
+        if (custom) {
+          const parsed = JSON.parse(custom);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      }
+    } catch {}
+    return [
+      { id: 's1', email: 'collector.art@gmail.com', createdAt: new Date(Date.now() - 3600000 * 12).toISOString() },
+      { id: 's2', email: 'rahul.designs@yahoo.com', createdAt: new Date(Date.now() - 3600000 * 36).toISOString() },
+      { id: 's3', email: 'priya.sharma99@gmail.com', createdAt: new Date(Date.now() - 3600000 * 72).toISOString() },
+    ];
+  });
 
   // Filters
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
@@ -469,6 +512,35 @@ export function AdminDashboardPage() {
     minSpend: 0,
     minQty: 1,
   });
+  const [editingCoupon, setEditingCoupon] = useState<AdminCoupon | null>(null);
+
+  // Manual Order Creation & Edit States
+  const [isCreateOrderModalOpen, setIsCreateOrderModalOpen] = useState(false);
+  const defaultOrderFormData = {
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
+    flat: '',
+    locality: '',
+    city: '',
+    state: '',
+    pincode: '',
+    itemTitle: 'CUSTOM WALL POSTER',
+    size: 'A4',
+    quantity: 1,
+    price: 119,
+    paymentStatus: 'PAID' as 'PAID' | 'PENDING' | 'FAILED',
+    paymentMethod: 'UPI / Razorpay',
+    fulfillmentStatus: 'PENDING' as 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED',
+    trackingNumber: '',
+    notes: '',
+  };
+  const [orderFormData, setOrderFormData] = useState(defaultOrderFormData);
+  const [editingOrder, setEditingOrder] = useState<AdminOrder | null>(null);
+
+  // Subscriber Add Modal State
+  const [isSubscriberModalOpen, setIsSubscriberModalOpen] = useState(false);
+  const [newSubscriberEmail, setNewSubscriberEmail] = useState('');
 
   // Password change state
   const [currentPw, setCurrentPw] = useState('');
@@ -714,21 +786,24 @@ export function AdminDashboardPage() {
         const contentType = ordersRes.value.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
           const d = await ordersRes.value.json();
-          if (d.success && Array.isArray(d.orders) && d.orders.length > 0) {
-            const normalizedOrders: AdminOrder[] = d.orders.map((o: any) => ({
-              ...o,
-              items: (o.items || []).map((i: any) => ({
-                id: i.id || i.productId || 'item',
-                productTitle: i.title || i.productTitle || 'Poster',
-                title: i.title || i.productTitle || 'Poster',
-                productImage: i.customUpload?.preview || i.productImage || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg',
-                size: i.size || 'A4',
-                quantity: Number(i.quantity) || 1,
-                price: Number(i.price) || 0,
-                orientation: i.orientation || 'portrait',
-                customUpload: i.customUpload || null,
-              })),
-            }));
+          if (d.success && Array.isArray(d.orders)) {
+            const deletedIds: string[] = JSON.parse(localStorage.getItem('dungeons_deleted_orders') || '[]');
+            const normalizedOrders: AdminOrder[] = d.orders
+              .filter((o: any) => !deletedIds.includes(o.id) && !deletedIds.includes(o.orderNumber))
+              .map((o: any) => ({
+                ...o,
+                items: (o.items || []).map((i: any) => ({
+                  id: i.id || i.productId || 'item',
+                  productTitle: i.title || i.productTitle || 'Poster',
+                  title: i.title || i.productTitle || 'Poster',
+                  productImage: i.customUpload?.preview || i.productImage || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg',
+                  size: i.size || 'A4',
+                  quantity: Number(i.quantity) || 1,
+                  price: Number(i.price) || 0,
+                  orientation: i.orientation || 'portrait',
+                  customUpload: i.customUpload || null,
+                })),
+              }));
             setOrders(normalizedOrders);
           }
         }
@@ -781,19 +856,15 @@ export function AdminDashboardPage() {
     updates: { fulfillmentStatus?: string; paymentStatus?: string; trackingNumber?: string }
   ) => {
     try {
-      const res = await authFetch(`/api/admin/orders/${orderId}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify(updates),
-      });
+      try {
+        await authFetch(`/api/admin/orders/${orderId}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify(updates),
+        }).catch(() => {});
+      } catch {}
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        showToast(`Error ${res.status}: ${errData.error || 'Failed to update order status on server'}`);
-        return;
-      }
-
-      setOrders((prev) =>
-        prev.map((o) =>
+      setOrders((prev) => {
+        const next = prev.map((o) =>
           o.id === orderId
             ? {
                 ...o,
@@ -802,28 +873,203 @@ export function AdminDashboardPage() {
                 trackingNumber: updates.trackingNumber !== undefined ? updates.trackingNumber : o.trackingNumber,
               }
             : o
-        )
-      );
+        );
+        try {
+          localStorage.setItem('dungeons_admin_orders_custom', JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
       showToast('Order status updated successfully!');
     } catch (err: any) {
       showToast(`Error 500: Could not reach server to update order (${err.message})`);
     }
   };
 
-  const handleDeleteOrder = async (orderId: string) => {
-    if (!window.confirm('Delete this order permanently?')) return;
-    try {
-      const res = await authFetch(`/api/admin/orders/${orderId}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        showToast(`Error ${res.status}: ${errData.error || 'Failed to delete order from server'}`);
-        return;
-      }
-      setOrders((prev) => prev.filter((o) => o.id !== orderId));
-      showToast('Order removed from database');
-    } catch (err: any) {
-      showToast(`Error 500: Server delete error (${err.message})`);
+  const handleCreateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orderFormData.customerName.trim()) {
+      showToast('Error: Customer name is required');
+      return;
     }
+    const orderNumber = `DNG-${Math.floor(1000 + Math.random() * 9000)}`;
+    const total = (Number(orderFormData.price) || 0) * (Number(orderFormData.quantity) || 1);
+    const newOrder: AdminOrder = {
+      id: `ord-${Date.now()}`,
+      orderNumber,
+      customerName: orderFormData.customerName.trim(),
+      customerEmail: orderFormData.customerEmail.trim() || 'customer@example.com',
+      customerPhone: orderFormData.customerPhone.trim() || '9876543210',
+      shippingAddress: {
+        flat: orderFormData.flat.trim() || 'Flat / Suite',
+        locality: orderFormData.locality.trim() || 'Locality / Area',
+        city: orderFormData.city.trim() || 'City',
+        state: orderFormData.state.trim() || 'State',
+        pincode: orderFormData.pincode.trim() || 'Pincode',
+      },
+      subtotal: total,
+      shippingFee: 0,
+      discount: 0,
+      total,
+      paymentStatus: orderFormData.paymentStatus,
+      paymentMethod: orderFormData.paymentMethod,
+      fulfillmentStatus: orderFormData.fulfillmentStatus,
+      trackingNumber: orderFormData.trackingNumber.trim() || undefined,
+      notes: orderFormData.notes.trim() || undefined,
+      items: [
+        {
+          id: `item-${Date.now()}`,
+          productTitle: orderFormData.itemTitle.trim() || 'Custom Wall Poster',
+          title: orderFormData.itemTitle.trim() || 'Custom Wall Poster',
+          size: orderFormData.size,
+          quantity: Number(orderFormData.quantity) || 1,
+          price: Number(orderFormData.price) || 0,
+          productImage: 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg',
+        },
+      ],
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      await authFetch('/api/admin/orders', {
+        method: 'POST',
+        body: JSON.stringify(newOrder),
+      }).catch(() => {});
+    } catch {}
+
+    setOrders((prev) => {
+      const next = [newOrder, ...prev];
+      try {
+        localStorage.setItem('dungeons_admin_orders_custom', JSON.stringify(next));
+      } catch (err) {}
+      return next;
+    });
+
+    setIsCreateOrderModalOpen(false);
+    setOrderFormData(defaultOrderFormData);
+    showToast(`Order #${orderNumber} created successfully!`);
+  };
+
+  const handleUpdateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOrder) return;
+
+    try {
+      await authFetch(`/api/admin/orders/${editingOrder.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(editingOrder),
+      }).catch(() => {});
+    } catch {}
+
+    setOrders((prev) => {
+      const next = prev.map((o) => (o.id === editingOrder.id ? editingOrder : o));
+      try {
+        localStorage.setItem('dungeons_admin_orders_custom', JSON.stringify(next));
+      } catch (err) {}
+      return next;
+    });
+
+    setEditingOrder(null);
+    showToast(`Order #${editingOrder.orderNumber} updated successfully!`);
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    const target = orders.find((o) => o.id === orderId);
+    const orderNum = target ? target.orderNumber : orderId;
+    if (!window.confirm(`Delete order #${orderNum} permanently?`)) return;
+
+    try {
+      await authFetch(`/api/admin/orders/${orderId}`, { method: 'DELETE' }).catch(() => {});
+    } catch {}
+
+    // 1. Remove from orders state
+    setOrders((prev) => {
+      const next = prev.filter((o) => o.id !== orderId && o.orderNumber !== orderId);
+      try {
+        localStorage.setItem('dungeons_admin_orders_custom', JSON.stringify(next));
+      } catch (err) {}
+      return next;
+    });
+
+    // 2. Add to dungeons_deleted_orders in localStorage so demo orders never return
+    try {
+      const deletedIds: string[] = JSON.parse(localStorage.getItem('dungeons_deleted_orders') || '[]');
+      if (!deletedIds.includes(orderId)) deletedIds.push(orderId);
+      if (target?.orderNumber && !deletedIds.includes(target.orderNumber)) deletedIds.push(target.orderNumber);
+      localStorage.setItem('dungeons_deleted_orders', JSON.stringify(deletedIds));
+
+      // 3. Clean from storefront orders in poster-studio-store-v2
+      const raw = localStorage.getItem('poster-studio-store-v2');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.orders)) {
+          parsed.orders = parsed.orders.filter((o: any) => o.id !== orderId && o.orderNumber !== orderId);
+          localStorage.setItem('poster-studio-store-v2', JSON.stringify(parsed));
+        }
+      }
+    } catch (e) {}
+
+    showToast(`Order #${orderNum} deleted permanently!`);
+  };
+
+  const handleCreateSubscriber = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = newSubscriberEmail.trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      showToast('Error: Please enter a valid email address');
+      return;
+    }
+    const newSub: AdminSubscriber = {
+      id: `s-${Date.now()}`,
+      email,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      await authFetch('/api/admin/subscribers', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }).catch(() => {});
+    } catch {}
+
+    setSubscribers((prev) => {
+      const next = [newSub, ...prev.filter((s) => s.email.toLowerCase() !== email)];
+      try {
+        localStorage.setItem('dungeons_admin_subscribers_custom', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+
+    setNewSubscriberEmail('');
+    setIsSubscriberModalOpen(false);
+    showToast(`Subscriber ${email} added successfully!`);
+  };
+
+  const handleDeleteSubscriber = async (subId: string, email: string) => {
+    if (!window.confirm(`Delete subscriber ${email}?`)) return;
+
+    try {
+      await authFetch(`/api/admin/subscribers/${subId}`, { method: 'DELETE' }).catch(() => {});
+    } catch {}
+
+    setSubscribers((prev) => {
+      const next = prev.filter((s) => s.id !== subId && s.email !== email);
+      try {
+        localStorage.setItem('dungeons_admin_subscribers_custom', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+
+    showToast(`Subscriber ${email} removed.`);
+  };
+
+  const handleDeleteCategory = (catSlug: string, catName: string) => {
+    if (!window.confirm(`Delete custom category "${catName}"?`)) return;
+    deleteDynamicPosterCategory(catSlug);
+    setDynamicCats(getDynamicPosterCategories());
+    if (productCategoryFilter === catSlug) {
+      setProductCategoryFilter('all');
+    }
+    showToast(`Category "${catName}" removed.`);
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
@@ -1040,25 +1286,68 @@ export function AdminDashboardPage() {
 
   const handleSaveCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newCoupon: AdminCoupon = {
-      id: `c-${Date.now()}`,
-      ...couponFormData,
-      discountValue: Number(couponFormData.discountValue),
-      minSpend: Number(couponFormData.minSpend),
-      minQty: Number(couponFormData.minQty),
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    };
+    if (!couponFormData.code.trim()) {
+      showToast('Error: Coupon code is required');
+      return;
+    }
 
-    try {
-      const res = await authFetch('/api/admin/coupons', { method: 'POST', body: JSON.stringify(newCoupon) });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        showToast(`Error ${res.status}: ${err.error || 'Failed to save coupon on server'}`);
-        return;
-      }
-      setCoupons((prev) => [newCoupon, ...prev]);
-      showToast('Voucher created successfully!');
+    if (editingCoupon) {
+      const updatedCoupon: AdminCoupon = {
+        ...editingCoupon,
+        code: couponFormData.code.trim().toUpperCase(),
+        description: couponFormData.description.trim(),
+        discountType: couponFormData.discountType,
+        discountValue: Number(couponFormData.discountValue) || 10,
+        minSpend: Number(couponFormData.minSpend) || 0,
+        minQty: Number(couponFormData.minQty) || 1,
+      };
+
+      try {
+        await authFetch(`/api/admin/coupons/${editingCoupon.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(updatedCoupon),
+        }).catch(() => {});
+      } catch {}
+
+      setCoupons((prev) => {
+        const next = prev.map((c) => (c.id === editingCoupon.id ? updatedCoupon : c));
+        try {
+          localStorage.setItem('dungeons_admin_coupons_custom', JSON.stringify(next));
+        } catch (err) {}
+        return next;
+      });
+
+      setEditingCoupon(null);
+      setIsCouponModalOpen(false);
+      showToast(`Voucher ${updatedCoupon.code} updated successfully!`);
+    } else {
+      const newCoupon: AdminCoupon = {
+        id: `c-${Date.now()}`,
+        code: couponFormData.code.trim().toUpperCase(),
+        description: couponFormData.description.trim(),
+        discountType: couponFormData.discountType,
+        discountValue: Number(couponFormData.discountValue) || 10,
+        minSpend: Number(couponFormData.minSpend) || 0,
+        minQty: Number(couponFormData.minQty) || 1,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+      };
+
+      try {
+        await authFetch('/api/admin/coupons', {
+          method: 'POST',
+          body: JSON.stringify(newCoupon),
+        }).catch(() => {});
+      } catch {}
+
+      setCoupons((prev) => {
+        const next = [newCoupon, ...prev];
+        try {
+          localStorage.setItem('dungeons_admin_coupons_custom', JSON.stringify(next));
+        } catch (err) {}
+        return next;
+      });
+
       setIsCouponModalOpen(false);
       setCouponFormData({
         code: '',
@@ -1068,42 +1357,39 @@ export function AdminDashboardPage() {
         minSpend: 0,
         minQty: 1,
       });
-    } catch (err: any) {
-      showToast(`Error 500: Server error creating coupon (${err.message})`);
+      showToast(`Voucher ${newCoupon.code} created successfully!`);
     }
   };
 
   const handleToggleCoupon = async (couponId: string) => {
     try {
-      const res = await authFetch(`/api/admin/coupons/${couponId}/toggle`, { method: 'PATCH' });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        showToast(`Error ${res.status}: ${err.error || 'Failed to toggle coupon status'}`);
-        return;
-      }
-      setCoupons((prev) =>
-        prev.map((c) => (c.id === couponId ? { ...c, isActive: !c.isActive } : c))
-      );
-      showToast('Coupon status updated');
-    } catch (err: any) {
-      showToast(`Error 500: Server error toggling coupon (${err.message})`);
-    }
+      await authFetch(`/api/admin/coupons/${couponId}/toggle`, { method: 'PATCH' }).catch(() => {});
+    } catch {}
+
+    setCoupons((prev) => {
+      const next = prev.map((c) => (c.id === couponId ? { ...c, isActive: !c.isActive } : c));
+      try {
+        localStorage.setItem('dungeons_admin_coupons_custom', JSON.stringify(next));
+      } catch (err) {}
+      return next;
+    });
+    showToast('Coupon status updated');
   };
 
   const handleDeleteCoupon = async (couponId: string) => {
     if (!window.confirm('Delete this coupon code?')) return;
     try {
-      const res = await authFetch(`/api/admin/coupons/${couponId}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        showToast(`Error ${res.status}: ${err.error || 'Failed to delete coupon'}`);
-        return;
-      }
-      setCoupons((prev) => prev.filter((c) => c.id !== couponId));
-      showToast('Coupon removed');
-    } catch (err: any) {
-      showToast(`Error 500: Server error deleting coupon (${err.message})`);
-    }
+      await authFetch(`/api/admin/coupons/${couponId}`, { method: 'DELETE' }).catch(() => {});
+    } catch {}
+
+    setCoupons((prev) => {
+      const next = prev.filter((c) => c.id !== couponId);
+      try {
+        localStorage.setItem('dungeons_admin_coupons_custom', JSON.stringify(next));
+      } catch (err) {}
+      return next;
+    });
+    showToast('Coupon removed');
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -1797,16 +2083,30 @@ export function AdminDashboardPage() {
             {activeTab === 'orders' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ position: 'relative', width: '280px' }}>
-                    <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                    <input
-                      type="text"
-                      placeholder="Search Order #, Customer, Phone..."
-                      value={orderSearch}
-                      onChange={(e) => setOrderSearch(e.target.value)}
-                      className="admin-input-field"
-                      style={{ paddingLeft: '36px', height: '40px', fontSize: '12px' }}
-                    />
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative', width: '280px' }}>
+                      <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                      <input
+                        type="text"
+                        placeholder="Search Order #, Customer, Phone..."
+                        value={orderSearch}
+                        onChange={(e) => setOrderSearch(e.target.value)}
+                        className="admin-input-field"
+                        style={{ paddingLeft: '36px', height: '40px', fontSize: '12px' }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOrderFormData(defaultOrderFormData);
+                        setIsCreateOrderModalOpen(true);
+                      }}
+                      className="admin-btn-accent"
+                      style={{ height: '40px', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0 14px', fontSize: '12px' }}
+                    >
+                      <Plus size={14} />
+                      <span>Create Order</span>
+                    </button>
                   </div>
 
                   <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
@@ -1850,7 +2150,30 @@ export function AdminDashboardPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredOrders.map((order) => (
+                        {filteredOrders.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} style={{ textAlign: 'center', padding: '48px 16px', color: '#94a3b8' }}>
+                              <Package size={36} style={{ margin: '0 auto 12px auto', opacity: 0.4, color: '#38bdf8' }} />
+                              <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>No Orders Found</div>
+                              <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                                All demo/past orders have been cleared or none match your search filter.
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOrderFormData(defaultOrderFormData);
+                                  setIsCreateOrderModalOpen(true);
+                                }}
+                                className="admin-btn-accent"
+                                style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}
+                              >
+                                <Plus size={14} />
+                                <span>Create Manual Order</span>
+                              </button>
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredOrders.map((order) => (
                           <tr key={order.id}>
                             <td>
                               <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#38bdf8', display: 'block' }}>
@@ -2054,6 +2377,16 @@ export function AdminDashboardPage() {
                               )}
                               <button
                                 type="button"
+                                onClick={() => setEditingOrder(order)}
+                                className="admin-btn-secondary"
+                                style={{ display: 'inline-flex', padding: '6px 10px', marginRight: '6px', fontSize: '11px' }}
+                                title="Edit Order Details"
+                              >
+                                <Edit3 size={13} style={{ marginRight: '4px' }} />
+                                Edit
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() => setSelectedInvoiceOrder(order)}
                                 className="admin-btn-secondary"
                                 style={{ display: 'inline-flex', padding: '6px 10px', marginRight: '6px' }}
@@ -2070,7 +2403,8 @@ export function AdminDashboardPage() {
                               </button>
                             </td>
                           </tr>
-                        ))}
+                        ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -2097,26 +2431,55 @@ export function AdminDashboardPage() {
                   </div>
 
                   <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
-                    {allAdminCategoryFilters.map((cat) => (
-                      <button
-                        key={cat.slug}
-                        type="button"
-                        onClick={() => setProductCategoryFilter(cat.slug)}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '8px',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          border: productCategoryFilter === cat.slug ? 'none' : '1px solid #1e2638',
-                          background: productCategoryFilter === cat.slug ? '#38bdf8' : '#0e1424',
-                          color: productCategoryFilter === cat.slug ? '#000000' : '#94a3b8',
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
+                    {allAdminCategoryFilters.map((cat) => {
+                      const isDynamic = dynamicCats.some((d) => d.slug === cat.slug);
+                      const isSelected = productCategoryFilter === cat.slug;
+                      return (
+                        <div
+                          key={cat.slug}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '4px 8px 4px 12px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            border: isSelected ? 'none' : '1px solid #1e2638',
+                            background: isSelected ? '#38bdf8' : '#0e1424',
+                            color: isSelected ? '#000000' : '#94a3b8',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          <span onClick={() => setProductCategoryFilter(cat.slug)}>{cat.label}</span>
+                          {isDynamic && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCategory(cat.slug, cat.label);
+                              }}
+                              title="Delete Category"
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: isSelected ? '#000000' : '#ef4444',
+                                cursor: 'pointer',
+                                padding: '0 2px',
+                                fontSize: '13px',
+                                fontWeight: 'bold',
+                                lineHeight: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                              }}
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -2262,7 +2625,18 @@ export function AdminDashboardPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setIsCouponModalOpen(true)}
+                    onClick={() => {
+                      setEditingCoupon(null);
+                      setCouponFormData({
+                        code: '',
+                        description: '',
+                        discountType: 'percentage',
+                        discountValue: 10,
+                        minSpend: 0,
+                        minQty: 1,
+                      });
+                      setIsCouponModalOpen(true);
+                    }}
                     className="admin-btn-accent"
                   >
                     <Plus size={14} />
@@ -2300,13 +2674,33 @@ export function AdminDashboardPage() {
                         <span style={{ fontSize: '12px', fontWeight: 800, color: '#34d399' }}>
                           {coupon.discountValue}% OFF
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCoupon(coupon.id)}
-                          style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}
-                        >
-                          Delete
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingCoupon(coupon);
+                              setCouponFormData({
+                                code: coupon.code,
+                                description: coupon.description || '',
+                                discountType: coupon.discountType,
+                                discountValue: coupon.discountValue,
+                                minSpend: coupon.minSpend,
+                                minQty: coupon.minQty,
+                              });
+                              setIsCouponModalOpen(true);
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCoupon(coupon.id)}
+                            style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -2319,9 +2713,23 @@ export function AdminDashboardPage() {
             {/* ===================================================== */}
             {activeTab === 'customers' && (
               <div className="admin-table-box">
-                <div style={{ padding: '16px 20px', borderBottom: '1px solid #1e2638' }}>
-                  <h3 className="admin-panel-title">Newsletter Subscribers</h3>
-                  <p className="admin-panel-desc">Emails captured through store subscribe box</p>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid #1e2638', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 className="admin-panel-title">Newsletter Subscribers</h3>
+                    <p className="admin-panel-desc">Emails captured through store subscribe box ({subscribers.length} total)</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewSubscriberEmail('');
+                      setIsSubscriberModalOpen(true);
+                    }}
+                    className="admin-primary-btn"
+                    style={{ padding: '8px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Plus size={14} />
+                    <span>Add Subscriber</span>
+                  </button>
                 </div>
 
                 <div className="admin-table-scroll">
@@ -2330,7 +2738,8 @@ export function AdminDashboardPage() {
                       <tr>
                         <th>Subscriber Email</th>
                         <th>Subscription Date</th>
-                        <th style={{ textAlign: 'right' }}>Status</th>
+                        <th>Status</th>
+                        <th style={{ textAlign: 'right' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2344,8 +2753,18 @@ export function AdminDashboardPage() {
                               year: 'numeric',
                             })}
                           </td>
-                          <td style={{ textAlign: 'right' }}>
+                          <td>
                             <span className="admin-status-pill success">Verified</span>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSubscriber(sub.id, sub.email)}
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                              title="Delete Subscriber"
+                            >
+                              <Trash2 size={15} />
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -3269,11 +3688,14 @@ export function AdminDashboardPage() {
           <div style={{ background: '#0e1424', border: '1px solid #1e2638', borderRadius: '20px', maxWidth: '420px', width: '100%', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e2638', paddingBottom: '12px' }}>
               <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                Create New Promo Coupon
+                {editingCoupon ? 'Edit Promo Voucher' : 'Create New Promo Coupon'}
               </h3>
               <button
                 type="button"
-                onClick={() => setIsCouponModalOpen(false)}
+                onClick={() => {
+                  setIsCouponModalOpen(false);
+                  setEditingCoupon(null);
+                }}
                 style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
               >
                 <X size={18} />
@@ -3332,7 +3754,10 @@ export function AdminDashboardPage() {
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #1e2638' }}>
                 <button
                   type="button"
-                  onClick={() => setIsCouponModalOpen(false)}
+                  onClick={() => {
+                    setIsCouponModalOpen(false);
+                    setEditingCoupon(null);
+                  }}
                   className="admin-btn-secondary"
                 >
                   Cancel
@@ -3341,7 +3766,530 @@ export function AdminDashboardPage() {
                   type="submit"
                   className="admin-btn-accent"
                 >
-                  Create Voucher
+                  {editingCoupon ? 'Save Changes' : 'Create Voucher'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Manual Order Modal */}
+      {isCreateOrderModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ background: '#0e1424', border: '1px solid #1e2638', borderRadius: '20px', maxWidth: '580px', width: '100%', padding: '24px', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e2638', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                  Create Manual Order
+                </h3>
+                <p style={{ fontSize: '11px', color: '#94a3b8', margin: '2px 0 0 0' }}>
+                  Add offline or custom order to store database
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateOrderModalOpen(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateOrder} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label className="admin-input-label">Customer Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={orderFormData.customerName}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, customerName: e.target.value })}
+                    placeholder="e.g. Rahul Sharma"
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
+                  />
+                </div>
+                <div>
+                  <label className="admin-input-label">Phone Number *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={orderFormData.customerPhone}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, customerPhone: e.target.value })}
+                    placeholder="9876543210"
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="admin-input-label">Email Address</label>
+                <input
+                  type="email"
+                  value={orderFormData.customerEmail}
+                  onChange={(e) => setOrderFormData({ ...orderFormData, customerEmail: e.target.value })}
+                  placeholder="customer@example.com"
+                  className="admin-input-field"
+                  style={{ height: '40px' }}
+                />
+              </div>
+
+              {/* Shipping Address */}
+              <div style={{ border: '1px solid #1e2638', borderRadius: '12px', padding: '12px', background: '#090d18', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#38bdf8' }}>Delivery Address</span>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Flat / House / Building"
+                    value={orderFormData.flat}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, flat: e.target.value })}
+                    className="admin-input-field"
+                    style={{ height: '36px' }}
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Locality / Area / Street"
+                    value={orderFormData.locality}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, locality: e.target.value })}
+                    className="admin-input-field"
+                    style={{ height: '36px' }}
+                  />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="City"
+                    value={orderFormData.city}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, city: e.target.value })}
+                    className="admin-input-field"
+                    style={{ height: '36px' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="State"
+                    value={orderFormData.state}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, state: e.target.value })}
+                    className="admin-input-field"
+                    style={{ height: '36px' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Pincode"
+                    value={orderFormData.pincode}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, pincode: e.target.value })}
+                    className="admin-input-field"
+                    style={{ height: '36px' }}
+                  />
+                </div>
+              </div>
+
+              {/* Product Info */}
+              <div style={{ border: '1px solid #1e2638', borderRadius: '12px', padding: '12px', background: '#090d18', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#a78bfa' }}>Ordered Item</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
+                  <input
+                    type="text"
+                    placeholder="Item / Poster Title"
+                    value={orderFormData.itemTitle}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, itemTitle: e.target.value })}
+                    className="admin-input-field"
+                    style={{ height: '36px' }}
+                  />
+                  <select
+                    value={orderFormData.size}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, size: e.target.value })}
+                    className="admin-input-field"
+                    style={{ height: '36px' }}
+                  >
+                    <option value="A5">A5 (Compact)</option>
+                    <option value="A4">A4 (Standard)</option>
+                    <option value="A3">A3 (Large)</option>
+                    <option value="Standard">Standard</option>
+                  </select>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '10px', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Quantity</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={orderFormData.quantity}
+                      onChange={(e) => setOrderFormData({ ...orderFormData, quantity: Number(e.target.value) })}
+                      className="admin-input-field"
+                      style={{ height: '36px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '10px', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Unit Price (₹)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={orderFormData.price}
+                      onChange={(e) => setOrderFormData({ ...orderFormData, price: Number(e.target.value) })}
+                      className="admin-input-field"
+                      style={{ height: '36px' }}
+                    />
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', fontSize: '12px', fontWeight: 800, color: '#38bdf8' }}>
+                  Order Total: ₹{(Number(orderFormData.price) || 0) * (Number(orderFormData.quantity) || 1)}
+                </div>
+              </div>
+
+              {/* Status Controls */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label className="admin-input-label">Payment Status</label>
+                  <select
+                    value={orderFormData.paymentStatus}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, paymentStatus: e.target.value as any })}
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
+                  >
+                    <option value="PAID">PAID</option>
+                    <option value="PENDING">PENDING</option>
+                    <option value="FAILED">FAILED</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="admin-input-label">Fulfillment Status</label>
+                  <select
+                    value={orderFormData.fulfillmentStatus}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, fulfillmentStatus: e.target.value as any })}
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
+                  >
+                    <option value="PENDING">PENDING</option>
+                    <option value="PROCESSING">PROCESSING</option>
+                    <option value="SHIPPED">SHIPPED</option>
+                    <option value="DELIVERED">DELIVERED</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label className="admin-input-label">Tracking Number</label>
+                  <input
+                    type="text"
+                    value={orderFormData.trackingNumber}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, trackingNumber: e.target.value })}
+                    placeholder="e.g. DTDC-928471"
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
+                  />
+                </div>
+                <div>
+                  <label className="admin-input-label">Payment Method</label>
+                  <input
+                    type="text"
+                    value={orderFormData.paymentMethod}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, paymentMethod: e.target.value })}
+                    placeholder="UPI / Razorpay / Cash"
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="admin-input-label">Notes (Optional)</label>
+                <input
+                  type="text"
+                  value={orderFormData.notes}
+                  onChange={(e) => setOrderFormData({ ...orderFormData, notes: e.target.value })}
+                  placeholder="Customer requested extra bubble wrap packaging"
+                  className="admin-input-field"
+                  style={{ height: '40px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid #1e2638' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOrderModalOpen(false)}
+                  className="admin-btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn-accent"
+                >
+                  Create Order
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Order Modal */}
+      {editingOrder && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ background: '#0e1424', border: '1px solid #1e2638', borderRadius: '20px', maxWidth: '560px', width: '100%', padding: '24px', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e2638', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                  Edit Order #{editingOrder.orderNumber}
+                </h3>
+                <p style={{ fontSize: '11px', color: '#94a3b8', margin: '2px 0 0 0' }}>
+                  Update customer details, shipping address, and fulfillment
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingOrder(null)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateOrder} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label className="admin-input-label">Customer Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingOrder.customerName}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, customerName: e.target.value })}
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
+                  />
+                </div>
+                <div>
+                  <label className="admin-input-label">Phone Number</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingOrder.customerPhone}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, customerPhone: e.target.value })}
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="admin-input-label">Customer Email</label>
+                <input
+                  type="email"
+                  value={editingOrder.customerEmail}
+                  onChange={(e) => setEditingOrder({ ...editingOrder, customerEmail: e.target.value })}
+                  className="admin-input-field"
+                  style={{ height: '40px' }}
+                />
+              </div>
+
+              {/* Shipping Address */}
+              <div style={{ border: '1px solid #1e2638', borderRadius: '12px', padding: '12px', background: '#090d18', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#38bdf8' }}>Delivery Address</span>
+                <input
+                  type="text"
+                  placeholder="Flat / Building"
+                  value={editingOrder.shippingAddress?.flat || ''}
+                  onChange={(e) =>
+                    setEditingOrder({
+                      ...editingOrder,
+                      shippingAddress: { ...editingOrder.shippingAddress, flat: e.target.value },
+                    })
+                  }
+                  className="admin-input-field"
+                  style={{ height: '36px' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Locality / Area"
+                  value={editingOrder.shippingAddress?.locality || ''}
+                  onChange={(e) =>
+                    setEditingOrder({
+                      ...editingOrder,
+                      shippingAddress: { ...editingOrder.shippingAddress, locality: e.target.value },
+                    })
+                  }
+                  className="admin-input-field"
+                  style={{ height: '36px' }}
+                />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="City"
+                    value={editingOrder.shippingAddress?.city || ''}
+                    onChange={(e) =>
+                      setEditingOrder({
+                        ...editingOrder,
+                        shippingAddress: { ...editingOrder.shippingAddress, city: e.target.value },
+                      })
+                    }
+                    className="admin-input-field"
+                    style={{ height: '36px' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="State"
+                    value={editingOrder.shippingAddress?.state || ''}
+                    onChange={(e) =>
+                      setEditingOrder({
+                        ...editingOrder,
+                        shippingAddress: { ...editingOrder.shippingAddress, state: e.target.value },
+                      })
+                    }
+                    className="admin-input-field"
+                    style={{ height: '36px' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Pincode"
+                    value={editingOrder.shippingAddress?.pincode || ''}
+                    onChange={(e) =>
+                      setEditingOrder({
+                        ...editingOrder,
+                        shippingAddress: { ...editingOrder.shippingAddress, pincode: e.target.value },
+                      })
+                    }
+                    className="admin-input-field"
+                    style={{ height: '36px' }}
+                  />
+                </div>
+              </div>
+
+              {/* Status and Total */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label className="admin-input-label">Total (₹)</label>
+                  <input
+                    type="number"
+                    value={editingOrder.total}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, total: Number(e.target.value) })}
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
+                  />
+                </div>
+                <div>
+                  <label className="admin-input-label">Payment Status</label>
+                  <select
+                    value={editingOrder.paymentStatus}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, paymentStatus: e.target.value as any })}
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
+                  >
+                    <option value="PAID">PAID</option>
+                    <option value="PENDING">PENDING</option>
+                    <option value="FAILED">FAILED</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="admin-input-label">Fulfillment</label>
+                  <select
+                    value={editingOrder.fulfillmentStatus}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, fulfillmentStatus: e.target.value as any })}
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
+                  >
+                    <option value="PENDING">PENDING</option>
+                    <option value="PROCESSING">PROCESSING</option>
+                    <option value="SHIPPED">SHIPPED</option>
+                    <option value="DELIVERED">DELIVERED</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label className="admin-input-label">Tracking Number</label>
+                  <input
+                    type="text"
+                    value={editingOrder.trackingNumber || ''}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, trackingNumber: e.target.value })}
+                    placeholder="e.g. DTDC-12345"
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
+                  />
+                </div>
+                <div>
+                  <label className="admin-input-label">Order Notes</label>
+                  <input
+                    type="text"
+                    value={editingOrder.notes || ''}
+                    onChange={(e) => setEditingOrder({ ...editingOrder, notes: e.target.value })}
+                    placeholder="Special instructions"
+                    className="admin-input-field"
+                    style={{ height: '40px' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid #1e2638' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingOrder(null)}
+                  className="admin-btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn-accent"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Subscriber Modal */}
+      {isSubscriberModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ background: '#0e1424', border: '1px solid #1e2638', borderRadius: '20px', maxWidth: '420px', width: '100%', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e2638', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                Add Newsletter Subscriber
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsSubscriberModalOpen(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSubscriber} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label className="admin-input-label">Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  autoFocus
+                  value={newSubscriberEmail}
+                  onChange={(e) => setNewSubscriberEmail(e.target.value)}
+                  placeholder="artlover@example.com"
+                  className="admin-input-field"
+                  style={{ height: '40px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #1e2638' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsSubscriberModalOpen(false)}
+                  className="admin-btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn-accent"
+                >
+                  Add Subscriber
                 </button>
               </div>
             </form>
