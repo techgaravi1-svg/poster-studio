@@ -84,6 +84,7 @@ interface AdminOrder {
   paymentMethod: string;
   fulfillmentStatus: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
   trackingNumber?: string | null;
+  notes?: string | null;
   items: Array<{
     id: string;
     productTitle: string;

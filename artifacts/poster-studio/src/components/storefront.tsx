@@ -28,22 +28,22 @@ import { cartTotals, store, useStore } from '@/lib/store';
 
 export const PARTNER_MAILTO_LINK =
   'mailto:dungeons.support@gmail.com?subject=' +
-  encodeURIComponent('Partner With Us - Shop & Business Details') +
+  encodeURIComponent('Partner With Us - Sell Products on Dungeons') +
   '&body=' +
   encodeURIComponent(
-    'Hello DUNGEONS Team,\n\n' +
-    'I am interested in partnering with DUNGEONS to sell your posters, wall art, and custom prints in my shop / store.\n\n' +
-    'Here are my shop and business details:\n' +
-    '• Shop / Business Name: \n' +
-    '• Owner / Contact Person: \n' +
-    '• Phone / WhatsApp Number: \n' +
-    '• City & State: \n' +
-    '• Shop Address / Location: \n' +
-    '• Shop Type (e.g. Gift Shop, Bookstore, Anime Store, Decor, Online): \n' +
-    '• Instagram / Website (if any): \n' +
-    '• Expected Monthly Order Volume: \n\n' +
-    'Looking forward to hearing from you.\n\n' +
-    'Thank you!'
+    'Hey there!\n\n' +
+    'Got cool home decor products to sell? We might be looking for you!\n\n' +
+    'Dungeons is an up-and-coming home decor e-commerce platform bringing together unique, creative and eye-catching products to help people make their spaces truly their own.\n\n' +
+    "We're expanding our collection and looking to partner with retailers, independent brands, artists and businesses who have something interesting to offer.\n\n" +
+    "Think your products belong on Dungeons? We'd love to hear from you!\n\n" +
+    'Just drop us an email with:\n\n' +
+    '- Your Brand / Business Name: \n' +
+    '- A little about your business: \n' +
+    '- Your product catalogue or Instagram / Website link: \n' +
+    '- Your contact details: \n\n' +
+    "Let's bring some amazing products together and grow!\n\n" +
+    'Team Dungeons\n' +
+    'Discover. Decorate. Elevate.'
   );
 
 export function PosterArt({
@@ -449,7 +449,7 @@ function MenuDrawer({
               href={PARTNER_MAILTO_LINK}
               className="btn-partner-action"
               onClick={onClose}
-              title="Partner with us to sell DUNGEONS products in your shop"
+              title="Partner with us — Sell your home decor & art products on Dungeons"
             >
               <Store size={15} />
               <span>Partner With Us</span>
@@ -684,7 +684,7 @@ export function Header() {
                     <a
                       href={PARTNER_MAILTO_LINK}
                       className="account-dropdown-row partner-dropdown-row"
-                      title="Partner with us to sell DUNGEONS products in your shop"
+                      title="Partner with us — Sell your home decor & art products on Dungeons"
                     >
                       <Store size={16} />
                       <span>Partner With Us</span>
@@ -920,7 +920,7 @@ export function Footer() {
                 <a
                   href={PARTNER_MAILTO_LINK}
                   className="footer-partner-pill-btn"
-                  title="Partner with us to sell DUNGEONS products in your shop"
+                  title="Partner with us — Sell your home decor & art products on Dungeons"
                 >
                   <Store size={14} />
                   <span>Partner With Us</span>
@@ -938,7 +938,7 @@ export function Footer() {
                 <a
                   href={PARTNER_MAILTO_LINK}
                   className="footer-link-partner"
-                  title="Partner with us to sell DUNGEONS products in your shop"
+                  title="Partner with us — Sell your home decor & art products on Dungeons"
                 >
                   Partner With Us
                 </a>

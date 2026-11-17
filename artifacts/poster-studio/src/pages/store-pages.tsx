@@ -3983,19 +3983,19 @@ export function AccountPage() {
           </div>
           <div>
             <h3 className="partner-card-title">Partner With Us</h3>
-            <p className="partner-card-sub">Are you a shop owner, retailer, or distributor?</p>
+            <p className="partner-card-sub">Got cool home decor products to sell? We might be looking for you!</p>
           </div>
         </div>
         <p className="partner-card-body">
-          Partner with DUNGEONS to stock our premium anime, superhero, sports &amp; luxury wall posters and custom prints in your retail store at bulk wholesale rates.
+          Dungeons is an up-and-coming home decor e-commerce platform bringing together unique, creative and eye-catching products to help people make their spaces truly their own. We&apos;re expanding our collection and looking to partner with retailers, independent brands, artists and businesses who have something interesting to offer.
         </p>
         <a
           href={PARTNER_MAILTO_LINK}
           className="btn-partner-email-cta"
-          title="Send your shop details to our official email"
+          title="Send your brand & product details to our official email"
         >
           <Mail size={16} />
-          <span>Partner With Us — Send Shop Details</span>
+          <span>Partner With Us — Send Details</span>
         </a>
       </div>
     </main>
