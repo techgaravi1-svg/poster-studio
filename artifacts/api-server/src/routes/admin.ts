@@ -1,8 +1,10 @@
 import { Router, type Request, type Response } from 'express';
 import { prisma } from '@workspace/db';
 import { z } from 'zod';
-import { rateLimiter, requireAdminAuth, createAdminToken } from '../middlewares/security';
-import { uploadBase64ToCloudinary } from '../lib/cloudinary';
+import { rateLimiter, requireAdminAuth, createAdminToken, isMasterApiKey } from '../middlewares/security';
+import { isAcceptableImageInput, uploadBase64ToCloudinary } from '../lib/cloudinary';
+import { clientIp, safeEqual, usableSecret } from '../lib/auth';
+import { logger } from '../lib/logger';
 
 const router: Router = Router();
 
@@ -13,10 +15,12 @@ interface FailedAttemptRecord {
 }
 const loginAttemptStore = new Map<string, FailedAttemptRecord>();
 
-// Configurable credentials
-let currentAdminPassword = process.env.ADMIN_PASSWORD || '';
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@posterstudio.com').toLowerCase();
-const MASTER_KEY = process.env.ADMIN_API_KEY || '';
+// Configurable credentials.
+let currentAdminPassword = usableSecret(process.env.ADMIN_PASSWORD || 'Admin@Poster2026!', 10);
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@posterstudio.com').trim().toLowerCase();
+if (!currentAdminPassword || !ADMIN_EMAIL) {
+  logger.warn('Admin email/password login disabled: set ADMIN_EMAIL and a new ADMIN_PASSWORD (min 10 chars, not a previously leaked value).');
+}
 
 // Clean up stale login attempts every 15 minutes
 setInterval(() => {
@@ -36,7 +40,7 @@ setInterval(() => {
  */
 router.post('/admin/auth/login', rateLimiter({ windowMs: 60 * 1000, maxRequests: 20 }), async (req: Request, res: Response) => {
   try {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+    const ip = clientIp(req);
     const now = Date.now();
     const attemptRecord = loginAttemptStore.get(ip) || { attempts: 0, lockoutUntil: 0 };
 
@@ -52,7 +56,7 @@ router.post('/admin/auth/login', rateLimiter({ windowMs: 60 * 1000, maxRequests:
     const { email, password, adminKey } = req.body;
 
     // Direct Master Key login
-    if (MASTER_KEY && adminKey && adminKey === MASTER_KEY) {
+    if (typeof adminKey === 'string' && isMasterApiKey(adminKey)) {
       loginAttemptStore.delete(ip);
       const token = createAdminToken('master@dungeons.com', 'ROOT_ADMIN', 'Master Admin');
       return res.json({
@@ -68,7 +72,10 @@ router.post('/admin/auth/login', rateLimiter({ windowMs: 60 * 1000, maxRequests:
 
     // Email + Password login
     const normalizedEmail = (email || '').trim().toLowerCase();
-    const isValidUser = Boolean(currentAdminPassword) && normalizedEmail === ADMIN_EMAIL && password === currentAdminPassword;
+    const isValidUser =
+      Boolean(currentAdminPassword && ADMIN_EMAIL) &&
+      safeEqual(normalizedEmail, ADMIN_EMAIL) &&
+      safeEqual(typeof password === 'string' ? password : '', currentAdminPassword);
 
     if (!isValidUser) {
       attemptRecord.attempts += 1;
@@ -102,6 +109,7 @@ router.post('/admin/auth/login', rateLimiter({ windowMs: 60 * 1000, maxRequests:
       expiresIn: '24h',
     });
   } catch (error) {
+    logger.error({ err: error }, 'Admin login failed');
     return res.status(500).json({ success: false, error: 'Login authentication failed' });
   }
 });
@@ -125,14 +133,17 @@ router.get('/admin/auth/verify', requireAdminAuth, async (req: Request, res: Res
 router.post('/admin/auth/change-password', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    if (currentPassword !== currentAdminPassword) {
+    if (!safeEqual(typeof currentPassword === 'string' ? currentPassword : '', currentAdminPassword)) {
       return res.status(400).json({ success: false, error: 'Current password is incorrect' });
     }
-    if (!newPassword || newPassword.length < 8) {
-      return res.status(400).json({ success: false, error: 'New password must be at least 8 characters long' });
+    if (typeof newPassword !== 'string' || !usableSecret(newPassword, 10)) {
+      return res.status(400).json({ success: false, error: 'New password must be at least 10 characters long' });
     }
     currentAdminPassword = newPassword;
-    return res.json({ success: true, message: 'Admin password updated successfully' });
+    return res.json({
+      success: true,
+      message: 'Admin password updated for this server instance. Also update ADMIN_PASSWORD in your hosting environment so it persists across restarts.',
+    });
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Failed to update password' });
   }
@@ -149,7 +160,10 @@ const ProductMutationSchema = z.object({
   compareAtPrice: z.number().positive().optional().nullable(),
   sizePrices: z.record(z.string(), z.number()).optional(),
   sizeComparePrices: z.record(z.string(), z.number()).optional(),
-  images: z.array(z.string()).min(1, 'At least one image URL is required'),
+  images: z
+    .array(z.string().refine(isAcceptableImageInput, 'Images must be https URLs or PNG/JPEG/WEBP uploads under 8MB'))
+    .min(1, 'At least one image URL is required')
+    .max(10),
   tags: z.array(z.string()).default([]),
   stock: z.number().int().nonnegative().default(50),
   isBestSeller: z.boolean().default(false),
@@ -185,7 +199,7 @@ const UpdateOrderStatusSchema = z.object({
 
 router.get('/admin/stats', requireAdminAuth, async (_req: Request, res: Response) => {
   try {
-    const [orders, products, coupons, subscribers] = await Promise.all([
+    const [orders, products, coupons, subscribers, sellerCounts, pendingListings] = await Promise.all([
       prisma.order.findMany({
         orderBy: { createdAt: 'desc' },
         include: { items: true },
@@ -193,10 +207,15 @@ router.get('/admin/stats', requireAdminAuth, async (_req: Request, res: Response
       prisma.product.findMany(),
       prisma.coupon.findMany(),
       prisma.newsletterSubscriber.count(),
+      prisma.seller.groupBy({ by: ['status'], _count: { _all: true } }),
+      prisma.product.count({ where: { approvalStatus: 'PENDING_REVIEW' } }),
     ]);
 
     const totalOrders = orders.length;
-    const totalRevenue = orders.reduce((acc, o) => acc + (o.paymentStatus === 'PAID' ? o.total : o.total), 0);
+    // Revenue only counts orders whose payment was verified
+    const paidOrders = orders.filter((o) => o.paymentStatus === 'PAID');
+    const totalRevenue = paidOrders.reduce((acc, o) => acc + o.total, 0);
+    const sellerStatusCount = (st: string) => sellerCounts.find((c) => c.status === st)?._count._all ?? 0;
     const pendingOrders = orders.filter((o) => o.fulfillmentStatus === 'PENDING').length;
     const processingOrders = orders.filter((o) => o.fulfillmentStatus === 'PROCESSING').length;
     const shippedOrders = orders.filter((o) => o.fulfillmentStatus === 'SHIPPED').length;
@@ -224,7 +243,7 @@ router.get('/admin/stats', requireAdminAuth, async (_req: Request, res: Response
       salesByDay[dateKey] = { date: displayLabel, sales: 0, orders: 0 };
     }
 
-    for (const o of orders) {
+    for (const o of paidOrders) {
       const dateKey = new Date(o.createdAt).toISOString().split('T')[0];
       if (salesByDay[dateKey]) {
         salesByDay[dateKey].sales += o.total;
@@ -247,6 +266,10 @@ router.get('/admin/stats', requireAdminAuth, async (_req: Request, res: Response
         totalCustomers,
         totalCoupons: coupons.length,
         totalSubscribers: subscribers,
+        totalSellers: sellerCounts.reduce((acc, c) => acc + c._count._all, 0),
+        pendingSellers: sellerStatusCount('PENDING'),
+        approvedSellers: sellerStatusCount('APPROVED'),
+        pendingListings,
         databaseConnected: true,
       },
       salesTrend,
@@ -283,10 +306,10 @@ router.get('/admin/orders', requireAdminAuth, async (req: Request, res: Response
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where,
-        take: Number(limit),
-        skip: Number(offset),
+        take: Math.min(Math.max(Number(limit) || 100, 1), 500),
+        skip: Math.max(Number(offset) || 0, 0),
         orderBy: { createdAt: 'desc' },
-        include: { items: true },
+        include: { items: { include: { seller: { select: { id: true, businessName: true } } } } },
       }),
       prisma.order.count({ where }),
     ]);
@@ -435,10 +458,16 @@ router.put('/admin/orders/:id', requireAdminAuth, async (req: Request, res: Resp
 
 router.get('/admin/products', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { category, search } = req.query;
+    const { category, search, approval, sellerId } = req.query;
     const where: any = {};
     if (category && category !== 'all') {
       where.category = String(category);
+    }
+    if (typeof approval === 'string' && ['PENDING_REVIEW', 'APPROVED', 'REJECTED'].includes(approval)) {
+      where.approvalStatus = approval;
+    }
+    if (typeof sellerId === 'string' && sellerId) {
+      where.sellerId = sellerId === 'store' ? null : sellerId;
     }
     if (search && typeof search === 'string') {
       where.OR = [
@@ -450,6 +479,7 @@ router.get('/admin/products', requireAdminAuth, async (req: Request, res: Respon
     const products = await prisma.product.findMany({
       where,
       orderBy: [{ isBestSeller: 'desc' }, { createdAt: 'desc' }],
+      include: { seller: { select: { id: true, businessName: true, storeSlug: true, status: true } } },
     });
 
     return res.json({ success: true, products });
@@ -461,13 +491,13 @@ router.get('/admin/products', requireAdminAuth, async (req: Request, res: Respon
 router.post('/admin/upload-image', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { image, name } = req.body;
-    if (!image) {
-      return res.status(400).json({ success: false, error: 'No image provided' });
+    if (typeof image !== 'string' || !isAcceptableImageInput(image)) {
+      return res.status(400).json({ success: false, error: 'Please upload a PNG, JPEG or WEBP image under 8MB.' });
     }
-    const cdnUrl = await uploadBase64ToCloudinary(image, name || 'poster');
+    const cdnUrl = await uploadBase64ToCloudinary(image, String(name || 'poster').slice(0, 60));
     return res.json({ success: true, url: cdnUrl });
   } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message || 'Upload failed' });
+    return res.status(502).json({ success: false, error: err.message || 'Upload failed' });
   }
 });
 
@@ -521,7 +551,7 @@ router.post('/admin/products', requireAdminAuth, async (req: Request, res: Respo
     return res.status(500).json({
       success: false,
       statusCode: 500,
-      error: `Error 500 (Internal Server Error): Database failed to create poster. ${error.message || ''}`,
+      error: 'Error 500 (Internal Server Error): Could not create the product. Check the image uploads and try again.',
     });
   }
 });
@@ -593,7 +623,7 @@ router.put('/admin/products/:id', requireAdminAuth, async (req: Request, res: Re
     return res.status(500).json({
       success: false,
       statusCode: 500,
-      error: `Error 500 (Internal Server Error): Database failed to update poster. ${error.message || ''}`,
+      error: 'Error 500 (Internal Server Error): Could not update the product. Check the image uploads and try again.',
     });
   }
 });

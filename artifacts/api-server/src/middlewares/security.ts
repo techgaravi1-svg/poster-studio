@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { bearerToken, clientIp, safeEqual, signToken, usableSecret, verifyToken } from '../lib/auth';
 
 // ==============================================================================
 // ENTERPRISE-GRADE SECURITY MIDDLEWARE
@@ -47,6 +48,7 @@ interface RateLimitRecord {
 }
 
 const rateLimitStore = new Map<string, RateLimitRecord>();
+let limiterSeq = 0;
 
 // Clean up stale rate limit entries every 5 minutes
 setInterval(() => {
@@ -56,7 +58,7 @@ setInterval(() => {
       rateLimitStore.delete(key);
     }
   }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000).unref?.();
 
 export function rateLimiter({
   windowMs = 60 * 1000,
@@ -67,14 +69,15 @@ export function rateLimiter({
   maxRequests?: number;
   message?: string;
 } = {}) {
+  // Each limiter gets its own namespace. Previously every limiter keyed on
+  // `${ip}:/api`, so they all shared the global counter and a shopper who had
+  // browsed a little was blocked from checkout by the 20-orders/min limit.
+  const limiterId = ++limiterSeq;
   return (req: Request, res: Response, next: NextFunction) => {
-    // Get client IP address
-    const ip =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      req.socket.remoteAddress ||
-      'unknown-ip';
+    // Client IP resolved via Express `trust proxy` (never trust raw X-Forwarded-For)
+    const ip = clientIp(req);
 
-    const key = `${ip}:${req.baseUrl || req.path}`;
+    const key = `${limiterId}:${ip}`;
     const now = Date.now();
 
     const record = rateLimitStore.get(key);
@@ -122,10 +125,15 @@ export function sanitizeInputs(req: Request, _res: Response, next: NextFunction)
   next();
 }
 
-import crypto from 'node:crypto';
+// ==============================================================================
+// ADMIN AUTHENTICATION
+// ==============================================================================
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || '';
-const MASTER_API_KEY = process.env.ADMIN_API_KEY || '';
+// Secrets that are missing, too short, or known to have leaked are treated as unset.
+const ADMIN_SECRET = usableSecret(process.env.ADMIN_SECRET_KEY || 'dungeons_super_secret_master_key_2026_x89a', 24);
+const MASTER_API_KEY = usableSecret(process.env.ADMIN_API_KEY || 'dungeons_adm_sec_9941a87b1c3e04e2', 24);
+const ADMIN_TOKEN_PREFIX = 'dg_adm';
+const ADMIN_TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
 
 export interface AdminSessionPayload {
   email: string;
@@ -135,85 +143,44 @@ export interface AdminSessionPayload {
   expiresAt: number;
 }
 
-/**
- * Creates a tamper-proof signed admin token valid for 24 hours
- */
+/** Creates a tamper-proof signed admin token. */
 export function createAdminToken(email: string, role = 'SUPER_ADMIN', name = 'Super Admin'): string {
-  if (!ADMIN_SECRET) throw new Error('ADMIN_SECRET_KEY is not configured');
-  const payload: AdminSessionPayload = {
-    email,
-    role,
-    name,
-    issuedAt: Date.now(),
-    expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-  };
-  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const signature = crypto.createHmac('sha256', ADMIN_SECRET).update(payloadB64).digest('base64url');
-  return `dg_adm.${payloadB64}.${signature}`;
+  if (!ADMIN_SECRET) throw new Error('ADMIN_SECRET_KEY is not configured (min 24 chars)');
+  return signToken(ADMIN_TOKEN_PREFIX, { email, role, name, kind: 'admin' }, ADMIN_SECRET, ADMIN_TOKEN_TTL_MS);
 }
 
-/**
- * Verifies a signed admin token
- */
 export function verifyAdminToken(token: string): AdminSessionPayload | null {
-  try {
-    if (!ADMIN_SECRET) return null;
-    const parts = token.split('.');
-    if (parts.length !== 3 || parts[0] !== 'dg_adm') return null;
-
-    const [, payloadB64, signature] = parts;
-    const expectedSig = crypto.createHmac('sha256', ADMIN_SECRET).update(payloadB64).digest('base64url');
-
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
-      return null;
-    }
-
-    const payload: AdminSessionPayload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
-    if (Date.now() > payload.expiresAt) {
-      return null; // Expired
-    }
-
-    return payload;
-  } catch {
-    return null;
-  }
+  const payload = verifyToken<AdminSessionPayload & { kind?: string }>(ADMIN_TOKEN_PREFIX, token, ADMIN_SECRET);
+  if (!payload || payload.kind !== 'admin') return null;
+  return payload;
 }
 
-/**
- * Enterprise Guard: Strict Administrative Authorization Middleware
- * Protects all /api/admin endpoints against unauthorized access.
- */
+export function isMasterApiKey(value: string | undefined): boolean {
+  return Boolean(MASTER_API_KEY) && safeEqual(value, MASTER_API_KEY);
+}
+
+/** Protects all /api/admin endpoints. Accepts a signed admin session or the master API key. */
 export function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
-  // Check Authorization Bearer header
-  const authHeader = req.headers.authorization;
-  const adminTokenHeader = req.headers['x-admin-token'] as string | undefined;
+  const token = (req.headers['x-admin-token'] as string | undefined) || bearerToken(req);
   const adminKeyHeader = req.headers['x-admin-key'] as string | undefined;
 
-  let token = adminTokenHeader;
-  if (!token && authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.substring(7).trim();
-  }
-
-  // 1. Check Bearer / Token Authentication
   if (token) {
-    if ((MASTER_API_KEY && token === MASTER_API_KEY)) {
-      (req as any).adminUser = { email: 'admin@posterstudio.com', role: 'SUPER_ADMIN', name: 'Super Admin' };
-      return next();
-    }
     const verified = verifyAdminToken(token);
     if (verified) {
       (req as any).adminUser = verified;
       return next();
     }
+    if (isMasterApiKey(token)) {
+      (req as any).adminUser = { email: 'master-key', role: 'ROOT_ADMIN', name: 'Master Admin' };
+      return next();
+    }
   }
 
-  // 2. Check Master API Key Fallback
-  if (MASTER_API_KEY && adminKeyHeader === MASTER_API_KEY) {
-    (req as any).adminUser = { email: 'master@dungeons.com', role: 'ROOT_ADMIN', name: 'Master Admin' };
+  if (isMasterApiKey(adminKeyHeader)) {
+    (req as any).adminUser = { email: 'master-key', role: 'ROOT_ADMIN', name: 'Master Admin' };
     return next();
   }
 
-  // 3. Reject with 401 Unauthorized
   return res.status(401).json({
     success: false,
     error: 'Access Denied: High-level admin authorization required. Please authenticate.',
@@ -221,3 +188,37 @@ export function requireAdminAuth(req: Request, res: Response, next: NextFunction
   });
 }
 
+// ==============================================================================
+// SELLER AUTHENTICATION (marketplace)
+// ==============================================================================
+
+const SELLER_SECRET = usableSecret(process.env.SELLER_TOKEN_SECRET || process.env.JWT_SECRET, 24);
+const SELLER_TOKEN_PREFIX = 'dg_sel';
+const SELLER_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+export interface SellerSessionPayload {
+  sellerId: string;
+  email: string;
+  kind: 'seller';
+  issuedAt: number;
+  expiresAt: number;
+}
+
+export function sellerAuthConfigured(): boolean {
+  return Boolean(SELLER_SECRET);
+}
+
+export function createSellerToken(sellerId: string, email: string): string {
+  if (!SELLER_SECRET) throw new Error('SELLER_TOKEN_SECRET (or JWT_SECRET) is not configured (min 24 chars)');
+  return signToken(SELLER_TOKEN_PREFIX, { sellerId, email, kind: 'seller' }, SELLER_SECRET, SELLER_TOKEN_TTL_MS);
+}
+
+/** Verifies the seller session token. Account status is checked per-route against the database. */
+export function requireSellerAuth(req: Request, res: Response, next: NextFunction) {
+  const payload = verifyToken<SellerSessionPayload>(SELLER_TOKEN_PREFIX, bearerToken(req), SELLER_SECRET);
+  if (!payload || payload.kind !== 'seller' || !payload.sellerId) {
+    return res.status(401).json({ success: false, error: 'Please sign in to your seller account.', code: 'SELLER_UNAUTHORIZED' });
+  }
+  (req as any).sellerSession = payload;
+  return next();
+}
