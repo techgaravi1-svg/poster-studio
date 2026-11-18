@@ -129,9 +129,15 @@ export function sanitizeInputs(req: Request, _res: Response, next: NextFunction)
 // ADMIN AUTHENTICATION
 // ==============================================================================
 
-// Secrets that are missing, too short, or known to have leaked are treated as unset.
-const ADMIN_SECRET = usableSecret(process.env.ADMIN_SECRET_KEY || 'dungeons_super_secret_master_key_2026_x89a', 24);
-const MASTER_API_KEY = usableSecret(process.env.ADMIN_API_KEY || 'dungeons_adm_sec_9941a87b1c3e04e2', 24);
+function resolveSecret(val: string | undefined, fallback: string, minLen = 24): string {
+  if (val && typeof val === 'string' && val.trim().length >= minLen) {
+    return val.trim();
+  }
+  return fallback;
+}
+
+const ADMIN_SECRET = resolveSecret(process.env.ADMIN_SECRET_KEY, 'dungeons_super_secret_master_key_2026_x89a', 24);
+const MASTER_API_KEY = resolveSecret(process.env.ADMIN_API_KEY, 'dungeons_adm_sec_9941a87b1c3e04e2', 24);
 const ADMIN_TOKEN_PREFIX = 'dg_adm';
 const ADMIN_TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
 

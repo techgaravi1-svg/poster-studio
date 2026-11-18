@@ -108,9 +108,10 @@ router.post('/admin/auth/login', rateLimiter({ windowMs: 60 * 1000, maxRequests:
       },
       expiresIn: '24h',
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('CRITICAL ADMIN LOGIN ERROR:', error);
     logger.error({ err: error }, 'Admin login failed');
-    return res.status(500).json({ success: false, error: 'Login authentication failed' });
+    return res.status(500).json({ success: false, error: error?.message || 'Login authentication failed' });
   }
 });
 
