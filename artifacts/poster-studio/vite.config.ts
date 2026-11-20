@@ -15,6 +15,11 @@ if (Number.isNaN(port) || port <= 0) {
 
 const basePath = process.env.BASE_PATH || '/';
 
+// Offline API mocks for frontend-only work (MOCK_API=1). Off by default so the
+// dev server talks to the real API (admin login, seller portal, marketplace
+// listings). When the API is down, the storefront falls back to its local catalog.
+const useApiMocks = process.env.MOCK_API === '1';
+
 export default defineConfig({
   base: basePath,
   plugins: [
@@ -43,7 +48,7 @@ export default defineConfig({
               return;
             } catch {}
           }
-          if (req.url && req.url.startsWith('/api/products')) {
+          if (useApiMocks && req.url && req.url.startsWith('/api/products')) {
             try {
               const fullDbPath = path.resolve(import.meta.dirname, 'src/lib/catalog-full-db.json');
               const rawData = fs.readFileSync(fullDbPath, 'utf8');
@@ -55,7 +60,7 @@ export default defineConfig({
               // fallback to next
             }
           }
-          if (req.url && req.url.startsWith('/api/coupons')) {
+          if (useApiMocks && req.url && req.url.startsWith('/api/coupons')) {
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({
               success: true,
@@ -66,11 +71,6 @@ export default defineConfig({
                 { id: 'cp-4', code: 'POSTER5', discountType: 'PERCENTAGE', discountValue: 5, minSpend: 99, active: true },
               ],
             }));
-            return;
-          }
-          if (req.url && req.url.startsWith('/api/admin/')) {
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ success: true, count: 0, orders: [], products: [], subscribers: [] }));
             return;
           }
           next();

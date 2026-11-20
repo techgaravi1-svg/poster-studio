@@ -1,0 +1,17 @@
+/*
+ * The global stylesheet (index.css) has unlayered resets such as
+ * `* { margin: 0; padding: 0 }` and `button { background: none; border: none }`.
+ * Unlayered rules always beat Tailwind's layered utilities, so spacing/border
+ * utilities never apply. Inside the seller pages we hand those properties back
+ * to the cascade layers. Zero-specificity :where() keeps component classes
+ * (e.g. ProductCard styles) in control of their own spacing.
+ */
+:where(.seller-scope) * {
+  margin: revert-layer;
+  padding: revert-layer;
+}
+
+:where(.seller-scope) button {
+  background: revert-layer;
+  border: revert-layer;
+}

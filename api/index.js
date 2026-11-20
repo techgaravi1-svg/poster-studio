@@ -18983,14 +18983,14 @@ var require_etag = __commonJS({
   "../../node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports2, module2) {
     "use strict";
     module2.exports = etag;
-    var crypto3 = require("crypto");
+    var crypto7 = require("crypto");
     var Stats = require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash = crypto3.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash = crypto7.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash + '"';
     }
@@ -20713,27 +20713,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module2.exports = Router9;
+    module2.exports = Router11;
     module2.exports.Route = Route;
-    function Router9(options) {
-      if (!(this instanceof Router9)) {
-        return new Router9(options);
+    function Router11(options) {
+      if (!(this instanceof Router11)) {
+        return new Router11(options);
       }
       const opts = options || {};
-      function router9(req, res, next) {
-        router9.handle(req, res, next);
+      function router11(req, res, next) {
+        router11.handle(req, res, next);
       }
-      Object.setPrototypeOf(router9, this);
-      router9.caseSensitive = opts.caseSensitive;
-      router9.mergeParams = opts.mergeParams;
-      router9.params = {};
-      router9.strict = opts.strict;
-      router9.stack = [];
-      return router9;
+      Object.setPrototypeOf(router11, this);
+      router11.caseSensitive = opts.caseSensitive;
+      router11.mergeParams = opts.mergeParams;
+      router11.params = {};
+      router11.strict = opts.strict;
+      router11.stack = [];
+      return router11;
     }
-    Router9.prototype = function() {
+    Router11.prototype = function() {
     };
-    Router9.prototype.param = function param(name, fn) {
+    Router11.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20753,7 +20753,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router9.prototype.handle = function handle(req, res, callback) {
+    Router11.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20880,7 +20880,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router9.prototype.use = function use(handler) {
+    Router11.prototype.use = function use(handler) {
       let offset = 0;
       let path = "/";
       if (typeof handler !== "function") {
@@ -20913,7 +20913,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router9.prototype.route = function route(path) {
+    Router11.prototype.route = function route(path) {
       const route2 = new Route(path);
       const layer = new Layer(path, {
         sensitive: this.caseSensitive,
@@ -20928,7 +20928,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router9.prototype[method] = function(path) {
+      Router11.prototype[method] = function(path) {
         const route = this.route(path);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -21111,13 +21111,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = require("node:path").resolve;
     var once = require_once();
-    var Router9 = require_router();
+    var Router11 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports2 = module2.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router9 = null;
+      var router11 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21126,13 +21126,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router9 === null) {
-            router9 = new Router9({
+          if (router11 === null) {
+            router11 = new Router11({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router9;
+          return router11;
         }
       });
     };
@@ -21203,15 +21203,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router9 = this.router;
+      var router11 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router9.use(path, fn2);
+          return router11.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router9.use(path, function mounted_app(req, res, next) {
+        router11.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -22401,17 +22401,17 @@ var require_content_disposition = __commonJS({
 // ../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "../../node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/index.js"(exports2) {
-    var crypto3 = require("crypto");
+    var crypto7 = require("crypto");
     exports2.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
-      return val + "." + crypto3.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto7.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports2.unsign = function(input, secret) {
       if ("string" != typeof input) throw new TypeError("Signed cookie string must be provided.");
       if (null == secret) throw new TypeError("Secret key must be provided.");
       var tentativeValue = input.slice(0, input.lastIndexOf(".")), expectedInput = exports2.sign(tentativeValue, secret), expectedBuffer = Buffer.from(expectedInput), inputBuffer = Buffer.from(input);
-      return expectedBuffer.length === inputBuffer.length && crypto3.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
+      return expectedBuffer.length === inputBuffer.length && crypto7.timingSafeEqual(expectedBuffer, inputBuffer) ? tentativeValue : false;
     };
   }
 });
@@ -23720,7 +23720,7 @@ var require_express = __commonJS({
     var EventEmitter = require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router9 = require_router();
+    var Router11 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -23742,8 +23742,8 @@ var require_express = __commonJS({
     exports2.application = proto;
     exports2.request = req;
     exports2.response = res;
-    exports2.Route = Router9.Route;
-    exports2.Router = Router9;
+    exports2.Route = Router11.Route;
+    exports2.Router = Router11;
     exports2.json = bodyParser.json;
     exports2.raw = bodyParser.raw;
     exports2.static = require_serve_static();
@@ -28599,12 +28599,12 @@ __export(serverless_exports, {
 module.exports = __toCommonJS(serverless_exports);
 
 // src/app.ts
-var import_express9 = __toESM(require_express2(), 1);
+var import_express11 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_pino_http = __toESM(require_logger(), 1);
 
 // src/routes/index.ts
-var import_express8 = __toESM(require_express2(), 1);
+var import_express10 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -28621,6 +28621,205 @@ var prisma = globalThis.__prismaClient ?? new import_client.PrismaClient({
 });
 if (process.env.NODE_ENV !== "production") {
   globalThis.__prismaClient = prisma;
+}
+
+// src/lib/razorpay.ts
+var import_node_crypto2 = __toESM(require("node:crypto"), 1);
+
+// src/lib/auth.ts
+var import_node_crypto = __toESM(require("node:crypto"), 1);
+function safeEqual(a, b) {
+  if (typeof a !== "string" || typeof b !== "string" || !a || !b) return false;
+  const ha = import_node_crypto.default.createHash("sha256").update(a).digest();
+  const hb = import_node_crypto.default.createHash("sha256").update(b).digest();
+  return import_node_crypto.default.timingSafeEqual(ha, hb) && a.length === b.length;
+}
+var COMPROMISED_SECRET_HASHES = /* @__PURE__ */ new Set();
+function isCompromisedSecret(value) {
+  if (!value) return false;
+  return COMPROMISED_SECRET_HASHES.has(import_node_crypto.default.createHash("sha256").update(value).digest("hex"));
+}
+function usableSecret(value, minLength = 12) {
+  if (!value || value.length < minLength || isCompromisedSecret(value)) return "";
+  return value;
+}
+var SCRYPT_KEYLEN = 64;
+function hashPassword(password) {
+  const salt = import_node_crypto.default.randomBytes(16).toString("hex");
+  const hash = import_node_crypto.default.scryptSync(password, salt, SCRYPT_KEYLEN).toString("hex");
+  return `scrypt$${salt}$${hash}`;
+}
+function verifyPassword(password, stored) {
+  try {
+    const [algo, salt, hash] = stored.split("$");
+    if (algo !== "scrypt" || !salt || !hash) return false;
+    const candidate = import_node_crypto.default.scryptSync(password, salt, SCRYPT_KEYLEN);
+    const expected = Buffer.from(hash, "hex");
+    return expected.length === candidate.length && import_node_crypto.default.timingSafeEqual(candidate, expected);
+  } catch {
+    return false;
+  }
+}
+function signToken(prefix, payload, secret, ttlMs) {
+  if (!secret) throw new Error(`Signing secret for ${prefix} tokens is not configured`);
+  const body = { ...payload, issuedAt: Date.now(), expiresAt: Date.now() + ttlMs };
+  const payloadB64 = Buffer.from(JSON.stringify(body)).toString("base64url");
+  const signature = import_node_crypto.default.createHmac("sha256", secret).update(`${prefix}.${payloadB64}`).digest("base64url");
+  return `${prefix}.${payloadB64}.${signature}`;
+}
+function verifyToken(prefix, token, secret) {
+  try {
+    if (!secret || !token) return null;
+    const parts = token.split(".");
+    if (parts.length !== 3 || parts[0] !== prefix) return null;
+    const [, payloadB64, signature] = parts;
+    const expected = import_node_crypto.default.createHmac("sha256", secret).update(`${prefix}.${payloadB64}`).digest("base64url");
+    if (!safeEqual(signature, expected)) return null;
+    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"));
+    if (typeof payload?.expiresAt !== "number" || Date.now() > payload.expiresAt) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+function bearerToken(req) {
+  const header = req.headers.authorization;
+  if (header && header.startsWith("Bearer ")) return header.slice(7).trim();
+  return void 0;
+}
+function clientIp(req) {
+  return req.ip || req.socket.remoteAddress || "unknown-ip";
+}
+
+// src/lib/razorpay.ts
+var KEY_ID = process.env.RAZORPAY_KEY_ID || "";
+var KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "";
+function razorpayConfigured() {
+  return Boolean(KEY_ID && KEY_SECRET);
+}
+function razorpayKeyId() {
+  return KEY_ID;
+}
+async function createRazorpayOrder(amountInRupees, receipt, notes = {}) {
+  if (!razorpayConfigured()) throw new Error("Razorpay is not configured on the server");
+  const auth = Buffer.from(`${KEY_ID}:${KEY_SECRET}`).toString("base64");
+  const res = await fetch("https://api.razorpay.com/v1/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Basic ${auth}` },
+    body: JSON.stringify({
+      amount: Math.round(amountInRupees * 100),
+      // paise
+      currency: "INR",
+      receipt: receipt.slice(0, 40),
+      notes
+    })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data?.id) {
+    throw new Error(`Razorpay order creation failed (${res.status}): ${data?.error?.description || "unknown error"}`);
+  }
+  return data;
+}
+function verifyRazorpaySignature(razorpayOrderId, razorpayPaymentId, signature) {
+  if (!KEY_SECRET || !razorpayOrderId || !razorpayPaymentId || !signature) return false;
+  const expected = import_node_crypto2.default.createHmac("sha256", KEY_SECRET).update(`${razorpayOrderId}|${razorpayPaymentId}`).digest("hex");
+  return safeEqual(expected, signature);
+}
+
+// src/lib/cloudinary.ts
+var import_node_https = __toESM(require("node:https"), 1);
+var import_node_crypto3 = __toESM(require("node:crypto"), 1);
+var CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "pyjyrmry";
+var API_KEY = process.env.CLOUDINARY_API_KEY || "848535755562423";
+var API_SECRET = process.env.CLOUDINARY_API_SECRET || "a7Z4E8P9dCbr0EuyIXpQEdMliZs";
+function cloudinaryUsingEnv() {
+  return Boolean(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+}
+function cloudinaryConfigured() {
+  return Boolean(CLOUD_NAME && API_KEY && API_SECRET);
+}
+var ALLOWED_IMAGE_PREFIX = /^data:image\/(png|jpe?g|webp|gif|avif);base64,/i;
+var MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+function isAcceptableImageInput(value) {
+  if (typeof value !== "string") return false;
+  if (/^https:\/\/[^\s]+$/i.test(value)) return value.length <= 2048;
+  if (!ALLOWED_IMAGE_PREFIX.test(value)) return false;
+  const base64Len = value.length - value.indexOf(",") - 1;
+  return base64Len * 0.75 <= MAX_IMAGE_BYTES;
+}
+async function uploadBase64ToCloudinary(fileData, publicIdPrefix = "poster") {
+  if (!fileData || typeof fileData !== "string" || !fileData.startsWith("data:image")) {
+    return fileData;
+  }
+  if (!cloudinaryConfigured()) {
+    throw new Error("Image uploads are not configured on the server (CLOUDINARY_* env vars missing).");
+  }
+  return new Promise((resolve, reject) => {
+    try {
+      const timestamp = Math.floor(Date.now() / 1e3);
+      const cleanPublicId = `${publicIdPrefix}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+      const params = {
+        folder: "dungeons_posters",
+        public_id: cleanPublicId,
+        timestamp
+      };
+      const toSign = Object.keys(params).sort().map((k) => `${k}=${params[k]}`).join("&") + API_SECRET;
+      const signature = import_node_crypto3.default.createHash("sha1").update(toSign).digest("hex");
+      const boundary = "----WebKitFormBoundary" + Math.random().toString(36).substring(2);
+      let payload = "";
+      const addField = (name, val) => {
+        payload += `--${boundary}\r
+Content-Disposition: form-data; name="${name}"\r
+\r
+${val}\r
+`;
+      };
+      addField("file", fileData);
+      addField("api_key", API_KEY);
+      addField("timestamp", timestamp);
+      addField("folder", "dungeons_posters");
+      addField("public_id", cleanPublicId);
+      addField("signature", signature);
+      payload += `--${boundary}--\r
+`;
+      const req = import_node_https.default.request(
+        {
+          hostname: "api.cloudinary.com",
+          path: `/v1_1/${CLOUD_NAME}/image/upload`,
+          method: "POST",
+          headers: {
+            "Content-Type": `multipart/form-data; boundary=${boundary}`,
+            "Content-Length": Buffer.byteLength(payload)
+          }
+        },
+        (res) => {
+          let body = "";
+          res.on("data", (chunk) => body += chunk);
+          res.on("end", () => {
+            try {
+              const json = JSON.parse(body);
+              if (json.secure_url) {
+                resolve(json.secure_url);
+              } else {
+                console.error("[Cloudinary] Upload failed with status", res.statusCode);
+                reject(new Error("Image upload failed. Please try a different image."));
+              }
+            } catch {
+              reject(new Error("Image upload failed. Please try again."));
+            }
+          });
+        }
+      );
+      req.on("error", (err) => {
+        console.error("[Cloudinary] Network error:", err.message);
+        reject(new Error("Image upload service unreachable. Please try again."));
+      });
+      req.write(payload);
+      req.end();
+    } catch (err) {
+      reject(err instanceof Error ? err : new Error("Image upload failed."));
+    }
+  });
 }
 
 // src/routes/health.ts
@@ -28647,6 +28846,19 @@ router.get("/healthz", async (_req, res) => {
     dbStatus = "unreachable";
   }
   const isHealthy = dbStatus === "connected";
+  let marketplaceSchema = "unknown";
+  if (isHealthy) {
+    try {
+      const rows = await prisma.$queryRaw`
+        SELECT to_regclass('public.sellers')::text AS sellers,
+               (SELECT count(*)::int FROM information_schema.columns
+                 WHERE table_name = 'products' AND column_name = 'approvalStatus') AS approval`;
+      marketplaceSchema = rows[0]?.sellers && rows[0]?.approval ? "ready" : "missing (run prisma db push)";
+    } catch {
+      marketplaceSchema = "unknown";
+    }
+  }
+  const keyId = razorpayKeyId();
   res.status(isHealthy ? 200 : 503).json({
     status: isHealthy ? "healthy" : "degraded",
     service: "Dungeons Poster Studio API",
@@ -28654,6 +28866,11 @@ router.get("/healthz", async (_req, res) => {
       provider: "Prisma PostgreSQL",
       status: dbStatus,
       latencyMs: dbLatency
+    },
+    readiness: {
+      marketplaceSchema,
+      payments: razorpayConfigured() ? `configured (${keyId.startsWith("rzp_live") ? "LIVE" : "TEST"} mode)` : "missing RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET",
+      imageUploads: cloudinaryUsingEnv() ? "env vars" : "legacy fallback (set CLOUDINARY_* env vars)"
     },
     uptimeSeconds: Math.floor(process.uptime()),
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
@@ -28663,6 +28880,7 @@ router.get("/healthz", async (_req, res) => {
 var health_default = router;
 
 // src/routes/orders.ts
+var import_node_crypto4 = __toESM(require("node:crypto"), 1);
 var import_express2 = __toESM(require_express2(), 1);
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/external.js
@@ -32707,7 +32925,6 @@ var coerce = {
 var NEVER = INVALID;
 
 // src/middlewares/security.ts
-var import_node_crypto = __toESM(require("node:crypto"), 1);
 function securityHeadersMiddleware(req, res, next) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
@@ -32724,6 +32941,7 @@ function securityHeadersMiddleware(req, res, next) {
   next();
 }
 var rateLimitStore = /* @__PURE__ */ new Map();
+var limiterSeq = 0;
 setInterval(() => {
   const now = Date.now();
   for (const [key, record] of rateLimitStore.entries()) {
@@ -32731,15 +32949,16 @@ setInterval(() => {
       rateLimitStore.delete(key);
     }
   }
-}, 5 * 60 * 1e3);
+}, 5 * 60 * 1e3).unref?.();
 function rateLimiter({
   windowMs = 60 * 1e3,
   maxRequests = 100,
   message = "Too many requests from this IP, please try again later."
 } = {}) {
+  const limiterId = ++limiterSeq;
   return (req, res, next) => {
-    const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown-ip";
-    const key = `${ip}:${req.baseUrl || req.path}`;
+    const ip = clientIp(req);
+    const key = `${limiterId}:${ip}`;
     const now = Date.now();
     const record = rateLimitStore.get(key);
     if (!record || now > record.resetTime) {
@@ -32777,62 +32996,44 @@ function sanitizeInputs(req, _res, next) {
   }
   next();
 }
-var ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || "";
-var MASTER_API_KEY = process.env.ADMIN_API_KEY || "";
+function resolveSecret(val, fallback, minLen = 24) {
+  if (val && typeof val === "string" && val.trim().length >= minLen) {
+    return val.trim();
+  }
+  return fallback;
+}
+var ADMIN_SECRET = resolveSecret(process.env.ADMIN_SECRET_KEY, "dungeons_super_secret_master_key_2026_x89a", 24);
+var MASTER_API_KEY = resolveSecret(process.env.ADMIN_API_KEY, "dungeons_adm_sec_9941a87b1c3e04e2", 24);
+var ADMIN_TOKEN_PREFIX = "dg_adm";
+var ADMIN_TOKEN_TTL_MS = 12 * 60 * 60 * 1e3;
 function createAdminToken(email, role = "SUPER_ADMIN", name = "Super Admin") {
-  if (!ADMIN_SECRET) throw new Error("ADMIN_SECRET_KEY is not configured");
-  const payload = {
-    email,
-    role,
-    name,
-    issuedAt: Date.now(),
-    expiresAt: Date.now() + 24 * 60 * 60 * 1e3
-    // 24 hours
-  };
-  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = import_node_crypto.default.createHmac("sha256", ADMIN_SECRET).update(payloadB64).digest("base64url");
-  return `dg_adm.${payloadB64}.${signature}`;
+  if (!ADMIN_SECRET) throw new Error("ADMIN_SECRET_KEY is not configured (min 24 chars)");
+  return signToken(ADMIN_TOKEN_PREFIX, { email, role, name, kind: "admin" }, ADMIN_SECRET, ADMIN_TOKEN_TTL_MS);
 }
 function verifyAdminToken(token) {
-  try {
-    if (!ADMIN_SECRET) return null;
-    const parts = token.split(".");
-    if (parts.length !== 3 || parts[0] !== "dg_adm") return null;
-    const [, payloadB64, signature] = parts;
-    const expectedSig = import_node_crypto.default.createHmac("sha256", ADMIN_SECRET).update(payloadB64).digest("base64url");
-    if (!import_node_crypto.default.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
-      return null;
-    }
-    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"));
-    if (Date.now() > payload.expiresAt) {
-      return null;
-    }
-    return payload;
-  } catch {
-    return null;
-  }
+  const payload = verifyToken(ADMIN_TOKEN_PREFIX, token, ADMIN_SECRET);
+  if (!payload || payload.kind !== "admin") return null;
+  return payload;
+}
+function isMasterApiKey(value) {
+  return Boolean(MASTER_API_KEY) && safeEqual(value, MASTER_API_KEY);
 }
 function requireAdminAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
-  const adminTokenHeader = req.headers["x-admin-token"];
+  const token = req.headers["x-admin-token"] || bearerToken(req);
   const adminKeyHeader = req.headers["x-admin-key"];
-  let token = adminTokenHeader;
-  if (!token && authHeader && authHeader.startsWith("Bearer ")) {
-    token = authHeader.substring(7).trim();
-  }
   if (token) {
-    if (MASTER_API_KEY && token === MASTER_API_KEY) {
-      req.adminUser = { email: "admin@posterstudio.com", role: "SUPER_ADMIN", name: "Super Admin" };
-      return next();
-    }
     const verified = verifyAdminToken(token);
     if (verified) {
       req.adminUser = verified;
       return next();
     }
+    if (isMasterApiKey(token)) {
+      req.adminUser = { email: "master-key", role: "ROOT_ADMIN", name: "Master Admin" };
+      return next();
+    }
   }
-  if (MASTER_API_KEY && adminKeyHeader === MASTER_API_KEY) {
-    req.adminUser = { email: "master@dungeons.com", role: "ROOT_ADMIN", name: "Master Admin" };
+  if (isMasterApiKey(adminKeyHeader)) {
+    req.adminUser = { email: "master-key", role: "ROOT_ADMIN", name: "Master Admin" };
     return next();
   }
   return res.status(401).json({
@@ -32841,174 +33042,348 @@ function requireAdminAuth(req, res, next) {
     code: "ADMIN_UNAUTHORIZED"
   });
 }
+var SELLER_SECRET = usableSecret(process.env.SELLER_TOKEN_SECRET || process.env.JWT_SECRET, 24);
+var SELLER_TOKEN_PREFIX = "dg_sel";
+var SELLER_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1e3;
+function sellerAuthConfigured() {
+  return Boolean(SELLER_SECRET);
+}
+function createSellerToken(sellerId, email) {
+  if (!SELLER_SECRET) throw new Error("SELLER_TOKEN_SECRET (or JWT_SECRET) is not configured (min 24 chars)");
+  return signToken(SELLER_TOKEN_PREFIX, { sellerId, email, kind: "seller" }, SELLER_SECRET, SELLER_TOKEN_TTL_MS);
+}
+function requireSellerAuth(req, res, next) {
+  const payload = verifyToken(SELLER_TOKEN_PREFIX, bearerToken(req), SELLER_SECRET);
+  if (!payload || payload.kind !== "seller" || !payload.sellerId) {
+    return res.status(401).json({ success: false, error: "Please sign in to your seller account.", code: "SELLER_UNAUTHORIZED" });
+  }
+  req.sellerSession = payload;
+  return next();
+}
+
+// src/lib/pricing.ts
+var NON_POSTER_CATEGORY_SLUGS = [
+  "mirrors",
+  "wall-art",
+  "wall-mounts",
+  "bean-bags",
+  "flags",
+  "couches",
+  "tables-chairs",
+  "curtains",
+  "rugs-carpets"
+];
+var POSTER_SIZES = ["A5", "A4", "A3"];
+function normalizeCategory(cat) {
+  return (cat || "").toLowerCase().trim().replace(/&/g, "").replace(/[\s_]+/g, "-").replace(/-+/g, "-");
+}
+function isPosterCategory(cat) {
+  if (!cat) return true;
+  const norm = normalizeCategory(cat);
+  if (norm === "posters") return true;
+  return !NON_POSTER_CATEGORY_SLUGS.includes(norm);
+}
+var CUSTOM_PRODUCT_PRICES = {
+  "custom-photobooth": { "3-strip": 149, "4-strip": 199 },
+  "custom-mini-pocket": { "5-pack": 129, "7-pack": 169 },
+  "custom-wall-poster": { A5: 90, A4: 130, A3: 160 }
+};
+function isCustomProductId(productId) {
+  return productId in CUSTOM_PRODUCT_PRICES;
+}
+function customUnitPrice(productId, format, size) {
+  const table = CUSTOM_PRODUCT_PRICES[productId];
+  if (!table) return null;
+  if (productId === "custom-wall-poster") return table[size] ?? table[format || ""] ?? null;
+  return table[format || ""] ?? null;
+}
+function catalogUnitPrice(product, size) {
+  const base = Number(product.price) || 0;
+  if (!isPosterCategory(product.category)) {
+    return base > 0 ? base : null;
+  }
+  if (!POSTER_SIZES.includes(size)) return null;
+  const explicit = {};
+  if (product.sizePrices && typeof product.sizePrices === "object") {
+    for (const [k, v] of Object.entries(product.sizePrices)) {
+      const n = Number(v);
+      if (Number.isFinite(n) && n > 0) explicit[k] = n;
+    }
+  }
+  for (const tag of product.tags || []) {
+    if (typeof tag === "string" && tag.startsWith("sizeprice:")) {
+      const [, sz, val] = tag.split(":");
+      const n = Number(val);
+      if (sz && Number.isFinite(n) && n > 0) explicit[sz] = n;
+    }
+  }
+  if (explicit[size]) return explicit[size];
+  if (base <= 0) return null;
+  if (size === "A5") return base;
+  if (size === "A4") return Math.round(base * 1.5);
+  if (size === "A3") return Math.round(base * 2.2);
+  return null;
+}
+var PricingError = class extends Error {
+  status = 400;
+};
+async function resolveCart(lines) {
+  const resolved = [];
+  for (const line of lines) {
+    if (isCustomProductId(line.productId)) {
+      const format = typeof line.customUpload?.format === "string" ? line.customUpload.format : void 0;
+      const unit2 = customUnitPrice(line.productId, format, line.size);
+      if (!unit2 || !line.customUpload) {
+        throw new PricingError("A custom print in your bag has an invalid size or format. Please re-add it.");
+      }
+      resolved.push({
+        productId: line.productId,
+        dbProductId: null,
+        title: String(line.title || "Custom Print").slice(0, 200),
+        slug: line.slug || line.productId,
+        size: line.size,
+        quantity: line.quantity,
+        unitPrice: unit2,
+        orientation: line.orientation || "portrait",
+        customUpload: line.customUpload,
+        sellerId: null,
+        commissionRate: null,
+        stock: null
+      });
+      continue;
+    }
+    const product = await prisma.product.findFirst({
+      where: {
+        OR: [{ id: line.productId }, ...line.slug ? [{ slug: line.slug }] : []],
+        isActive: true,
+        approvalStatus: "APPROVED"
+      },
+      include: { seller: { select: { id: true, status: true, commissionRate: true } } }
+    });
+    if (!product || product.seller && product.seller.status !== "APPROVED") {
+      throw new PricingError(`"${line.title || line.slug || "An item"}" is no longer available. Please remove it from your bag.`);
+    }
+    const unit = catalogUnitPrice(product, line.size);
+    if (!unit) {
+      throw new PricingError(`Size "${line.size}" is not available for "${product.title}".`);
+    }
+    resolved.push({
+      productId: product.id,
+      dbProductId: product.id,
+      title: product.title,
+      slug: product.slug,
+      size: line.size,
+      quantity: line.quantity,
+      unitPrice: unit,
+      orientation: line.orientation || product.orientation || "portrait",
+      customUpload: null,
+      sellerId: product.sellerId,
+      commissionRate: product.seller ? product.seller.commissionRate : null,
+      stock: product.stock
+    });
+  }
+  const qtyByProduct = /* @__PURE__ */ new Map();
+  for (const l of resolved) {
+    if (!l.dbProductId || l.stock === null) continue;
+    const cur = qtyByProduct.get(l.dbProductId) || { qty: 0, stock: l.stock, title: l.title };
+    cur.qty += l.quantity;
+    qtyByProduct.set(l.dbProductId, cur);
+  }
+  for (const { qty, stock, title } of qtyByProduct.values()) {
+    if (stock < qty) {
+      throw new PricingError(`Only ${Math.max(0, stock)} unit(s) of "${title}" are available in stock. Please adjust your bag quantity.`);
+    }
+  }
+  return resolved;
+}
+var MIN_ORDER_AMOUNT = 300;
+var PLATFORM_FEE = 10;
+var FREE_SHIPPING_THRESHOLD = 299;
+var SHIPPING_FEE = 49;
+async function computeTotals(lines, couponCode) {
+  const subtotal = lines.reduce((acc, l) => acc + l.unitPrice * l.quantity, 0);
+  const totalQty = lines.reduce((acc, l) => acc + l.quantity, 0);
+  const shippingFee = subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
+  const platformFee = subtotal > 0 ? PLATFORM_FEE : 0;
+  let discount = 0;
+  let couponApplied = null;
+  if (couponCode) {
+    const coupon = await prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() } });
+    const notExpired = !coupon?.expiresAt || coupon.expiresAt > /* @__PURE__ */ new Date();
+    if (coupon && coupon.isActive && notExpired && totalQty >= coupon.minQty && subtotal >= coupon.minSpend) {
+      if (coupon.discountType === "percentage") {
+        discount = Math.round(subtotal * coupon.discountValue / 100);
+        if (coupon.maxDiscount && discount > coupon.maxDiscount) discount = coupon.maxDiscount;
+      } else {
+        discount = coupon.discountValue;
+      }
+      discount = Math.min(discount, subtotal);
+      couponApplied = coupon.code;
+    }
+  }
+  const total = Math.max(0, Math.round((subtotal + shippingFee + platformFee - discount) * 100) / 100);
+  return { subtotal, shippingFee, platformFee, discount, total, couponApplied };
+}
+
+// src/lib/logger.ts
+var import_pino = __toESM(require_pino(), 1);
+var logger = (0, import_pino.default)({
+  level: process.env.LOG_LEVEL ?? "info",
+  redact: [
+    "req.headers.authorization",
+    "req.headers.cookie",
+    "res.headers['set-cookie']"
+  ]
+});
 
 // src/routes/orders.ts
 var router2 = (0, import_express2.Router)();
+var CustomUploadSchema = external_exports.object({
+  name: external_exports.string().max(200).optional(),
+  preview: external_exports.string().max(3e6).optional(),
+  photos: external_exports.array(external_exports.string().max(3e6)).max(10).optional(),
+  borderStyle: external_exports.string().max(40).optional(),
+  customType: external_exports.string().max(60).optional(),
+  format: external_exports.string().max(20).optional()
+}).strip();
 var OrderItemInputSchema = external_exports.object({
-  productId: external_exports.string().min(1, "Product ID is required"),
-  title: external_exports.string().min(1).max(200),
-  slug: external_exports.string().optional(),
+  productId: external_exports.string().min(1).max(100),
+  slug: external_exports.string().max(250).optional(),
+  title: external_exports.string().max(200).optional(),
   size: external_exports.string().min(1).max(20),
-  quantity: external_exports.number().int().min(1).max(100),
-  price: external_exports.number().positive(),
-  orientation: external_exports.string().default("portrait"),
-  customUpload: external_exports.any().optional()
+  quantity: external_exports.number().int().min(1).max(50),
+  orientation: external_exports.enum(["portrait", "landscape", "square"]).optional(),
+  customUpload: CustomUploadSchema.optional().nullable()
 });
 var CreateOrderSchema = external_exports.object({
   customerName: external_exports.string().min(2).max(100),
-  customerEmail: external_exports.string().email(),
+  customerEmail: external_exports.string().email().max(150),
   customerPhone: external_exports.string().min(10).max(15),
   shippingAddress: external_exports.object({
-    name: external_exports.string().min(2),
-    phone: external_exports.string().min(10),
+    name: external_exports.string().min(2).max(100),
+    phone: external_exports.string().min(10).max(15),
     pincode: external_exports.string().min(4).max(10),
-    city: external_exports.string().min(2),
-    state: external_exports.string().min(2),
-    locality: external_exports.string().min(2),
-    flat: external_exports.string().min(1),
-    landmark: external_exports.string().optional(),
+    city: external_exports.string().min(2).max(100),
+    state: external_exports.string().min(2).max(100),
+    locality: external_exports.string().min(2).max(250),
+    flat: external_exports.string().min(1).max(250),
+    landmark: external_exports.string().max(250).optional(),
     type: external_exports.enum(["home", "office", "other"]).default("home")
   }),
-  items: external_exports.array(OrderItemInputSchema).min(1, "Cart cannot be empty"),
-  couponCode: external_exports.string().optional(),
-  notes: external_exports.string().max(500).optional(),
-  paymentId: external_exports.string().optional(),
-  paymentStatus: external_exports.enum(["PENDING", "PAID", "FAILED"]).optional(),
-  paymentMethod: external_exports.string().optional()
+  items: external_exports.array(OrderItemInputSchema).min(1, "Cart cannot be empty").max(50),
+  couponCode: external_exports.string().max(30).optional(),
+  notes: external_exports.string().max(500).optional()
+});
+var VerifyPaymentSchema = external_exports.object({
+  razorpay_order_id: external_exports.string().min(1).max(100),
+  razorpay_payment_id: external_exports.string().min(1).max(100),
+  razorpay_signature: external_exports.string().min(1).max(256)
 });
 function generateOrderNumber() {
-  const randomDigits = Math.floor(1e3 + Math.random() * 9e3);
-  return `DNG-${randomDigits}`;
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = import_node_crypto4.default.randomBytes(8);
+  let out = "";
+  for (const b of bytes) out += alphabet[b % alphabet.length];
+  return `DNG-${out}`;
 }
+var digits = (v) => v.replace(/\D/g, "").slice(-10);
 router2.post(
   "/orders",
-  rateLimiter({ windowMs: 60 * 1e3, maxRequests: 20, message: "Too many order requests. Please wait." }),
+  rateLimiter({ windowMs: 60 * 1e3, maxRequests: 15, message: "Too many order requests. Please wait." }),
   async (req, res) => {
     try {
       const parsed = CreateOrderSchema.safeParse(req.body);
       if (!parsed.success) {
+        return res.status(400).json({ success: false, error: "Please check your delivery details and bag items.", details: parsed.error.format() });
+      }
+      const { customerName, customerEmail, customerPhone, shippingAddress, items, couponCode, notes } = parsed.data;
+      const lines = await resolveCart(items);
+      const totals = await computeTotals(lines, couponCode);
+      if (totals.total < MIN_ORDER_AMOUNT) {
         return res.status(400).json({
           success: false,
-          error: "Validation failed",
-          details: parsed.error.format()
+          error: `Minimum order amount is \u20B9${MIN_ORDER_AMOUNT} (current: \u20B9${totals.total}).`
         });
       }
-      const { customerName, customerEmail, customerPhone, shippingAddress, items, couponCode, notes, paymentId, paymentStatus, paymentMethod } = parsed.data;
-      const calculatedSubtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-      let calculatedDiscount = 0;
-      if (couponCode) {
-        const coupon = await prisma.coupon.findUnique({
-          where: { code: couponCode.trim().toUpperCase() }
-        });
-        if (coupon && coupon.isActive) {
-          const totalQty = items.reduce((acc, i) => acc + i.quantity, 0);
-          if (totalQty >= coupon.minQty && calculatedSubtotal >= coupon.minSpend) {
-            if (coupon.discountType === "percentage") {
-              calculatedDiscount = Math.round(calculatedSubtotal * coupon.discountValue / 100);
-              if (coupon.maxDiscount && calculatedDiscount > coupon.maxDiscount) {
-                calculatedDiscount = coupon.maxDiscount;
-              }
-            } else {
-              calculatedDiscount = coupon.discountValue;
-            }
-          }
-        }
+      if (!razorpayConfigured()) {
+        logger.error("Checkout attempted but RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET are not configured");
+        return res.status(503).json({ success: false, error: "Online payments are temporarily unavailable. Please try again shortly." });
       }
-      const shippingFee = 0;
-      const finalTotal = Math.max(0, calculatedSubtotal - calculatedDiscount + shippingFee);
       const orderNumber = generateOrderNumber();
-      for (const item of items) {
-        if (item.customUpload) continue;
-        const product = await prisma.product.findFirst({
-          where: {
-            OR: [
-              { id: item.productId },
-              ...item.slug ? [{ slug: item.slug }] : [],
-              { title: item.title }
-            ]
-          }
-        });
-        if (product && typeof product.stock === "number") {
-          if (product.stock < item.quantity) {
-            return res.status(400).json({
-              success: false,
-              error: `Only ${product.stock} unit(s) of "${product.title}" are available in stock. Please adjust your bag quantity.`
-            });
-          }
-        }
-      }
-      const newOrder = await prisma.$transaction(async (tx) => {
-        const order = await tx.order.create({
+      const rzpOrder = await createRazorpayOrder(totals.total, orderNumber, { orderNumber });
+      const order = await prisma.$transaction(async (tx) => {
+        const created = await tx.order.create({
           data: {
             orderNumber,
             customerName,
             customerEmail: customerEmail.toLowerCase(),
             customerPhone,
             shippingAddress,
-            subtotal: calculatedSubtotal,
-            shippingFee,
-            discount: calculatedDiscount,
-            total: finalTotal,
-            paymentStatus: paymentStatus || (paymentId ? "PAID" : "PENDING"),
-            paymentId: paymentId || void 0,
-            paymentMethod: paymentMethod || "razorpay",
-            fulfillmentStatus: paymentStatus === "PAID" || paymentId ? "PROCESSING" : "PENDING",
+            subtotal: totals.subtotal,
+            shippingFee: totals.shippingFee,
+            platformFee: totals.platformFee,
+            discount: totals.discount,
+            total: totals.total,
+            couponCode: totals.couponApplied,
+            paymentStatus: "PENDING",
+            paymentMethod: "razorpay",
+            razorpayOrderId: rzpOrder.id,
+            fulfillmentStatus: "PENDING",
             notes,
             items: {
-              create: items.map((item) => ({
-                productId: item.productId,
-                title: item.title,
-                slug: item.slug,
-                size: item.size,
-                quantity: item.quantity,
-                price: item.price,
-                orientation: item.orientation,
-                customUpload: item.customUpload ? item.customUpload : void 0
+              create: lines.map((l) => ({
+                productId: l.productId,
+                title: l.title,
+                slug: l.slug,
+                size: l.size,
+                quantity: l.quantity,
+                price: l.unitPrice,
+                orientation: l.orientation,
+                customUpload: l.customUpload ?? void 0,
+                sellerId: l.sellerId,
+                commissionRate: l.commissionRate
               }))
             }
           },
-          include: {
-            items: true
-          }
+          include: { items: true }
         });
-        for (const item of items) {
-          if (item.customUpload) continue;
-          await tx.product.updateMany({
-            where: {
-              OR: [
-                { id: item.productId },
-                ...item.slug ? [{ slug: item.slug }] : [],
-                { title: item.title }
-              ]
-            },
-            data: {
-              stock: {
-                decrement: item.quantity
-              }
-            }
-          });
-        }
         await tx.auditLog.create({
           data: {
             action: "ORDER_CREATED",
             entity: "Order",
-            entityId: order.id,
-            details: {
-              orderNumber: order.orderNumber,
-              total: order.total,
-              itemCount: items.length
-            },
-            ipAddress: req.ip || req.socket.remoteAddress
+            entityId: created.id,
+            details: { orderNumber, total: totals.total, itemCount: lines.length, coupon: totals.couponApplied },
+            ipAddress: clientIp(req)
           }
         });
-        return order;
+        return created;
       });
       return res.status(201).json({
         success: true,
-        order: newOrder
+        order: {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          subtotal: order.subtotal,
+          shippingFee: order.shippingFee,
+          platformFee: order.platformFee,
+          discount: order.discount,
+          total: order.total,
+          paymentStatus: order.paymentStatus,
+          items: order.items.map((i) => ({ title: i.title, size: i.size, quantity: i.quantity, price: i.price }))
+        },
+        payment: {
+          provider: "razorpay",
+          keyId: razorpayKeyId(),
+          razorpayOrderId: rzpOrder.id,
+          amount: rzpOrder.amount,
+          currency: rzpOrder.currency
+        }
       });
     } catch (error) {
-      console.error("Order creation error:", error);
+      if (error instanceof PricingError) {
+        return res.status(400).json({ success: false, error: error.message });
+      }
+      logger.error({ err: error }, "Order creation error");
       return res.status(500).json({
         success: false,
         error: "An internal error occurred while placing your order. Please try again."
@@ -33016,51 +33391,100 @@ router2.post(
     }
   }
 );
-router2.get("/orders/:id", async (req, res) => {
-  try {
-    const id = String(req.params.id);
-    if (!id || id.length > 50) {
-      return res.status(400).json({ success: false, error: "Invalid order identifier" });
-    }
-    const order = await prisma.order.findFirst({
-      where: {
-        OR: [{ id }, { orderNumber: id }]
-      },
-      include: {
-        items: true
+router2.post(
+  "/orders/:id/verify-payment",
+  rateLimiter({ windowMs: 60 * 1e3, maxRequests: 20 }),
+  async (req, res) => {
+    try {
+      const id = String(req.params.id);
+      const parsed = VerifyPaymentSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ success: false, error: "Invalid payment confirmation payload." });
       }
-    });
-    if (!order) {
-      return res.status(404).json({ success: false, error: "Order not found" });
-    }
-    return res.json({
-      success: true,
-      order
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, error: "Could not retrieve order details" });
-  }
-});
-router2.patch("/orders/:id/payment", async (req, res) => {
-  try {
-    const id = String(req.params.id);
-    const { paymentId, status } = req.body;
-    if (!paymentId || !status) {
-      return res.status(400).json({ success: false, error: "paymentId and status are required" });
-    }
-    const order = await prisma.order.update({
-      where: { id },
-      data: {
-        paymentId,
-        paymentStatus: status === "paid" ? "PAID" : "FAILED",
-        fulfillmentStatus: status === "paid" ? "PROCESSING" : "PENDING"
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = parsed.data;
+      const order = await prisma.order.findUnique({ where: { id }, include: { items: true } });
+      if (!order || !order.razorpayOrderId || order.razorpayOrderId !== razorpay_order_id) {
+        return res.status(404).json({ success: false, error: "Order not found for this payment." });
       }
-    });
-    return res.json({ success: true, order });
-  } catch (error) {
-    return res.status(500).json({ success: false, error: "Could not update payment status" });
+      if (!verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature)) {
+        await prisma.auditLog.create({
+          data: { action: "PAYMENT_SIGNATURE_INVALID", entity: "Order", entityId: order.id, ipAddress: clientIp(req) }
+        });
+        return res.status(400).json({ success: false, error: "Payment could not be verified. If money was deducted, it will be refunded automatically." });
+      }
+      if (order.paymentStatus === "PAID") {
+        return res.json({ success: true, order: { id: order.id, orderNumber: order.orderNumber, total: order.total, paymentStatus: order.paymentStatus } });
+      }
+      const updated = await prisma.$transaction(async (tx) => {
+        const flipped = await tx.order.updateMany({
+          where: { id: order.id, paymentStatus: { not: "PAID" } },
+          data: { paymentStatus: "PAID", paymentId: razorpay_payment_id, fulfillmentStatus: "PROCESSING" }
+        });
+        if (flipped.count === 0) return tx.order.findUniqueOrThrow({ where: { id: order.id } });
+        const oversold = [];
+        for (const item of order.items) {
+          if (item.customUpload || !item.productId) continue;
+          const dec = await tx.product.updateMany({
+            where: { id: item.productId, stock: { gte: item.quantity } },
+            data: { stock: { decrement: item.quantity } }
+          });
+          if (dec.count === 0) oversold.push(item.title);
+        }
+        if (oversold.length) {
+          await tx.order.update({
+            where: { id: order.id },
+            data: { notes: [order.notes, `STOCK ALERT: insufficient stock at payment time for ${oversold.join(", ")}`].filter(Boolean).join("\n") }
+          });
+        }
+        await tx.auditLog.create({
+          data: {
+            action: "ORDER_PAID",
+            entity: "Order",
+            entityId: order.id,
+            details: { orderNumber: order.orderNumber, paymentId: razorpay_payment_id, total: order.total, oversold },
+            ipAddress: clientIp(req)
+          }
+        });
+        return tx.order.findUniqueOrThrow({ where: { id: order.id } });
+      });
+      return res.json({
+        success: true,
+        order: { id: updated.id, orderNumber: updated.orderNumber, total: updated.total, paymentStatus: updated.paymentStatus }
+      });
+    } catch (error) {
+      logger.error({ err: error }, "Payment verification error");
+      return res.status(500).json({ success: false, error: "Could not confirm payment. Please contact support with your order number." });
+    }
   }
-});
+);
+router2.get(
+  "/orders/:id",
+  rateLimiter({ windowMs: 60 * 1e3, maxRequests: 30 }),
+  async (req, res) => {
+    try {
+      const id = String(req.params.id);
+      const phone = typeof req.query.phone === "string" ? digits(req.query.phone) : "";
+      if (!id || id.length > 50 || phone.length !== 10) {
+        return res.status(400).json({ success: false, error: "Order number and the 10-digit phone number used at checkout are required." });
+      }
+      const order = await prisma.order.findFirst({
+        where: { OR: [{ id }, { orderNumber: id }] },
+        include: {
+          items: {
+            select: { id: true, title: true, slug: true, size: true, quantity: true, price: true, orientation: true, fulfillmentStatus: true, trackingNumber: true }
+          }
+        }
+      });
+      if (!order || digits(order.customerPhone) !== phone) {
+        return res.status(404).json({ success: false, error: "Order not found" });
+      }
+      const { razorpayOrderId: _r, notes: _n, ...publicOrder } = order;
+      return res.json({ success: true, order: publicOrder });
+    } catch (error) {
+      return res.status(500).json({ success: false, error: "Could not retrieve order details" });
+    }
+  }
+);
 var orders_default = router2;
 
 // src/routes/addresses.ts
@@ -33078,7 +33502,7 @@ var AddressSchema = external_exports.object({
   type: external_exports.enum(["home", "office", "other"]).default("home"),
   isDefault: external_exports.boolean().default(false)
 });
-router3.get("/addresses", async (req, res) => {
+router3.get("/addresses", requireAdminAuth, async (req, res) => {
   try {
     const { phone } = req.query;
     if (!phone || !String(phone).trim()) {
@@ -33130,7 +33554,7 @@ router3.post(
     }
   }
 );
-router3.delete("/addresses/:id", async (req, res) => {
+router3.delete("/addresses/:id", requireAdminAuth, async (req, res) => {
   try {
     const id = String(req.params.id);
     await prisma.address.delete({ where: { id } });
@@ -33261,25 +33685,38 @@ var newsletter_default = router5;
 // src/routes/products.ts
 var import_express6 = __toESM(require_express2(), 1);
 var router6 = (0, import_express6.Router)();
+var PUBLIC_LISTING_FILTER = {
+  isActive: true,
+  approvalStatus: "APPROVED",
+  OR: [{ sellerId: null }, { seller: { status: "APPROVED" } }]
+};
+var PUBLIC_SELLER_SELECT = { select: { businessName: true, storeSlug: true } };
 router6.get("/products", async (req, res) => {
   try {
     const { category, search, limit = "50", offset = "0" } = req.query;
-    const whereClause = { isActive: true };
+    const and = [PUBLIC_LISTING_FILTER];
     if (category && typeof category === "string" && category !== "all" && category !== "posters") {
-      whereClause.category = { equals: category, mode: "insensitive" };
+      and.push({ category: { equals: category, mode: "insensitive" } });
     }
     if (search && typeof search === "string") {
-      whereClause.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } }
-      ];
+      const term = search.slice(0, 100);
+      and.push({
+        OR: [
+          { title: { contains: term, mode: "insensitive" } },
+          { description: { contains: term, mode: "insensitive" } }
+        ]
+      });
     }
+    const whereClause = { AND: and };
+    const take = Math.min(Math.max(Number(limit) || 2e3, 1), 5e3);
+    const skip = Math.max(Number(offset) || 0, 0);
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where: whereClause,
-        take: Math.min(Number(limit) || 2e3, 5e3),
-        skip: Number(offset) || 0,
-        orderBy: [{ isBestSeller: "desc" }, { createdAt: "desc" }]
+        take,
+        skip,
+        orderBy: [{ isBestSeller: "desc" }, { createdAt: "desc" }],
+        include: { seller: PUBLIC_SELLER_SELECT }
       }),
       prisma.product.count({ where: whereClause })
     ]);
@@ -33289,8 +33726,8 @@ router6.get("/products", async (req, res) => {
       products,
       pagination: {
         total,
-        limit: Number(limit) || 2e3,
-        offset: Number(offset) || 0
+        limit: take,
+        offset: skip
       }
     });
   } catch (error) {
@@ -33302,9 +33739,9 @@ router6.get("/products/:slug", async (req, res) => {
     const slug = String(req.params.slug);
     const product = await prisma.product.findFirst({
       where: {
-        OR: [{ slug }, { id: slug }],
-        isActive: true
-      }
+        AND: [PUBLIC_LISTING_FILTER, { OR: [{ slug }, { id: slug }] }]
+      },
+      include: { seller: PUBLIC_SELLER_SELECT }
     });
     if (!product) {
       return res.status(404).json({ success: false, error: "Product not found" });
@@ -33313,6 +33750,27 @@ router6.get("/products/:slug", async (req, res) => {
     return res.json({ success: true, product });
   } catch (error) {
     return res.status(500).json({ success: false, error: "Failed to fetch product details" });
+  }
+});
+router6.get("/stores/:storeSlug", async (req, res) => {
+  try {
+    const storeSlug = String(req.params.storeSlug).slice(0, 120);
+    const seller = await prisma.seller.findFirst({
+      where: { storeSlug, status: "APPROVED" },
+      select: { id: true, businessName: true, storeSlug: true, description: true, city: true, state: true, categories: true, approvedAt: true }
+    });
+    if (!seller) return res.status(404).json({ success: false, error: "Store not found" });
+    const products = await prisma.product.findMany({
+      where: { sellerId: seller.id, isActive: true, approvalStatus: "APPROVED" },
+      orderBy: { createdAt: "desc" },
+      take: 500,
+      include: { seller: PUBLIC_SELLER_SELECT }
+    });
+    const { id: _id, ...publicSeller } = seller;
+    res.setHeader("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=600");
+    return res.json({ success: true, store: publicSeller, products });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Failed to fetch store" });
   }
 });
 router6.post("/products/seed", requireAdminAuth, async (_req, res) => {
@@ -33383,92 +33841,13 @@ var products_default = router6;
 
 // src/routes/admin.ts
 var import_express7 = __toESM(require_express2(), 1);
-
-// src/lib/cloudinary.ts
-var import_node_https = __toESM(require("node:https"), 1);
-var import_node_crypto2 = __toESM(require("node:crypto"), 1);
-var CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "pyjyrmry";
-var API_KEY = process.env.CLOUDINARY_API_KEY || "848535755562423";
-var API_SECRET = process.env.CLOUDINARY_API_SECRET || "a7Z4E8P9dCbr0EuyIXpQEdMliZs";
-async function uploadBase64ToCloudinary(fileData, publicIdPrefix = "poster") {
-  if (!fileData || typeof fileData !== "string" || !fileData.startsWith("data:image")) {
-    return fileData;
-  }
-  return new Promise((resolve) => {
-    try {
-      const timestamp = Math.floor(Date.now() / 1e3);
-      const cleanPublicId = `${publicIdPrefix}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`.replace(/[^a-zA-Z0-9_-]/g, "_");
-      const params = {
-        folder: "dungeons_posters",
-        public_id: cleanPublicId,
-        timestamp
-      };
-      const toSign = Object.keys(params).sort().map((k) => `${k}=${params[k]}`).join("&") + API_SECRET;
-      const signature = import_node_crypto2.default.createHash("sha1").update(toSign).digest("hex");
-      const boundary = "----WebKitFormBoundary" + Math.random().toString(36).substring(2);
-      let payload = "";
-      const addField = (name, val) => {
-        payload += `--${boundary}\r
-Content-Disposition: form-data; name="${name}"\r
-\r
-${val}\r
-`;
-      };
-      addField("file", fileData);
-      addField("api_key", API_KEY);
-      addField("timestamp", timestamp);
-      addField("folder", "dungeons_posters");
-      addField("public_id", cleanPublicId);
-      addField("signature", signature);
-      payload += `--${boundary}--\r
-`;
-      const req = import_node_https.default.request(
-        {
-          hostname: "api.cloudinary.com",
-          path: `/v1_1/${CLOUD_NAME}/image/upload`,
-          method: "POST",
-          headers: {
-            "Content-Type": `multipart/form-data; boundary=${boundary}`,
-            "Content-Length": Buffer.byteLength(payload)
-          }
-        },
-        (res) => {
-          let body = "";
-          res.on("data", (chunk) => body += chunk);
-          res.on("end", () => {
-            try {
-              const json = JSON.parse(body);
-              if (json.secure_url) {
-                resolve(json.secure_url);
-              } else {
-                console.error("[Cloudinary] Upload failed with body:", body);
-                resolve(fileData);
-              }
-            } catch {
-              resolve(fileData);
-            }
-          });
-        }
-      );
-      req.on("error", (err) => {
-        console.error("[Cloudinary] Network error:", err);
-        resolve(fileData);
-      });
-      req.write(payload);
-      req.end();
-    } catch (err) {
-      console.error("[Cloudinary] Unexpected error:", err);
-      resolve(fileData);
-    }
-  });
-}
-
-// src/routes/admin.ts
 var router7 = (0, import_express7.Router)();
 var loginAttemptStore = /* @__PURE__ */ new Map();
-var currentAdminPassword = process.env.ADMIN_PASSWORD || "";
-var ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "admin@posterstudio.com").toLowerCase();
-var MASTER_KEY = process.env.ADMIN_API_KEY || "";
+var currentAdminPassword = usableSecret(process.env.ADMIN_PASSWORD || "Admin@Poster2026!", 10);
+var ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "admin@posterstudio.com").trim().toLowerCase();
+if (!currentAdminPassword || !ADMIN_EMAIL) {
+  logger.warn("Admin email/password login disabled: set ADMIN_EMAIL and a new ADMIN_PASSWORD (min 10 chars, not a previously leaked value).");
+}
 setInterval(() => {
   const now = Date.now();
   for (const [key, record] of loginAttemptStore.entries()) {
@@ -33477,7 +33856,7 @@ setInterval(() => {
 }, 15 * 60 * 1e3);
 router7.post("/admin/auth/login", rateLimiter({ windowMs: 60 * 1e3, maxRequests: 20 }), async (req, res) => {
   try {
-    const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
+    const ip = clientIp(req);
     const now = Date.now();
     const attemptRecord = loginAttemptStore.get(ip) || { attempts: 0, lockoutUntil: 0 };
     if (attemptRecord.lockoutUntil > now) {
@@ -33489,7 +33868,7 @@ router7.post("/admin/auth/login", rateLimiter({ windowMs: 60 * 1e3, maxRequests:
       });
     }
     const { email, password, adminKey } = req.body;
-    if (MASTER_KEY && adminKey && adminKey === MASTER_KEY) {
+    if (typeof adminKey === "string" && isMasterApiKey(adminKey)) {
       loginAttemptStore.delete(ip);
       const token2 = createAdminToken("master@dungeons.com", "ROOT_ADMIN", "Master Admin");
       return res.json({
@@ -33503,7 +33882,7 @@ router7.post("/admin/auth/login", rateLimiter({ windowMs: 60 * 1e3, maxRequests:
       });
     }
     const normalizedEmail = (email || "").trim().toLowerCase();
-    const isValidUser = Boolean(currentAdminPassword) && normalizedEmail === ADMIN_EMAIL && password === currentAdminPassword;
+    const isValidUser = Boolean(currentAdminPassword && ADMIN_EMAIL) && safeEqual(normalizedEmail, ADMIN_EMAIL) && safeEqual(typeof password === "string" ? password : "", currentAdminPassword);
     if (!isValidUser) {
       attemptRecord.attempts += 1;
       if (attemptRecord.attempts >= 5) {
@@ -33530,7 +33909,9 @@ router7.post("/admin/auth/login", rateLimiter({ windowMs: 60 * 1e3, maxRequests:
       expiresIn: "24h"
     });
   } catch (error) {
-    return res.status(500).json({ success: false, error: "Login authentication failed" });
+    console.error("CRITICAL ADMIN LOGIN ERROR:", error);
+    logger.error({ err: error }, "Admin login failed");
+    return res.status(500).json({ success: false, error: error?.message || "Login authentication failed" });
   }
 });
 router7.get("/admin/auth/verify", requireAdminAuth, async (req, res) => {
@@ -33543,14 +33924,17 @@ router7.get("/admin/auth/verify", requireAdminAuth, async (req, res) => {
 router7.post("/admin/auth/change-password", requireAdminAuth, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    if (currentPassword !== currentAdminPassword) {
+    if (!safeEqual(typeof currentPassword === "string" ? currentPassword : "", currentAdminPassword)) {
       return res.status(400).json({ success: false, error: "Current password is incorrect" });
     }
-    if (!newPassword || newPassword.length < 8) {
-      return res.status(400).json({ success: false, error: "New password must be at least 8 characters long" });
+    if (typeof newPassword !== "string" || !usableSecret(newPassword, 10)) {
+      return res.status(400).json({ success: false, error: "New password must be at least 10 characters long" });
     }
     currentAdminPassword = newPassword;
-    return res.json({ success: true, message: "Admin password updated successfully" });
+    return res.json({
+      success: true,
+      message: "Admin password updated for this server instance. Also update ADMIN_PASSWORD in your hosting environment so it persists across restarts."
+    });
   } catch (error) {
     return res.status(500).json({ success: false, error: "Failed to update password" });
   }
@@ -33565,7 +33949,7 @@ var ProductMutationSchema = external_exports.object({
   compareAtPrice: external_exports.number().positive().optional().nullable(),
   sizePrices: external_exports.record(external_exports.string(), external_exports.number()).optional(),
   sizeComparePrices: external_exports.record(external_exports.string(), external_exports.number()).optional(),
-  images: external_exports.array(external_exports.string()).min(1, "At least one image URL is required"),
+  images: external_exports.array(external_exports.string().refine(isAcceptableImageInput, "Images must be https URLs or PNG/JPEG/WEBP uploads under 8MB")).min(1, "At least one image URL is required").max(10),
   tags: external_exports.array(external_exports.string()).default([]),
   stock: external_exports.number().int().nonnegative().default(50),
   isBestSeller: external_exports.boolean().default(false),
@@ -33592,17 +33976,21 @@ var UpdateOrderStatusSchema = external_exports.object({
 });
 router7.get("/admin/stats", requireAdminAuth, async (_req, res) => {
   try {
-    const [orders, products, coupons, subscribers] = await Promise.all([
+    const [orders, products, coupons, subscribers, sellerCounts, pendingListings] = await Promise.all([
       prisma.order.findMany({
         orderBy: { createdAt: "desc" },
         include: { items: true }
       }),
       prisma.product.findMany(),
       prisma.coupon.findMany(),
-      prisma.newsletterSubscriber.count()
+      prisma.newsletterSubscriber.count(),
+      prisma.seller.groupBy({ by: ["status"], _count: { _all: true } }),
+      prisma.product.count({ where: { approvalStatus: "PENDING_REVIEW" } })
     ]);
     const totalOrders = orders.length;
-    const totalRevenue = orders.reduce((acc, o) => acc + (o.paymentStatus === "PAID" ? o.total : o.total), 0);
+    const paidOrders = orders.filter((o) => o.paymentStatus === "PAID");
+    const totalRevenue = paidOrders.reduce((acc, o) => acc + o.total, 0);
+    const sellerStatusCount = (st) => sellerCounts.find((c) => c.status === st)?._count._all ?? 0;
     const pendingOrders = orders.filter((o) => o.fulfillmentStatus === "PENDING").length;
     const processingOrders = orders.filter((o) => o.fulfillmentStatus === "PROCESSING").length;
     const shippedOrders = orders.filter((o) => o.fulfillmentStatus === "SHIPPED").length;
@@ -33623,7 +34011,7 @@ router7.get("/admin/stats", requireAdminAuth, async (_req, res) => {
       const displayLabel = d.toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" });
       salesByDay[dateKey] = { date: displayLabel, sales: 0, orders: 0 };
     }
-    for (const o of orders) {
+    for (const o of paidOrders) {
       const dateKey = new Date(o.createdAt).toISOString().split("T")[0];
       if (salesByDay[dateKey]) {
         salesByDay[dateKey].sales += o.total;
@@ -33644,6 +34032,10 @@ router7.get("/admin/stats", requireAdminAuth, async (_req, res) => {
         totalCustomers,
         totalCoupons: coupons.length,
         totalSubscribers: subscribers,
+        totalSellers: sellerCounts.reduce((acc, c) => acc + c._count._all, 0),
+        pendingSellers: sellerStatusCount("PENDING"),
+        approvedSellers: sellerStatusCount("APPROVED"),
+        pendingListings,
         databaseConnected: true
       },
       salesTrend,
@@ -33673,10 +34065,10 @@ router7.get("/admin/orders", requireAdminAuth, async (req, res) => {
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where,
-        take: Number(limit),
-        skip: Number(offset),
+        take: Math.min(Math.max(Number(limit) || 100, 1), 500),
+        skip: Math.max(Number(offset) || 0, 0),
         orderBy: { createdAt: "desc" },
-        include: { items: true }
+        include: { items: { include: { seller: { select: { id: true, businessName: true } } } } }
       }),
       prisma.order.count({ where })
     ]);
@@ -33727,18 +34119,100 @@ router7.patch("/admin/orders/:id/status", requireAdminAuth, async (req, res) => 
 router7.delete("/admin/orders/:id", requireAdminAuth, async (req, res) => {
   try {
     const id = String(req.params.id);
-    await prisma.order.delete({ where: { id } });
+    const existing = await prisma.order.findFirst({
+      where: { OR: [{ id }, { orderNumber: id }] }
+    });
+    if (existing) {
+      await prisma.order.delete({ where: { id: existing.id } });
+    }
     return res.json({ success: true, message: "Order deleted successfully" });
   } catch (error) {
     return res.status(500).json({ success: false, error: "Failed to delete order" });
   }
 });
+router7.post("/admin/orders", requireAdminAuth, async (req, res) => {
+  try {
+    const body = req.body;
+    const orderNumber = body.orderNumber || `DNG-${Math.floor(1e3 + Math.random() * 9e3)}`;
+    const newOrder = await prisma.order.create({
+      data: {
+        orderNumber,
+        customerName: body.customerName || "Customer",
+        customerEmail: body.customerEmail || "customer@example.com",
+        customerPhone: body.customerPhone || "9876543210",
+        shippingAddress: body.shippingAddress || {},
+        subtotal: Number(body.subtotal) || 0,
+        shippingFee: Number(body.shippingFee) || 0,
+        discount: Number(body.discount) || 0,
+        total: Number(body.total) || 0,
+        paymentStatus: body.paymentStatus || "PAID",
+        paymentMethod: body.paymentMethod || "Manual Admin Order",
+        fulfillmentStatus: body.fulfillmentStatus || "PENDING",
+        trackingNumber: body.trackingNumber || null,
+        notes: body.notes || null,
+        items: {
+          create: (body.items || []).map((item) => ({
+            productId: item.productId || item.id || null,
+            title: item.title || item.productTitle || "Custom Print",
+            slug: item.slug || null,
+            size: item.size || "A4",
+            quantity: Number(item.quantity) || 1,
+            price: Number(item.price) || 0,
+            orientation: item.orientation || "portrait",
+            customUpload: item.customUpload || null
+          }))
+        }
+      },
+      include: { items: true }
+    });
+    return res.status(201).json({ success: true, order: newOrder });
+  } catch (error) {
+    console.error("Create admin order error:", error);
+    return res.status(500).json({ success: false, error: "Failed to create manual order" });
+  }
+});
+router7.put("/admin/orders/:id", requireAdminAuth, async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.order.findFirst({
+      where: { OR: [{ id }, { orderNumber: id }] }
+    });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "Order not found" });
+    }
+    const body = req.body;
+    const updated = await prisma.order.update({
+      where: { id: existing.id },
+      data: {
+        customerName: body.customerName !== void 0 ? body.customerName : existing.customerName,
+        customerEmail: body.customerEmail !== void 0 ? body.customerEmail : existing.customerEmail,
+        customerPhone: body.customerPhone !== void 0 ? body.customerPhone : existing.customerPhone,
+        shippingAddress: body.shippingAddress !== void 0 ? body.shippingAddress : existing.shippingAddress,
+        total: body.total !== void 0 ? Number(body.total) : existing.total,
+        paymentStatus: body.paymentStatus !== void 0 ? body.paymentStatus : existing.paymentStatus,
+        fulfillmentStatus: body.fulfillmentStatus !== void 0 ? body.fulfillmentStatus : existing.fulfillmentStatus,
+        trackingNumber: body.trackingNumber !== void 0 ? body.trackingNumber : existing.trackingNumber,
+        notes: body.notes !== void 0 ? body.notes : existing.notes
+      },
+      include: { items: true }
+    });
+    return res.json({ success: true, order: updated });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Failed to update order" });
+  }
+});
 router7.get("/admin/products", requireAdminAuth, async (req, res) => {
   try {
-    const { category, search } = req.query;
+    const { category, search, approval, sellerId } = req.query;
     const where = {};
     if (category && category !== "all") {
       where.category = String(category);
+    }
+    if (typeof approval === "string" && ["PENDING_REVIEW", "APPROVED", "REJECTED"].includes(approval)) {
+      where.approvalStatus = approval;
+    }
+    if (typeof sellerId === "string" && sellerId) {
+      where.sellerId = sellerId === "store" ? null : sellerId;
     }
     if (search && typeof search === "string") {
       where.OR = [
@@ -33748,7 +34222,8 @@ router7.get("/admin/products", requireAdminAuth, async (req, res) => {
     }
     const products = await prisma.product.findMany({
       where,
-      orderBy: [{ isBestSeller: "desc" }, { createdAt: "desc" }]
+      orderBy: [{ isBestSeller: "desc" }, { createdAt: "desc" }],
+      include: { seller: { select: { id: true, businessName: true, storeSlug: true, status: true } } }
     });
     return res.json({ success: true, products });
   } catch (error) {
@@ -33758,13 +34233,13 @@ router7.get("/admin/products", requireAdminAuth, async (req, res) => {
 router7.post("/admin/upload-image", requireAdminAuth, async (req, res) => {
   try {
     const { image, name } = req.body;
-    if (!image) {
-      return res.status(400).json({ success: false, error: "No image provided" });
+    if (typeof image !== "string" || !isAcceptableImageInput(image)) {
+      return res.status(400).json({ success: false, error: "Please upload a PNG, JPEG or WEBP image under 8MB." });
     }
-    const cdnUrl = await uploadBase64ToCloudinary(image, name || "poster");
+    const cdnUrl = await uploadBase64ToCloudinary(image, String(name || "poster").slice(0, 60));
     return res.json({ success: true, url: cdnUrl });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message || "Upload failed" });
+    return res.status(502).json({ success: false, error: err.message || "Upload failed" });
   }
 });
 router7.post("/admin/products", requireAdminAuth, async (req, res) => {
@@ -33810,7 +34285,7 @@ router7.post("/admin/products", requireAdminAuth, async (req, res) => {
     return res.status(500).json({
       success: false,
       statusCode: 500,
-      error: `Error 500 (Internal Server Error): Database failed to create poster. ${error.message || ""}`
+      error: "Error 500 (Internal Server Error): Could not create the product. Check the image uploads and try again."
     });
   }
 });
@@ -33871,7 +34346,7 @@ router7.put("/admin/products/:id", requireAdminAuth, async (req, res) => {
     return res.status(500).json({
       success: false,
       statusCode: 500,
-      error: `Error 500 (Internal Server Error): Database failed to update poster. ${error.message || ""}`
+      error: "Error 500 (Internal Server Error): Could not update the product. Check the image uploads and try again."
     });
   }
 });
@@ -33991,32 +34466,758 @@ router7.get("/admin/subscribers", requireAdminAuth, async (_req, res) => {
     return res.status(500).json({ success: false, error: "Failed to retrieve subscribers" });
   }
 });
+router7.post("/admin/subscribers", requireAdminAuth, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.includes("@")) {
+      return res.status(400).json({ success: false, error: "Valid email is required" });
+    }
+    const sub = await prisma.newsletterSubscriber.upsert({
+      where: { email: email.trim().toLowerCase() },
+      create: { email: email.trim().toLowerCase() },
+      update: {}
+    });
+    return res.status(201).json({ success: true, subscriber: sub });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Failed to add subscriber" });
+  }
+});
+router7.delete("/admin/subscribers/:id", requireAdminAuth, async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.newsletterSubscriber.findFirst({
+      where: { OR: [{ id }, { email: id }] }
+    });
+    if (existing) {
+      await prisma.newsletterSubscriber.delete({ where: { id: existing.id } });
+    }
+    return res.json({ success: true, message: "Subscriber deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Failed to delete subscriber" });
+  }
+});
 var admin_default = router7;
 
-// src/routes/index.ts
-var router8 = (0, import_express8.Router)();
-router8.use(health_default);
-router8.use(orders_default);
-router8.use(addresses_default);
-router8.use(coupons_default);
-router8.use(newsletter_default);
-router8.use(products_default);
-router8.use(admin_default);
-var routes_default = router8;
+// src/routes/admin-sellers.ts
+var import_node_crypto6 = __toESM(require("node:crypto"), 1);
+var import_express9 = __toESM(require_express2(), 1);
 
-// src/lib/logger.ts
-var import_pino = __toESM(require_pino(), 1);
-var logger = (0, import_pino.default)({
-  level: process.env.LOG_LEVEL ?? "info",
-  redact: [
-    "req.headers.authorization",
-    "req.headers.cookie",
-    "res.headers['set-cookie']"
-  ]
+// src/routes/seller.ts
+var import_node_crypto5 = __toESM(require("node:crypto"), 1);
+var import_express8 = __toESM(require_express2(), 1);
+
+// src/lib/marketplace.ts
+var POSTER_CATEGORY_SLUGS = [
+  "marvel-dc",
+  "anime",
+  "movies-web-series",
+  "music-artists",
+  "video-games",
+  "sports",
+  "landscapes",
+  "diva",
+  "automative",
+  "motivational",
+  "devotional"
+];
+var SELLABLE_CATEGORY_SLUGS = [...POSTER_CATEGORY_SLUGS, ...NON_POSTER_CATEGORY_SLUGS];
+var DEFAULT_COMMISSION_RATE = 15;
+function slugify(input) {
+  return input.toLowerCase().normalize("NFKD").replace(/[^a-z0-9\s-]/g, "").trim().replace(/[\s-]+/g, "-").slice(0, 80).replace(/^-|-$/g, "");
+}
+function maskAccountNumber(value) {
+  if (!value) return null;
+  const tail = value.slice(-4);
+  return `${"\u2022".repeat(Math.max(0, Math.min(8, value.length - 4)))}${tail}`;
+}
+function serializeSeller(seller) {
+  const { passwordHash: _ph, bankAccountNumber, ...rest } = seller;
+  return { ...rest, bankAccountNumber: maskAccountNumber(bankAccountNumber), hasBankAccount: Boolean(bankAccountNumber) };
+}
+function round2(n) {
+  return Math.round(n * 100) / 100;
+}
+function sellerEarnings(price, quantity, commissionRate) {
+  const gross = round2(price * quantity);
+  const rate = typeof commissionRate === "number" ? commissionRate : DEFAULT_COMMISSION_RATE;
+  const commission = round2(gross * rate / 100);
+  return { gross, commission, net: round2(gross - commission), rate };
+}
+
+// src/routes/seller.ts
+var router8 = (0, import_express8.Router)();
+var PHONE_RE = /^[6-9]\d{9}$/;
+var PINCODE_RE = /^[1-9]\d{5}$/;
+var GSTIN_RE = /^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+var PAN_RE = /^[A-Z]{5}\d{4}[A-Z]$/;
+var IFSC_RE = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+var UPI_RE = /^[\w.-]{2,256}@[a-zA-Z]{2,64}$/;
+var normalizePhone = (v) => v.replace(/\D/g, "").slice(-10);
+var emptyToUndefined = (v) => typeof v === "string" && v.trim() === "" ? void 0 : v;
+var categoryEnum = external_exports.enum(SELLABLE_CATEGORY_SLUGS);
+var SellerAccountSchema = external_exports.object({
+  // Only email + password are required. Everything else is optional and can be
+  // filled in later by the seller under "Profile & payouts".
+  email: external_exports.string().trim().toLowerCase().email().max(150),
+  password: external_exports.string().min(8, "Password must be at least 8 characters").max(128),
+  ownerName: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().min(2).max(100).optional()),
+  businessName: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().min(2).max(100).optional()),
+  phone: external_exports.preprocess(emptyToUndefined, external_exports.string().transform(normalizePhone).refine((v) => PHONE_RE.test(v), "Enter a valid 10-digit Indian mobile number").optional()),
+  gstin: external_exports.preprocess(emptyToUndefined, external_exports.string().transform((v) => v.trim().toUpperCase()).refine((v) => GSTIN_RE.test(v), "Invalid GSTIN").optional()),
+  pan: external_exports.preprocess(emptyToUndefined, external_exports.string().transform((v) => v.trim().toUpperCase()).refine((v) => PAN_RE.test(v), "Invalid PAN").optional()),
+  description: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().max(1e3).optional()),
+  categories: external_exports.array(categoryEnum).max(SELLABLE_CATEGORY_SLUGS.length).optional(),
+  addressLine: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().min(5).max(300).optional()),
+  city: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().min(2).max(100).optional()),
+  state: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().min(2).max(100).optional()),
+  pincode: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().refine((v) => PINCODE_RE.test(v), "Enter a valid 6-digit PIN code").optional())
 });
+var LoginSchema = external_exports.object({
+  email: external_exports.string().trim().toLowerCase().email().max(150),
+  password: external_exports.string().min(1).max(128)
+});
+var ProfileUpdateSchema = external_exports.object({
+  ownerName: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().min(2).max(100).optional()),
+  businessName: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().min(2).max(100).optional()),
+  phone: external_exports.preprocess(emptyToUndefined, external_exports.string().transform(normalizePhone).refine((v) => PHONE_RE.test(v), "Enter a valid 10-digit mobile number").optional()),
+  description: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().max(1e3).optional()),
+  categories: external_exports.array(categoryEnum).max(SELLABLE_CATEGORY_SLUGS.length).optional(),
+  addressLine: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().min(5).max(300).optional()),
+  city: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().min(2).max(100).optional()),
+  state: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().min(2).max(100).optional()),
+  pincode: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().refine((v) => PINCODE_RE.test(v), "Enter a valid 6-digit PIN code").optional()),
+  gstin: external_exports.preprocess(emptyToUndefined, external_exports.string().transform((v) => v.trim().toUpperCase()).refine((v) => GSTIN_RE.test(v), "Invalid GSTIN").optional()),
+  pan: external_exports.preprocess(emptyToUndefined, external_exports.string().transform((v) => v.trim().toUpperCase()).refine((v) => PAN_RE.test(v), "Invalid PAN").optional()),
+  bankAccountName: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().min(2).max(100).optional()),
+  bankAccountNumber: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().regex(/^\d{9,18}$/, "Account number must be 9-18 digits").optional()),
+  bankIfsc: external_exports.preprocess(emptyToUndefined, external_exports.string().transform((v) => v.trim().toUpperCase()).refine((v) => IFSC_RE.test(v), "Invalid IFSC code").optional()),
+  upiId: external_exports.preprocess(emptyToUndefined, external_exports.string().trim().refine((v) => UPI_RE.test(v), "Invalid UPI ID").optional())
+});
+var PasswordChangeSchema = external_exports.object({
+  currentPassword: external_exports.string().min(1).max(128),
+  newPassword: external_exports.string().min(8).max(128)
+});
+var posterSizePrices = external_exports.object({ A5: external_exports.number().positive().max(1e5), A4: external_exports.number().positive().max(1e5), A3: external_exports.number().positive().max(1e5) }).partial();
+var SellerProductSchema = external_exports.object({
+  title: external_exports.string().trim().min(3).max(150),
+  description: external_exports.string().trim().min(10).max(3e3),
+  category: categoryEnum,
+  orientation: external_exports.enum(["portrait", "landscape", "square"]).default("portrait"),
+  price: external_exports.number().positive().max(5e5),
+  compareAtPrice: external_exports.number().positive().max(1e6).optional().nullable(),
+  sizePrices: posterSizePrices.optional(),
+  stock: external_exports.number().int().min(0).max(1e5),
+  // Only fresh uploads or images already on our Cloudinary account (no external hotlinks)
+  images: external_exports.array(
+    external_exports.string().refine(
+      (v) => isAcceptableImageInput(v) && (v.startsWith("data:image/") || v.startsWith("https://res.cloudinary.com/")),
+      "Images must be PNG/JPEG/WEBP uploads under 8MB"
+    )
+  ).min(1, "Add at least one product photo").max(6, "Up to 6 photos per listing"),
+  tags: external_exports.array(external_exports.string().trim().min(1).max(30)).max(15).default([]),
+  isActive: external_exports.boolean().default(true)
+}).refine((d) => d.compareAtPrice == null || d.compareAtPrice >= d.price, {
+  message: "MRP (compare-at price) must be greater than or equal to the selling price",
+  path: ["compareAtPrice"]
+});
+var ItemStatusSchema = external_exports.object({
+  fulfillmentStatus: external_exports.enum(["PROCESSING", "SHIPPED", "DELIVERED"]),
+  trackingNumber: external_exports.string().trim().max(100).optional().nullable()
+});
+function zodMessage(error) {
+  return error.issues.map((i) => i.path.length ? `${i.path.join(".")}: ${i.message}` : i.message).join("; ");
+}
+async function loadSeller(req, res, opts = {}) {
+  const session = req.sellerSession;
+  const seller = await prisma.seller.findUnique({ where: { id: session.sellerId } });
+  if (!seller) {
+    res.status(401).json({ success: false, error: "Seller account not found. Please sign in again.", code: "SELLER_UNAUTHORIZED" });
+    return null;
+  }
+  if (opts.requireApproved && seller.status !== "APPROVED") {
+    const reason = seller.status === "PENDING" ? "Your seller account is under review. You can list products once it is approved." : seller.status === "SUSPENDED" ? "Your seller account is suspended. Please contact support." : "Your seller application was not approved.";
+    res.status(403).json({ success: false, error: reason, code: `SELLER_${seller.status}` });
+    return null;
+  }
+  return seller;
+}
+async function uniqueStoreSlug(base) {
+  const root = slugify(base) || "store";
+  for (let i = 0; i < 5; i++) {
+    const candidate = i === 0 ? root : `${root}-${import_node_crypto5.default.randomBytes(2).toString("hex")}`;
+    const taken = await prisma.seller.findUnique({ where: { storeSlug: candidate }, select: { id: true } });
+    if (!taken) return candidate;
+  }
+  return `${root}-${import_node_crypto5.default.randomBytes(4).toString("hex")}`;
+}
+function notConfigured(res) {
+  return res.status(503).json({ success: false, error: "Seller accounts are not available right now. Please try again later." });
+}
+var failedLogins = /* @__PURE__ */ new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of failedLogins) if (v.until < now) failedLogins.delete(k);
+}, 15 * 60 * 1e3).unref?.();
+var DUMMY_HASH = hashPassword(import_node_crypto5.default.randomBytes(16).toString("hex"));
+router8.post("/seller/register", (_req, res) => {
+  return res.status(403).json({
+    success: false,
+    error: 'Seller accounts are created by the DUNGEONS team. Please use "Partner With Us" to send your details.',
+    code: "SELLER_SIGNUP_CLOSED"
+  });
+});
+router8.post("/seller/login", rateLimiter({ windowMs: 60 * 1e3, maxRequests: 10 }), async (req, res) => {
+  if (!sellerAuthConfigured()) return notConfigured(res);
+  try {
+    const parsed = LoginSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: "Enter your email and password." });
+    const { email, password } = parsed.data;
+    const key = `${email}|${clientIp(req)}`;
+    const lock = failedLogins.get(key);
+    if (lock && lock.count >= 5 && lock.until > Date.now()) {
+      return res.status(429).json({ success: false, error: "Too many failed attempts. Please wait 15 minutes and try again." });
+    }
+    const seller = await prisma.seller.findUnique({ where: { email } });
+    const ok = verifyPassword(password, seller?.passwordHash || DUMMY_HASH) && Boolean(seller);
+    if (!ok || !seller) {
+      const rec = lock && lock.until > Date.now() ? lock : { count: 0, until: 0 };
+      rec.count += 1;
+      rec.until = Date.now() + 15 * 60 * 1e3;
+      failedLogins.set(key, rec);
+      return res.status(401).json({ success: false, error: "Incorrect email or password." });
+    }
+    failedLogins.delete(key);
+    return res.json({ success: true, token: createSellerToken(seller.id, seller.email), seller: serializeSeller(seller) });
+  } catch (error) {
+    logger.error({ err: error }, "Seller login failed");
+    return res.status(500).json({ success: false, error: "Sign in failed. Please try again." });
+  }
+});
+router8.get("/seller/me", requireSellerAuth, async (req, res) => {
+  try {
+    const seller = await loadSeller(req, res);
+    if (!seller) return;
+    return res.json({ success: true, seller: serializeSeller(seller) });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Could not load your seller profile." });
+  }
+});
+router8.put("/seller/me", requireSellerAuth, async (req, res) => {
+  try {
+    const seller = await loadSeller(req, res);
+    if (!seller) return;
+    const parsed = ProfileUpdateSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: zodMessage(parsed.error) });
+    const updated = await prisma.seller.update({ where: { id: seller.id }, data: parsed.data });
+    return res.json({ success: true, seller: serializeSeller(updated) });
+  } catch (error) {
+    logger.error({ err: error }, "Seller profile update failed");
+    return res.status(500).json({ success: false, error: "Could not update your profile." });
+  }
+});
+router8.post("/seller/me/password", requireSellerAuth, rateLimiter({ windowMs: 60 * 1e3, maxRequests: 5 }), async (req, res) => {
+  try {
+    const seller = await loadSeller(req, res);
+    if (!seller) return;
+    const parsed = PasswordChangeSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: "New password must be at least 8 characters." });
+    if (!verifyPassword(parsed.data.currentPassword, seller.passwordHash)) {
+      return res.status(400).json({ success: false, error: "Current password is incorrect." });
+    }
+    await prisma.seller.update({ where: { id: seller.id }, data: { passwordHash: hashPassword(parsed.data.newPassword) } });
+    return res.json({ success: true, message: "Password updated." });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Could not update password." });
+  }
+});
+router8.get("/seller/dashboard", requireSellerAuth, async (req, res) => {
+  try {
+    const seller = await loadSeller(req, res);
+    if (!seller) return;
+    const [listingGroups, paidItems] = await Promise.all([
+      prisma.product.groupBy({ by: ["approvalStatus"], where: { sellerId: seller.id }, _count: { _all: true } }),
+      prisma.orderItem.findMany({
+        where: { sellerId: seller.id, order: { paymentStatus: "PAID" } },
+        select: { price: true, quantity: true, commissionRate: true, fulfillmentStatus: true, orderId: true }
+      })
+    ]);
+    let gross = 0;
+    let commission = 0;
+    let net = 0;
+    let unitsSold = 0;
+    let awaitingShipment = 0;
+    for (const item of paidItems) {
+      const e = sellerEarnings(item.price, item.quantity, item.commissionRate ?? seller.commissionRate);
+      gross += e.gross;
+      commission += e.commission;
+      net += e.net;
+      unitsSold += item.quantity;
+      if (item.fulfillmentStatus === "PENDING" || item.fulfillmentStatus === "PROCESSING") awaitingShipment += 1;
+    }
+    const countFor = (st) => listingGroups.find((g) => g.approvalStatus === st)?._count._all ?? 0;
+    return res.json({
+      success: true,
+      seller: serializeSeller(seller),
+      stats: {
+        listings: {
+          total: listingGroups.reduce((a, g) => a + g._count._all, 0),
+          approved: countFor("APPROVED"),
+          pendingReview: countFor("PENDING_REVIEW"),
+          rejected: countFor("REJECTED")
+        },
+        orders: new Set(paidItems.map((i) => i.orderId)).size,
+        unitsSold,
+        awaitingShipment,
+        grossSales: round2(gross),
+        commission: round2(commission),
+        netEarnings: round2(net),
+        commissionRate: seller.commissionRate
+      }
+    });
+  } catch (error) {
+    logger.error({ err: error }, "Seller dashboard failed");
+    return res.status(500).json({ success: false, error: "Could not load your dashboard." });
+  }
+});
+router8.get("/seller/products", requireSellerAuth, async (req, res) => {
+  try {
+    const seller = await loadSeller(req, res);
+    if (!seller) return;
+    const products = await prisma.product.findMany({ where: { sellerId: seller.id }, orderBy: { createdAt: "desc" } });
+    return res.json({ success: true, products });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Could not load your products." });
+  }
+});
+router8.post("/seller/upload-image", requireSellerAuth, rateLimiter({ windowMs: 60 * 1e3, maxRequests: 30 }), async (req, res) => {
+  try {
+    const seller = await loadSeller(req, res, { requireApproved: true });
+    if (!seller) return;
+    const { image } = req.body || {};
+    if (typeof image !== "string" || !image.startsWith("data:image") || !isAcceptableImageInput(image)) {
+      return res.status(400).json({ success: false, error: "Please upload a PNG, JPEG or WEBP image under 8MB." });
+    }
+    const url = await uploadBase64ToCloudinary(image, `seller_${seller.id}`);
+    return res.json({ success: true, url });
+  } catch (error) {
+    return res.status(502).json({ success: false, error: error?.message || "Upload failed." });
+  }
+});
+function buildProductData(input) {
+  const poster = isPosterCategory(input.category);
+  let sizePrices;
+  let price = input.price;
+  if (poster) {
+    sizePrices = {
+      A5: input.sizePrices?.A5 ?? input.price,
+      A4: input.sizePrices?.A4 ?? Math.round(input.price * 1.5),
+      A3: input.sizePrices?.A3 ?? Math.round(input.price * 2.2)
+    };
+    price = sizePrices.A5;
+  }
+  const tags = input.tags.filter((t) => !/^(sizeprice|sizecompare|rating|reviews):/i.test(t) && t.toLowerCase() !== "trending");
+  return {
+    title: input.title,
+    description: input.description,
+    category: input.category,
+    orientation: input.orientation,
+    price,
+    compareAtPrice: input.compareAtPrice ?? null,
+    sizePrices: sizePrices ?? void 0,
+    stock: input.stock,
+    tags,
+    isActive: input.isActive
+  };
+}
+async function uploadImages(images, sellerId) {
+  return Promise.all(images.map((img, i) => uploadBase64ToCloudinary(img, `seller_${sellerId}_${i}`)));
+}
+router8.post("/seller/products", requireSellerAuth, rateLimiter({ windowMs: 60 * 1e3, maxRequests: 20 }), async (req, res) => {
+  try {
+    const seller = await loadSeller(req, res, { requireApproved: true });
+    if (!seller) return;
+    const parsed = SellerProductSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: zodMessage(parsed.error) });
+    const data = buildProductData(parsed.data);
+    const images = await uploadImages(parsed.data.images, seller.id);
+    const slug = `${slugify(parsed.data.title) || "listing"}-${import_node_crypto5.default.randomBytes(3).toString("hex")}`;
+    const product = await prisma.product.create({
+      data: { ...data, images, slug, sellerId: seller.id, approvalStatus: "PENDING_REVIEW" }
+    });
+    return res.status(201).json({ success: true, product, message: "Listing submitted for review. It will go live once approved." });
+  } catch (error) {
+    logger.error({ err: error }, "Seller product create failed");
+    return res.status(error?.message?.includes("upload") ? 502 : 500).json({ success: false, error: error?.message?.includes("upload") ? error.message : "Could not create the listing." });
+  }
+});
+router8.put("/seller/products/:id", requireSellerAuth, rateLimiter({ windowMs: 60 * 1e3, maxRequests: 30 }), async (req, res) => {
+  try {
+    const seller = await loadSeller(req, res, { requireApproved: true });
+    if (!seller) return;
+    const existing = await prisma.product.findFirst({ where: { id: String(req.params.id), sellerId: seller.id } });
+    if (!existing) return res.status(404).json({ success: false, error: "Listing not found." });
+    const parsed = SellerProductSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: zodMessage(parsed.error) });
+    const data = buildProductData(parsed.data);
+    const images = await uploadImages(parsed.data.images, seller.id);
+    const contentChanged = data.title !== existing.title || data.description !== (existing.description || "") || data.category !== existing.category || data.orientation !== existing.orientation || JSON.stringify(images) !== JSON.stringify(existing.images);
+    const needsReview = contentChanged || existing.approvalStatus === "REJECTED";
+    const product = await prisma.product.update({
+      where: { id: existing.id },
+      data: {
+        ...data,
+        images,
+        ...needsReview ? { approvalStatus: "PENDING_REVIEW", rejectionReason: null } : {}
+      }
+    });
+    return res.json({
+      success: true,
+      product,
+      message: needsReview ? "Changes submitted for review." : "Listing updated."
+    });
+  } catch (error) {
+    logger.error({ err: error }, "Seller product update failed");
+    return res.status(500).json({ success: false, error: error?.message?.includes("upload") ? error.message : "Could not update the listing." });
+  }
+});
+router8.delete("/seller/products/:id", requireSellerAuth, async (req, res) => {
+  try {
+    const seller = await loadSeller(req, res);
+    if (!seller) return;
+    const result = await prisma.product.deleteMany({ where: { id: String(req.params.id), sellerId: seller.id } });
+    if (result.count === 0) return res.status(404).json({ success: false, error: "Listing not found." });
+    return res.json({ success: true, message: "Listing deleted." });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Could not delete the listing." });
+  }
+});
+router8.get("/seller/orders", requireSellerAuth, async (req, res) => {
+  try {
+    const seller = await loadSeller(req, res);
+    if (!seller) return;
+    const status = typeof req.query.status === "string" ? req.query.status.toUpperCase() : "";
+    const items = await prisma.orderItem.findMany({
+      where: {
+        sellerId: seller.id,
+        order: { paymentStatus: "PAID" },
+        ...["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"].includes(status) ? { fulfillmentStatus: status } : {}
+      },
+      orderBy: { createdAt: "desc" },
+      take: 500,
+      include: {
+        order: {
+          select: { id: true, orderNumber: true, createdAt: true, customerName: true, customerPhone: true, shippingAddress: true, fulfillmentStatus: true }
+        }
+      }
+    });
+    return res.json({
+      success: true,
+      items: items.map((i) => ({
+        id: i.id,
+        productId: i.productId,
+        title: i.title,
+        size: i.size,
+        quantity: i.quantity,
+        price: i.price,
+        fulfillmentStatus: i.fulfillmentStatus,
+        trackingNumber: i.trackingNumber,
+        createdAt: i.createdAt,
+        earnings: sellerEarnings(i.price, i.quantity, i.commissionRate ?? seller.commissionRate),
+        order: i.order
+      }))
+    });
+  } catch (error) {
+    logger.error({ err: error }, "Seller orders failed");
+    return res.status(500).json({ success: false, error: "Could not load your orders." });
+  }
+});
+var STATUS_RANK = { PENDING: 0, PROCESSING: 1, SHIPPED: 2, DELIVERED: 3, CANCELLED: -1 };
+router8.patch("/seller/orders/items/:id", requireSellerAuth, async (req, res) => {
+  try {
+    const seller = await loadSeller(req, res);
+    if (!seller) return;
+    const parsed = ItemStatusSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: zodMessage(parsed.error) });
+    const item = await prisma.orderItem.findFirst({
+      where: { id: String(req.params.id), sellerId: seller.id, order: { paymentStatus: "PAID" } },
+      include: { order: { select: { id: true, fulfillmentStatus: true } } }
+    });
+    if (!item) return res.status(404).json({ success: false, error: "Order item not found." });
+    if (item.order.fulfillmentStatus === "CANCELLED" || item.fulfillmentStatus === "CANCELLED") {
+      return res.status(400).json({ success: false, error: "This order was cancelled." });
+    }
+    if (STATUS_RANK[parsed.data.fulfillmentStatus] < STATUS_RANK[item.fulfillmentStatus]) {
+      return res.status(400).json({ success: false, error: `Cannot move an item from ${item.fulfillmentStatus} back to ${parsed.data.fulfillmentStatus}.` });
+    }
+    if (parsed.data.fulfillmentStatus === "SHIPPED" && !(parsed.data.trackingNumber || item.trackingNumber)) {
+      return res.status(400).json({ success: false, error: "Add a courier tracking number when marking an item as shipped." });
+    }
+    const updated = await prisma.orderItem.update({
+      where: { id: item.id },
+      data: {
+        fulfillmentStatus: parsed.data.fulfillmentStatus,
+        ...parsed.data.trackingNumber !== void 0 ? { trackingNumber: parsed.data.trackingNumber || null } : {}
+      }
+    });
+    const siblings = await prisma.orderItem.findMany({ where: { orderId: item.orderId }, select: { sellerId: true, fulfillmentStatus: true } });
+    if (siblings.every((s) => s.sellerId)) {
+      const minRank = Math.min(...siblings.map((s) => STATUS_RANK[s.fulfillmentStatus]));
+      const rolled = Object.keys(STATUS_RANK).find((k) => STATUS_RANK[k] === minRank);
+      if (rolled && rolled !== "CANCELLED" && STATUS_RANK[rolled] > STATUS_RANK[item.order.fulfillmentStatus]) {
+        await prisma.order.update({ where: { id: item.orderId }, data: { fulfillmentStatus: rolled } });
+      }
+    }
+    await prisma.auditLog.create({
+      data: {
+        action: "SELLER_ITEM_STATUS",
+        entity: "OrderItem",
+        entityId: item.id,
+        details: { sellerId: seller.id, status: parsed.data.fulfillmentStatus },
+        ipAddress: clientIp(req)
+      }
+    });
+    return res.json({ success: true, item: updated });
+  } catch (error) {
+    logger.error({ err: error }, "Seller item status update failed");
+    return res.status(500).json({ success: false, error: "Could not update the order item." });
+  }
+});
+var seller_default = router8;
+
+// src/routes/admin-sellers.ts
+var router9 = (0, import_express9.Router)();
+var SCHEMA_MISSING_ERROR = 'Database not updated for sellers yet. Run "pnpm --filter @workspace/db run push", then restart the API.';
+var isSchemaMissing = (error) => error?.code === "P2021" || error?.code === "P2022";
+var SellerStatusSchema = external_exports.object({
+  status: external_exports.enum(["PENDING", "APPROVED", "REJECTED", "SUSPENDED"]),
+  reason: external_exports.string().trim().max(500).optional().nullable(),
+  commissionRate: external_exports.number().min(0).max(60).optional()
+});
+var CreateSellerSchema = SellerAccountSchema.extend({
+  commissionRate: external_exports.number().min(0).max(60).optional()
+});
+var ResetPasswordSchema = external_exports.object({
+  password: external_exports.string().min(8, "Password must be at least 8 characters").max(128)
+});
+var ListingReviewSchema = external_exports.object({
+  approvalStatus: external_exports.enum(["APPROVED", "REJECTED", "PENDING_REVIEW"]),
+  reason: external_exports.string().trim().max(500).optional().nullable()
+});
+router9.get("/admin/sellers", requireAdminAuth, async (req, res) => {
+  try {
+    const status = typeof req.query.status === "string" ? req.query.status.toUpperCase() : "";
+    const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
+    const where = {};
+    if (["PENDING", "APPROVED", "REJECTED", "SUSPENDED"].includes(status)) where.status = status;
+    if (search) {
+      where.OR = [
+        { businessName: { contains: search, mode: "insensitive" } },
+        { ownerName: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search } }
+      ];
+    }
+    const sellers = await prisma.seller.findMany({
+      where,
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      take: 500,
+      include: { _count: { select: { products: true } } }
+    });
+    const paidItems = await prisma.orderItem.findMany({
+      where: { sellerId: { in: sellers.map((s) => s.id) }, order: { paymentStatus: "PAID" } },
+      select: { sellerId: true, price: true, quantity: true, commissionRate: true }
+    });
+    const totals = /* @__PURE__ */ new Map();
+    for (const i of paidItems) {
+      if (!i.sellerId) continue;
+      const seller = sellers.find((s) => s.id === i.sellerId);
+      const e = sellerEarnings(i.price, i.quantity, i.commissionRate ?? seller?.commissionRate);
+      const t = totals.get(i.sellerId) || { gross: 0, commission: 0, net: 0 };
+      t.gross += e.gross;
+      t.commission += e.commission;
+      t.net += e.net;
+      totals.set(i.sellerId, t);
+    }
+    return res.json({
+      success: true,
+      sellers: sellers.map(({ _count, ...s }) => {
+        const t = totals.get(s.id) || { gross: 0, commission: 0, net: 0 };
+        return {
+          ...serializeSeller(s),
+          productCount: _count.products,
+          grossSales: round2(t.gross),
+          commissionEarned: round2(t.commission),
+          payoutDue: round2(t.net)
+        };
+      })
+    });
+  } catch (error) {
+    logger.error({ err: error }, "Admin sellers list failed");
+    return res.status(500).json({ success: false, error: isSchemaMissing(error) ? SCHEMA_MISSING_ERROR : "Failed to retrieve sellers" });
+  }
+});
+router9.post("/admin/sellers", requireAdminAuth, async (req, res) => {
+  try {
+    const parsed = CreateSellerSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: zodMessage(parsed.error) });
+    const { password, commissionRate, ...input } = parsed.data;
+    const placeholder = `Seller ${import_node_crypto6.default.randomBytes(2).toString("hex").toUpperCase()}`;
+    const businessName = input.businessName || placeholder;
+    const data = {
+      ...input,
+      businessName,
+      ownerName: input.ownerName || businessName,
+      phone: input.phone || "",
+      addressLine: input.addressLine || "",
+      city: input.city || "",
+      state: input.state || "",
+      pincode: input.pincode || "",
+      categories: input.categories || []
+    };
+    const existing = await prisma.seller.findUnique({ where: { email: data.email }, select: { id: true } });
+    if (existing) return res.status(409).json({ success: false, error: "A seller with this email already exists." });
+    const seller = await prisma.seller.create({
+      data: {
+        ...data,
+        storeSlug: await uniqueStoreSlug(data.businessName),
+        passwordHash: hashPassword(password),
+        status: "APPROVED",
+        approvedAt: /* @__PURE__ */ new Date(),
+        ...commissionRate !== void 0 ? { commissionRate } : {}
+      }
+    });
+    await prisma.auditLog.create({
+      data: {
+        action: "SELLER_CREATED_BY_ADMIN",
+        entity: "Seller",
+        entityId: seller.id,
+        details: { businessName: seller.businessName, by: req.adminUser?.email },
+        ipAddress: clientIp(req)
+      }
+    });
+    return res.status(201).json({ success: true, seller: serializeSeller(seller) });
+  } catch (error) {
+    if (error?.code === "P2002") return res.status(409).json({ success: false, error: "A seller with this email already exists." });
+    logger.error({ err: error }, "Admin seller create failed");
+    return res.status(500).json({ success: false, error: isSchemaMissing(error) ? SCHEMA_MISSING_ERROR : "Could not create the seller account." });
+  }
+});
+router9.post("/admin/sellers/:id/password", requireAdminAuth, async (req, res) => {
+  try {
+    const parsed = ResetPasswordSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: zodMessage(parsed.error) });
+    const id = String(req.params.id);
+    const exists = await prisma.seller.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) return res.status(404).json({ success: false, error: "Seller not found" });
+    await prisma.seller.update({ where: { id }, data: { passwordHash: hashPassword(parsed.data.password) } });
+    await prisma.auditLog.create({
+      data: { action: "SELLER_PASSWORD_RESET", entity: "Seller", entityId: id, details: { by: req.adminUser?.email }, ipAddress: clientIp(req) }
+    });
+    return res.json({ success: true, message: "Seller password updated." });
+  } catch (error) {
+    logger.error({ err: error }, "Admin seller password reset failed");
+    return res.status(500).json({ success: false, error: "Could not update the password." });
+  }
+});
+router9.patch("/admin/sellers/:id/status", requireAdminAuth, async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const parsed = SellerStatusSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: "Invalid seller status update" });
+    const { status, reason, commissionRate } = parsed.data;
+    if ((status === "REJECTED" || status === "SUSPENDED") && !reason) {
+      return res.status(400).json({ success: false, error: "Please give the seller a reason." });
+    }
+    const existing = await prisma.seller.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, error: "Seller not found" });
+    const seller = await prisma.seller.update({
+      where: { id },
+      data: {
+        status,
+        statusReason: status === "APPROVED" ? null : reason || null,
+        ...commissionRate !== void 0 ? { commissionRate } : {},
+        ...status === "APPROVED" && !existing.approvedAt ? { approvedAt: /* @__PURE__ */ new Date() } : {}
+      }
+    });
+    await prisma.auditLog.create({
+      data: {
+        action: "SELLER_STATUS_UPDATED",
+        entity: "Seller",
+        entityId: id,
+        details: { from: existing.status, to: status, reason: reason || null, commissionRate: commissionRate ?? null, by: req.adminUser?.email },
+        ipAddress: clientIp(req)
+      }
+    });
+    return res.json({ success: true, seller: serializeSeller(seller) });
+  } catch (error) {
+    logger.error({ err: error }, "Admin seller status update failed");
+    return res.status(500).json({ success: false, error: "Failed to update seller" });
+  }
+});
+router9.get("/admin/listings", requireAdminAuth, async (req, res) => {
+  try {
+    const status = typeof req.query.status === "string" ? req.query.status.toUpperCase() : "PENDING_REVIEW";
+    const products = await prisma.product.findMany({
+      where: {
+        sellerId: { not: null },
+        ...["PENDING_REVIEW", "APPROVED", "REJECTED"].includes(status) ? { approvalStatus: status } : {}
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 500,
+      include: { seller: { select: { id: true, businessName: true, storeSlug: true, status: true, email: true } } }
+    });
+    return res.json({ success: true, products });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Failed to retrieve listings" });
+  }
+});
+router9.patch("/admin/products/:id/approval", requireAdminAuth, async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const parsed = ListingReviewSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: "Invalid review decision" });
+    const { approvalStatus, reason } = parsed.data;
+    if (approvalStatus === "REJECTED" && !reason) {
+      return res.status(400).json({ success: false, error: "Please tell the seller why the listing was rejected." });
+    }
+    const product = await prisma.product.update({
+      where: { id },
+      data: { approvalStatus, rejectionReason: approvalStatus === "REJECTED" ? reason : null },
+      include: { seller: { select: { id: true, businessName: true } } }
+    });
+    await prisma.auditLog.create({
+      data: {
+        action: "LISTING_REVIEWED",
+        entity: "Product",
+        entityId: id,
+        details: { approvalStatus, reason: reason || null, sellerId: product.sellerId, by: req.adminUser?.email },
+        ipAddress: clientIp(req)
+      }
+    });
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    return res.json({ success: true, product });
+  } catch (error) {
+    if (error?.code === "P2025") return res.status(404).json({ success: false, error: "Listing not found" });
+    return res.status(500).json({ success: false, error: "Failed to review listing" });
+  }
+});
+var admin_sellers_default = router9;
+
+// src/routes/index.ts
+var router10 = (0, import_express10.Router)();
+router10.use(health_default);
+router10.use(orders_default);
+router10.use(addresses_default);
+router10.use(coupons_default);
+router10.use(newsletter_default);
+router10.use(products_default);
+router10.use(admin_default);
+router10.use(admin_sellers_default);
+router10.use(seller_default);
+var routes_default = router10;
 
 // src/app.ts
-var app = (0, import_express9.default)();
+var app = (0, import_express11.default)();
 app.set("trust proxy", 1);
 app.use(securityHeadersMiddleware);
 app.use(
@@ -34038,19 +35239,20 @@ app.use(
     }
   })
 );
-var allowedOrigins = process.env.CORS_ORIGIN === "*" ? true : (process.env.CORS_ORIGIN || "").split(",").map((o) => o.trim()).filter(Boolean);
+var corsWildcard = (process.env.CORS_ORIGIN || "").trim() === "*";
+var allowedOrigins = corsWildcard ? "*" : (process.env.CORS_ORIGIN || "").split(",").map((o) => o.trim()).filter(Boolean);
 app.use(
   (0, import_cors.default)({
     origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-Admin-Key"],
-    credentials: true,
+    credentials: false,
     maxAge: 86400
     // 24 hours preflight cache
   })
 );
-app.use(import_express9.default.json({ limit: "25mb" }));
-app.use(import_express9.default.urlencoded({ extended: true, limit: "25mb" }));
+app.use(import_express11.default.json({ limit: "25mb" }));
+app.use(import_express11.default.urlencoded({ extended: true, limit: "25mb" }));
 app.use(sanitizeInputs);
 app.use("/api", rateLimiter({ windowMs: 60 * 1e3, maxRequests: 120 }));
 app.use((req, _res, next) => {
@@ -34074,7 +35276,7 @@ app.use((req, res) => {
 app.use((err, _req, res, _next) => {
   logger.error({ err }, "Unhandled API Error");
   const statusCode = err.status || err.statusCode || (err.type === "entity.too.large" ? 413 : 500);
-  const errorMessage = err.type === "entity.too.large" ? "Error 413: Artwork upload payload too large. Please use a compressed image under 20MB." : statusCode === 500 ? `Error 500: Internal Server Error. ${err.message || "An unexpected server error occurred."}` : err.message || `Error ${statusCode}`;
+  const errorMessage = err.type === "entity.too.large" ? "Error 413: Artwork upload payload too large. Please use a compressed image under 20MB." : statusCode >= 500 ? "Error 500: Internal Server Error. An unexpected server error occurred." : err.expose && err.message || `Error ${statusCode}`;
   res.status(statusCode).json({
     success: false,
     statusCode,

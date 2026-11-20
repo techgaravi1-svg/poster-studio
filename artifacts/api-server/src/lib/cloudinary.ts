@@ -1,16 +1,49 @@
 import https from 'node:https';
 import crypto from 'node:crypto';
 
+// Credentials should come from the environment (CLOUDINARY_* in Vercel).
+// The fallbacks keep the live admin image uploads working exactly as before
+// until those env vars are set. They were already public in git history:
+// rotate the Cloudinary secret, set the env vars, then delete these fallbacks.
 const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || 'pyjyrmry';
 const API_KEY = process.env.CLOUDINARY_API_KEY || '848535755562423';
 const API_SECRET = process.env.CLOUDINARY_API_SECRET || 'a7Z4E8P9dCbr0EuyIXpQEdMliZs';
 
+/** True when the credentials come from env vars rather than the legacy fallbacks. */
+export function cloudinaryUsingEnv(): boolean {
+  return Boolean(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+}
+
+export function cloudinaryConfigured(): boolean {
+  return Boolean(CLOUD_NAME && API_KEY && API_SECRET);
+}
+
+const ALLOWED_IMAGE_PREFIX = /^data:image\/(png|jpe?g|webp|gif|avif);base64,/i;
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB decoded
+
+/** True for an https URL or an allowed base64 image data URI under the size cap. */
+export function isAcceptableImageInput(value: string): boolean {
+  if (typeof value !== 'string') return false;
+  if (/^https:\/\/[^\s]+$/i.test(value)) return value.length <= 2048;
+  if (!ALLOWED_IMAGE_PREFIX.test(value)) return false;
+  const base64Len = value.length - value.indexOf(',') - 1;
+  return base64Len * 0.75 <= MAX_IMAGE_BYTES;
+}
+
+/**
+ * Uploads a base64 image to Cloudinary and returns its CDN URL.
+ * Non-data-URI values (already-hosted URLs) are returned unchanged.
+ * Throws if the upload fails, so raw base64 blobs never end up in the database.
+ */
 export async function uploadBase64ToCloudinary(fileData: string, publicIdPrefix = 'poster'): Promise<string> {
   if (!fileData || typeof fileData !== 'string' || !fileData.startsWith('data:image')) {
     return fileData;
   }
+  if (!cloudinaryConfigured()) {
+    throw new Error('Image uploads are not configured on the server (CLOUDINARY_* env vars missing).');
+  }
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     try {
       const timestamp = Math.floor(Date.now() / 1000);
       const cleanPublicId = `${publicIdPrefix}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`.replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -57,26 +90,25 @@ export async function uploadBase64ToCloudinary(fileData: string, publicIdPrefix 
               if (json.secure_url) {
                 resolve(json.secure_url);
               } else {
-                console.error('[Cloudinary] Upload failed with body:', body);
-                resolve(fileData);
+                console.error('[Cloudinary] Upload failed with status', res.statusCode);
+                reject(new Error('Image upload failed. Please try a different image.'));
               }
             } catch {
-              resolve(fileData);
+              reject(new Error('Image upload failed. Please try again.'));
             }
           });
         }
       );
 
       req.on('error', (err) => {
-        console.error('[Cloudinary] Network error:', err);
-        resolve(fileData);
+        console.error('[Cloudinary] Network error:', err.message);
+        reject(new Error('Image upload service unreachable. Please try again.'));
       });
 
       req.write(payload);
       req.end();
     } catch (err) {
-      console.error('[Cloudinary] Unexpected error:', err);
-      resolve(fileData);
+      reject(err instanceof Error ? err : new Error('Image upload failed.'));
     }
   });
 }

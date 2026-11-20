@@ -60,3 +60,4 @@ changes/
 
 # Vercel Build Output API (generated during build, do not commit)
 .vercel/output/
+.claude/

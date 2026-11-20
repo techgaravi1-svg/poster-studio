@@ -35,8 +35,11 @@ app.use(
 );
 
 // 4. Secure CORS Configuration
-const allowedOrigins = process.env.CORS_ORIGIN === '*'
-  ? true
+// Auth uses Bearer tokens (not cookies), so credentials are never needed cross-origin.
+// A wildcard origin is only honoured without credentials.
+const corsWildcard = (process.env.CORS_ORIGIN || '').trim() === '*';
+const allowedOrigins = corsWildcard
+  ? '*'
   : (process.env.CORS_ORIGIN || '').split(',').map((o) => o.trim()).filter(Boolean);
 
 app.use(
@@ -44,7 +47,7 @@ app.use(
     origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Admin-Key'],
-    credentials: true,
+    credentials: false,
     maxAge: 86400, // 24 hours preflight cache
   })
 );
@@ -88,11 +91,12 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   logger.error({ err }, 'Unhandled API Error');
 
   const statusCode = err.status || err.statusCode || (err.type === 'entity.too.large' ? 413 : 500);
+  // Never echo internal error messages for 5xx: they can leak database/schema details.
   const errorMessage = err.type === 'entity.too.large'
     ? 'Error 413: Artwork upload payload too large. Please use a compressed image under 20MB.'
-    : (statusCode === 500
-        ? `Error 500: Internal Server Error. ${err.message || 'An unexpected server error occurred.'}`
-        : (err.message || `Error ${statusCode}`));
+    : (statusCode >= 500
+        ? 'Error 500: Internal Server Error. An unexpected server error occurred.'
+        : (err.expose && err.message) || `Error ${statusCode}`);
 
   res.status(statusCode).json({
     success: false,

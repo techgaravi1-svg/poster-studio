@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import { prisma } from '@workspace/db';
 import { z } from 'zod';
-import { rateLimiter } from '../middlewares/security';
+import { rateLimiter, requireAdminAuth } from '../middlewares/security';
 
 const router: Router = Router();
 
@@ -19,10 +19,11 @@ const AddressSchema = z.object({
 });
 
 /**
- * GET /api/addresses
- * Retrieve saved addresses (optionally filter by phone)
+ * GET /api/addresses?phone=
+ * Admin only: looking up addresses by phone number alone would let anyone
+ * read another customer's home address. (The storefront keeps addresses locally.)
  */
-router.get('/addresses', async (req: Request, res: Response) => {
+router.get('/addresses', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { phone } = req.query;
 
@@ -91,9 +92,9 @@ router.post(
 
 /**
  * DELETE /api/addresses/:id
- * Delete an address
+ * Admin only: unauthenticated deletes allowed anyone to wipe any saved address.
  */
-router.delete('/addresses/:id', async (req: Request, res: Response) => {
+router.delete('/addresses/:id', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
     await prisma.address.delete({ where: { id } });

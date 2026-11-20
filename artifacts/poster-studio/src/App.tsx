@@ -22,6 +22,8 @@ import {
 
 // Code-split heavy routes so initial storefront payload stays ultra-lightweight
 const AdminDashboardPage = lazy(() => import('@/pages/admin-page').then((m) => ({ default: m.AdminDashboardPage })));
+const SellerPortalPage = lazy(() => import('@/pages/seller-portal').then((m) => ({ default: m.SellerPortalPage })));
+const SellerStorePage = lazy(() => import('@/pages/seller-portal').then((m) => ({ default: m.SellerStorePage })));
 const AddressesPage = lazy(() => import('@/pages/addresses-page').then((m) => ({ default: m.AddressesPage })));
 const FaqPage = lazy(() => import('@/pages/policy-pages').then((m) => ({ default: m.FaqPage })));
 const TermsPage = lazy(() => import('@/pages/policy-pages').then((m) => ({ default: m.TermsPage })));
@@ -85,6 +87,15 @@ function Router() {
               </Route>
               <Route path="/account" component={AccountPage} />
               <Route path="/search" component={SearchPage} />
+              <Route path="/seller">
+                <PageSuspense><SellerPortalPage /></PageSuspense>
+              </Route>
+              <Route path="/sell">
+                <PageSuspense><SellerPortalPage /></PageSuspense>
+              </Route>
+              <Route path="/store/:slug">
+                <PageSuspense><SellerStorePage /></PageSuspense>
+              </Route>
               <Route path="/faqs">
                 <PageSuspense><FaqPage /></PageSuspense>
               </Route>

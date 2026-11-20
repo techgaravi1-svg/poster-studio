@@ -47,7 +47,7 @@ import {
   Store,
   Mail,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, isPosterCategory, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, transformDbProductToFrontend, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, isPosterCategory, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, ProductCardSkeleton, Toast, PARTNER_MAILTO_LINK } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
@@ -1267,18 +1267,31 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
 export function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
   const { products: liveProducts, isLoading } = useLiveProductsWithStatus();
-  const product = liveProducts.find((p) => p.slug === slug || p.id === slug) || getProduct(slug);
-  const [, navigate] = useLocation();
-  const { cart, wishlist = [] } = useStore();
-  const [selectedSize, setSelectedSize] = useState<PosterSize>('A5');
-  const [quantity, setQuantity] = useState(1);
-  const [openAccordion, setOpenAccordion] = useState<string | null>('features');
-  const [sizeChartOpen, setSizeChartOpen] = useState(false);
-  const [offerModalOpen, setOfferModalOpen] = useState(false);
-  const [toast, setToast] = useState('');
+  const cachedProduct = liveProducts.find((p) => p.slug === slug || p.id === slug) || getProduct(slug);
+
+  // The catalog is cached in the browser for up to 30 minutes. Fetch a single
+  // product directly when it is missing (e.g. a seller listing approved minutes ago).
+  const [fetched, setFetched] = useState<{ slug: string; product: Product | null } | null>(null);
+  useEffect(() => {
+    if (cachedProduct || !slug) return;
+    let alive = true;
+    fetch(`/api/products/${encodeURIComponent(slug)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (alive) setFetched({ slug, product: d?.product ? transformDbProductToFrontend(d.product) : null });
+      })
+      .catch(() => {
+        if (alive) setFetched({ slug, product: null });
+      });
+    return () => {
+      alive = false;
+    };
+  }, [slug, Boolean(cachedProduct)]);
+  const product = cachedProduct || (fetched?.slug === slug ? fetched.product || undefined : undefined);
+  const fetchingSingle = !cachedProduct && fetched?.slug !== slug;
 
   if (!product) {
-    if (isLoading) {
+    if (isLoading || fetchingSingle) {
       return (
         <main className="product-page-main max-w-6xl mx-auto px-4 py-8">
           <div className="product-layout-grid grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -1303,6 +1316,20 @@ export function ProductPage() {
       </main>
     );
   }
+
+  return <ProductPageContent key={product.id} product={product} liveProducts={liveProducts} />;
+}
+
+/** Product detail body. Split out so its hooks never run conditionally after the lookup's early returns. */
+function ProductPageContent({ product, liveProducts }: { product: Product; liveProducts: Product[] }) {
+  const [, navigate] = useLocation();
+  const { cart, wishlist = [] } = useStore();
+  const [selectedSize, setSelectedSize] = useState<PosterSize>('A5');
+  const [quantity, setQuantity] = useState(1);
+  const [openAccordion, setOpenAccordion] = useState<string | null>('features');
+  const [sizeChartOpen, setSizeChartOpen] = useState(false);
+  const [offerModalOpen, setOfferModalOpen] = useState(false);
+  const [toast, setToast] = useState('');
 
   const isWishlisted = wishlist.includes(product.slug) || wishlist.includes(product.id);
 
@@ -1411,6 +1438,14 @@ export function ProductPage() {
       {/* 2. PRODUCT INFO & DETAILS */}
       <section className="product-primary-details">
         <h1 className="product-page-title">{product.title}</h1>
+        {product.soldBy && (
+          <p style={{ fontSize: '13px', color: '#64748b', margin: '2px 0 6px' }}>
+            Sold by{' '}
+            <Link href={`/store/${product.soldBy.slug}`} style={{ color: '#0f172a', fontWeight: 700, textDecoration: 'underline' }}>
+              {product.soldBy.name}
+            </Link>
+          </p>
+        )}
 
         <div className="product-stars-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0 10px' }}>
           <div style={{ display: 'flex', color: '#f59e0b', fontSize: '15px' }}>
@@ -3317,15 +3352,83 @@ export function CheckoutPage() {
     setIsProcessing(true);
 
     try {
+      // 1. The server prices the bag from the database and opens a payment session.
+      //    Prices, totals and payment status are never trusted from the browser.
+      let created: any;
+      try {
+        const apiRes = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerName,
+            customerEmail,
+            customerPhone,
+            shippingAddress: {
+              name: activeAddress?.name || customerName,
+              phone: activeAddress?.phone || customerPhone,
+              pincode: activeAddress?.pincode || customerPincode,
+              city: activeAddress?.city || customerCity,
+              state: activeAddress?.state || customerState,
+              locality: activeAddress?.locality || customerAddress,
+              flat: activeAddress?.flat || customerAddress,
+              landmark: activeAddress?.landmark || '',
+              type: activeAddress?.type || 'home',
+            },
+            items: cart.map((item) => ({
+              productId: item.productId,
+              title: item.title,
+              slug: item.slug,
+              size: item.size,
+              quantity: item.quantity,
+              orientation: item.orientation || 'portrait',
+              customUpload: item.customUpload,
+            })),
+            couponCode: coupon || undefined,
+          }),
+        });
+        const data = await apiRes.json().catch(() => ({}));
+        if (!apiRes.ok || !data?.success || !data?.payment?.razorpayOrderId) {
+          setError(data?.error || `We could not start checkout (Error ${apiRes.status}). Please try again.`);
+          return;
+        }
+        created = data;
+      } catch {
+        setError('We could not reach our checkout server. Please check your connection and try again.');
+        return;
+      }
+
+      // 2. Open Razorpay for the server-locked amount
       const paymentResult = await paymentService.openRazorpayCheckout({
-        amount: totals.total,
+        keyId: created.payment.keyId,
+        razorpayOrderId: created.payment.razorpayOrderId,
+        amountPaise: created.payment.amount,
+        currency: created.payment.currency,
+        orderNumber: created.order.orderNumber,
         customerName,
         customerEmail,
         customerPhone,
-        orderDescription: `DUNGEONS Order of ${totals.totalItemCount} item(s)`,
+        orderDescription: `DUNGEONS Order ${created.order.orderNumber} (${totals.totalItemCount} item(s))`,
       });
 
       if (paymentResult.status === 'success') {
+        // 3. The server verifies the Razorpay signature before marking the order paid
+        let verified = false;
+        try {
+          const verifyRes = await fetch(`/api/orders/${encodeURIComponent(created.order.id)}/verify-payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(paymentResult.response),
+          });
+          const verifyData = await verifyRes.json().catch(() => ({}));
+          verified = verifyRes.ok && Boolean(verifyData?.success);
+          if (!verified) {
+            setError(verifyData?.error || `We could not confirm your payment. Please contact support with order ${created.order.orderNumber}.`);
+          }
+        } catch {
+          setError(`Your payment went through but we could not confirm it yet. Please contact support with order ${created.order.orderNumber}.`);
+        }
+        if (!verified) return;
+
         const order = makeOrder({
           customer: { name: customerName, email: customerEmail, phone: customerPhone },
           address: {
@@ -3338,62 +3441,16 @@ export function CheckoutPage() {
           products: cart,
           customUploads: [],
           ...totals,
+          subtotal: created.order.subtotal,
+          shipping: created.order.shippingFee,
+          discount: created.order.discount,
+          total: created.order.total,
           paymentStatus: 'paid',
-          paymentId: paymentResult.paymentId,
+          paymentId: paymentResult.response.razorpay_payment_id,
           paymentMethod: 'razorpay',
           fulfillmentStatus: 'processing',
         });
-
-        // Sync with secure Prisma PostgreSQL Backend
-        try {
-          const apiRes = await fetch('/api/orders', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              customerName,
-              customerEmail,
-              customerPhone,
-              shippingAddress: {
-                name: activeAddress?.name || customerName,
-                phone: activeAddress?.phone || customerPhone,
-                pincode: activeAddress?.pincode || customerPincode,
-                city: activeAddress?.city || customerCity,
-                state: activeAddress?.state || customerState,
-                locality: activeAddress?.locality || customerAddress,
-                flat: activeAddress?.flat || customerAddress,
-                landmark: activeAddress?.landmark || '',
-                type: activeAddress?.type || 'home',
-              },
-              items: cart.map((item) => ({
-                productId: item.productId,
-                title: item.title,
-                slug: item.slug,
-                size: item.size,
-                quantity: item.quantity,
-                price: item.price,
-                orientation: item.orientation || 'portrait',
-                customUpload: item.customUpload,
-              })),
-              couponCode: coupon || undefined,
-              paymentId: paymentResult.paymentId,
-              paymentStatus: 'PAID',
-              paymentMethod: 'razorpay',
-            }),
-          });
-
-          if (apiRes.ok) {
-            const data = await apiRes.json();
-            if (data.order?.orderNumber) {
-              order.id = data.order.orderNumber;
-            }
-          } else {
-            const status = apiRes.status;
-            const errData = await apiRes.json().catch(() => ({}));
-            console.warn(`[Checkout] Server API error ${status}:`, errData);
-          }
-        } catch (apiErr: any) {
-          console.warn('[Checkout] Backend order sync warning (Error 500 / network):', apiErr);
-        }
+        order.id = created.order.orderNumber;
 
         store.addOrder(order);
         navigate(`/checkout/success?order=${order.id}`);

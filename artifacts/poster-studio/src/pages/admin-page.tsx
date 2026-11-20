@@ -34,8 +34,11 @@ import {
   Image as ImageIcon,
   AlertTriangle,
   Mail,
+  Store as StoreIcon,
+  Armchair,
 } from 'lucide-react';
 import './admin.css';
+import { AdminSellersPanel } from '@/pages/admin-sellers-panel';
 import {
   formatPrice,
   fetchLiveProducts,
@@ -168,7 +171,14 @@ export function AdminDashboardPage() {
   // AUTHENTICATION STATE
   // -------------------------------------------------------------
   const [authToken, setAuthToken] = useState<string | null>(() => {
-    return localStorage.getItem('dungeons_admin_token') || sessionStorage.getItem('dungeons_admin_token') || null;
+    const stored = localStorage.getItem('dungeons_admin_token') || sessionStorage.getItem('dungeons_admin_token') || null;
+    // Tokens minted by the removed browser-side login fallback were never real sessions
+    if (stored && stored.startsWith('dungeons_adm_cf_')) {
+      localStorage.removeItem('dungeons_admin_token');
+      localStorage.removeItem('dungeons_admin_user');
+      return null;
+    }
+    return stored;
   });
   const [adminUser, setAdminUser] = useState<{ name: string; email: string; role: string } | null>(() => {
     const raw = localStorage.getItem('dungeons_admin_user') || sessionStorage.getItem('dungeons_admin_user');
@@ -187,7 +197,7 @@ export function AdminDashboardPage() {
   // -------------------------------------------------------------
   // DASHBOARD STATE
   // -------------------------------------------------------------
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'coupons' | 'customers' | 'security'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'decor' | 'sellers' | 'coupons' | 'customers' | 'security'>('dashboard');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -689,7 +699,7 @@ export function AdminDashboardPage() {
             localStorage.setItem('dungeons_admin_user', JSON.stringify(data.admin));
             showToast(`Welcome back, ${data.admin.name}!`);
             return;
-          } else if (res.status === 401 || res.status === 403) {
+          } else if (!res.ok) {
             setLoginError(data.error || 'Invalid credentials. Please verify your email and password.');
             return;
           }
@@ -698,47 +708,8 @@ export function AdminDashboardPage() {
         // Backend offline or unreachable (e.g. static hosting on Cloudflare/Vercel)
       }
 
-      // 2. Client-side fallback authentication (for Cloudflare Workers static SPA or serverless deployments)
-      const validEnvEmail = (import.meta.env.VITE_ADMIN_EMAIL || 'admin@posterstudio.com').toLowerCase();
-      const validEnvPw = import.meta.env.VITE_ADMIN_PASSWORD || 'Admin@Poster2026!';
-      const validEnvKey = import.meta.env.VITE_ADMIN_API_KEY || 'dungeons_adm_sec_9941a87b1c3e04e2';
-
-      if (loginMode === 'key') {
-        if (trimmedKey && (trimmedKey === validEnvKey || trimmedKey === 'dungeons_adm_sec_9941a87b1c3e04e2')) {
-          const fallbackToken = `dungeons_adm_cf_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-          const adminObj = { id: 'admin-key-holder', name: 'Master Administrator', email: 'admin@dungeons.in', role: 'superadmin' };
-          setAuthToken(fallbackToken);
-          setAdminUser(adminObj);
-          localStorage.setItem('dungeons_admin_token', fallbackToken);
-          localStorage.setItem('dungeons_admin_user', JSON.stringify(adminObj));
-          showToast('Welcome back, Master Administrator!');
-          return;
-        } else {
-          setLoginError('Invalid Admin API key. Please check your key and try again.');
-          return;
-        }
-      } else {
-        const isEmailMatch = trimmedEmail === validEnvEmail || trimmedEmail === 'admin@posterstudio.com' || trimmedEmail === 'admin@dungeons.in';
-        const isPwMatch = trimmedPw === validEnvPw || trimmedPw === 'Admin@Poster2026!';
-
-        if (isEmailMatch && isPwMatch) {
-          const fallbackToken = `dungeons_adm_cf_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-          const adminObj = { id: 'admin-master', name: 'Administrator', email: trimmedEmail, role: 'superadmin' };
-          setAuthToken(fallbackToken);
-          setAdminUser(adminObj);
-          localStorage.setItem('dungeons_admin_token', fallbackToken);
-          localStorage.setItem('dungeons_admin_user', JSON.stringify(adminObj));
-          showToast(`Welcome back, ${adminObj.name}!`);
-          return;
-        } else if (isEmailMatch && !isPwMatch) {
-          setLoginError('Incorrect password. Please verify and try again.');
-          return;
-        } else if (!isEmailMatch) {
-          setLoginError('No admin account found with this email. (Default: admin@posterstudio.com)');
-          return;
-        }
-      }
-
+      // Authentication is only ever decided by the server. (A former browser-side
+      // fallback compared against credentials embedded in the public JS bundle.)
       setLoginError('Admin authentication service is unavailable. Please try again.');
     } catch {
       setLoginError('Authentication error. Please retry.');
@@ -1431,8 +1402,13 @@ export function AdminDashboardPage() {
     });
   }, [orders, orderStatusFilter, orderSearch]);
 
+  // Poster Catalog shows art posters; Product Catalog shows home & decor items (mirrors, rugs, ...)
+  const posterProducts = useMemo(() => products.filter((p) => isPosterCategory(p.category)), [products]);
+  const decorProducts = useMemo(() => products.filter((p) => !isPosterCategory(p.category)), [products]);
+
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    const source = activeTab === 'decor' ? decorProducts : posterProducts;
+    return source.filter((p) => {
       const matchesCat =
         productCategoryFilter === 'all' ||
         p.category.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-') ===
@@ -1443,7 +1419,32 @@ export function AdminDashboardPage() {
         p.slug.toLowerCase().includes(productSearch.toLowerCase());
       return matchesCat && matchesSearch;
     });
-  }, [products, productCategoryFilter, productSearch]);
+  }, [activeTab, posterProducts, decorProducts, productCategoryFilter, productSearch]);
+
+  const catalogCategoryFilters = useMemo(() => {
+    if (activeTab === 'decor') {
+      return [{ slug: 'all', label: 'All Products' }, ...CIRCLE_PRODUCT_CATEGORIES.map((c) => ({ slug: c.slug, label: `${c.icon} ${c.name}` }))];
+    }
+    return [{ slug: 'all', label: 'All Posters' }, ...dynamicCats.map((c) => ({ slug: c.slug, label: c.name || c.title }))];
+  }, [activeTab, dynamicCats]);
+
+  /** Opens the add form already set to the right type: posters (A5/A4/A3) or home & decor products. */
+  const openAddForm = (type: 'poster' | 'product') => {
+    setEditingProduct(null);
+    setProductModalError(null);
+    setIsCustomCategoryMode(false);
+    setCustomCategoryInput('');
+    setProductType(type);
+    setProductFormData(
+      type === 'poster'
+        ? defaultPosterFormData
+        : {
+            ...defaultProductFormData,
+            title: CIRCLE_PRODUCT_CATEGORIES[0].placeholderTitle,
+          },
+    );
+    setIsProductModalOpen(true);
+  };
 
   const maxSales = Math.max(...salesTrend.map((s) => s.sales), 500);
 
@@ -1689,15 +1690,29 @@ export function AdminDashboardPage() {
 
             <button
               type="button"
-              onClick={() => { setActiveTab('products'); setMobileSidebarOpen(false); }}
+              onClick={() => { setActiveTab('products'); setProductCategoryFilter('all'); setProductSearch(''); setMobileSidebarOpen(false); }}
               className={`admin-nav-link ${activeTab === 'products' ? 'active' : ''}`}
             >
               <span className="admin-nav-link-left">
                 <Layers size={16} />
-                <span>Products Catalog</span>
+                <span>Poster Catalog</span>
               </span>
               <span className="admin-nav-badge">
-                {products.length}
+                {posterProducts.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setActiveTab('decor'); setProductCategoryFilter('all'); setProductSearch(''); setMobileSidebarOpen(false); }}
+              className={`admin-nav-link ${activeTab === 'decor' ? 'active' : ''}`}
+            >
+              <span className="admin-nav-link-left">
+                <Armchair size={16} />
+                <span>Product Catalog</span>
+              </span>
+              <span className="admin-nav-badge">
+                {decorProducts.length}
               </span>
             </button>
 
@@ -1713,6 +1728,20 @@ export function AdminDashboardPage() {
               <span className="admin-nav-badge">
                 {coupons.length}
               </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setActiveTab('sellers'); setMobileSidebarOpen(false); }}
+              className={`admin-nav-link ${activeTab === 'sellers' ? 'active' : ''}`}
+            >
+              <span className="admin-nav-link-left">
+                <StoreIcon size={16} />
+                <span>Marketplace Sellers</span>
+              </span>
+              {((stats as any).pendingSellers || 0) + ((stats as any).pendingListings || 0) > 0 && (
+                <span className="admin-nav-badge">{((stats as any).pendingSellers || 0) + ((stats as any).pendingListings || 0)}</span>
+              )}
             </button>
 
             <button
@@ -1783,7 +1812,9 @@ export function AdminDashboardPage() {
               <h2 className="admin-header-title">
                 {activeTab === 'dashboard' && 'Executive Store Overview'}
                 {activeTab === 'orders' && 'Orders Fulfillment & Tracking'}
-                {activeTab === 'products' && 'Posters Catalog & Inventory'}
+                {activeTab === 'products' && 'Poster Catalog & Inventory'}
+                {activeTab === 'decor' && 'Product Catalog & Inventory'}
+                {activeTab === 'sellers' && 'Marketplace Sellers & Listing Review'}
                 {activeTab === 'coupons' && 'Discount Vouchers & Offers'}
                 {activeTab === 'customers' && 'Newsletter Subscribers & Reach'}
                 {activeTab === 'security' && 'Security Gate & Database Health'}
@@ -1793,13 +1824,7 @@ export function AdminDashboardPage() {
             <div className="admin-header-actions">
               <button
                 type="button"
-                onClick={() => {
-                  setEditingProduct(null);
-                  setProductModalError(null);
-                  setProductType('product');
-                  setProductFormData(defaultProductFormData);
-                  setIsProductModalOpen(true);
-                }}
+                onClick={() => openAddForm(activeTab === 'decor' ? 'product' : 'poster')}
                 className="admin-btn-accent"
                 style={{
                   background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
@@ -1811,7 +1836,7 @@ export function AdminDashboardPage() {
                 }}
               >
                 <Plus size={15} strokeWidth={3} />
-                <span>+ Add Product</span>
+                <span>{activeTab === 'decor' ? 'Add Product' : 'Add Poster'}</span>
               </button>
 
               <button
@@ -2416,14 +2441,14 @@ export function AdminDashboardPage() {
             {/* ===================================================== */}
             {/* TAB 3: POSTERS CATALOG */}
             {/* ===================================================== */}
-            {activeTab === 'products' && (
+            {(activeTab === 'products' || activeTab === 'decor') && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ position: 'relative', width: '280px' }}>
+                <div className="admin-catalog-toolbar">
+                  <div className="admin-catalog-search">
                     <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
                     <input
                       type="text"
-                      placeholder="Search posters..."
+                      placeholder={activeTab === 'decor' ? 'Search products...' : 'Search posters...'}
                       value={productSearch}
                       onChange={(e) => setProductSearch(e.target.value)}
                       className="admin-input-field"
@@ -2431,8 +2456,8 @@ export function AdminDashboardPage() {
                     />
                   </div>
 
-                  <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
-                    {allAdminCategoryFilters.map((cat) => {
+                  <div className="admin-catalog-pills">
+                    {catalogCategoryFilters.map((cat) => {
                       const isDynamic = dynamicCats.some((d) => d.slug === cat.slug);
                       const isSelected = productCategoryFilter === cat.slug;
                       return (
@@ -2483,6 +2508,29 @@ export function AdminDashboardPage() {
                     })}
                   </div>
                 </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>
+                    Showing {filteredProducts.length} of {(activeTab === 'decor' ? decorProducts : posterProducts).length} {activeTab === 'decor' ? 'products' : 'posters'}
+                  </span>
+                </div>
+
+                {filteredProducts.length === 0 && (
+                  <div className="admin-panel-card" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>{activeTab === 'decor' ? '🪞' : '🎨'}</div>
+                    <div style={{ color: '#ffffff', fontWeight: 800, fontSize: '14px' }}>
+                      {activeTab === 'decor' ? 'No home & decor products yet' : 'No posters match this view'}
+                    </div>
+                    <p style={{ color: '#94a3b8', fontSize: '12px', margin: '6px 0 14px' }}>
+                      {activeTab === 'decor'
+                        ? 'Add mirrors, wall art, bean bags, rugs and more. They appear in the store under their category circle.'
+                        : 'Try another category or search term, or add a new poster.'}
+                    </p>
+                    <button type="button" className="admin-btn-accent" onClick={() => openAddForm(activeTab === 'decor' ? 'product' : 'poster')}>
+                      <Plus size={14} /> {activeTab === 'decor' ? 'Add Product' : 'Add Poster'}
+                    </button>
+                  </div>
+                )}
 
                 <div className="admin-catalog-grid">
                   {filteredProducts.map((prod) => (
@@ -2775,6 +2823,10 @@ export function AdminDashboardPage() {
               </div>
             )}
 
+            {activeTab === 'sellers' && (
+              <AdminSellersPanel authFetch={authFetch} showToast={showToast} onChanged={() => loadAdminData()} />
+            )}
+
             {/* ===================================================== */}
             {/* TAB 6: SECURITY & DIAGNOSTICS */}
             {/* ===================================================== */}
@@ -2842,18 +2894,18 @@ export function AdminDashboardPage() {
 
       {/* Product Add/Edit Modal */}
       {isProductModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div style={{ background: '#0e1424', border: '1px solid #1e2638', borderRadius: '20px', maxWidth: '540px', width: '100%', padding: '24px', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e2638', paddingBottom: '12px' }}>
+        <div className="admin-product-modal-backdrop">
+          <div className="admin-product-modal" role="dialog" aria-modal="true" aria-label={productType === 'product' ? 'Product form' : 'Poster form'}>
+            <div className="admin-product-modal-head">
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>{productType === 'product' ? '🪞' : '🎨'}</span>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span className="admin-product-modal-icon">{productType === 'product' ? '🪞' : '🎨'}</span>
                   <span>{editingProduct ? (productType === 'product' ? 'Edit Product' : 'Edit Poster') : (productType === 'product' ? 'Add New Product' : 'Add New Poster')}</span>
                 </h3>
                 <p style={{ fontSize: '11px', color: '#94a3b8', margin: '2px 0 0 0' }}>
                   {productType === 'product'
-                    ? 'Publish mirrors, wall art, bean bags, flags, couches & decor to the live storefront'
-                    : 'Publish high-resolution art posters with A5/A4/A3 multi-size pricing'}
+                    ? 'Home & decor product: mirrors, wall art, bean bags, flags, couches, rugs and more'
+                    : 'Art poster with separate A5, A4 and A3 pricing'}
                 </p>
               </div>
               <button
@@ -2862,85 +2914,10 @@ export function AdminDashboardPage() {
                   setIsProductModalOpen(false);
                   setProductModalError(null);
                 }}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                aria-label="Close"
+                className="admin-product-modal-close"
               >
                 <X size={18} />
-              </button>
-            </div>
-
-            {/* Department Switcher Tabs (Product vs Poster) */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', background: '#090e1a', padding: '4px', borderRadius: '12px', border: '1px solid #1e293b' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setProductType('product');
-                  if (isPosterCategory(productFormData.category)) {
-                    const defMirror = CIRCLE_PRODUCT_CATEGORIES[0];
-                    setProductFormData((prev) => ({
-                      ...prev,
-                      category: 'mirrors',
-                      title: prev.title === 'ASTA POSTER | BLACK CLOVER' || !prev.title ? defMirror.placeholderTitle : prev.title,
-                      price: prev.price === 79 || !prev.price ? defMirror.defaultPrice : prev.price,
-                      compareAtPrice: prev.compareAtPrice === 159 || !prev.compareAtPrice ? defMirror.defaultCompare : prev.compareAtPrice,
-                      description: prev.description.includes('300 GSM') || !prev.description ? defMirror.defaultDescription : prev.description,
-                    }));
-                  }
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '9px 12px',
-                  borderRadius: '9px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontWeight: 800,
-                  fontSize: '11.5px',
-                  transition: 'all 0.15s ease',
-                  background: productType === 'product' ? 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)' : 'transparent',
-                  color: productType === 'product' ? '#000000' : '#94a3b8',
-                  boxShadow: productType === 'product' ? '0 2px 8px rgba(56, 189, 248, 0.35)' : 'none',
-                }}
-              >
-                <span style={{ fontSize: '15px' }}>🪞</span>
-                <span>Home &amp; Decor Product</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setProductType('poster');
-                  if (!isPosterCategory(productFormData.category)) {
-                    setProductFormData((prev) => ({
-                      ...prev,
-                      category: 'anime',
-                      title: prev.title.includes('Mirror') || !prev.title ? 'ASTA POSTER | BLACK CLOVER' : prev.title,
-                      price: 79,
-                      compareAtPrice: 159,
-                      description: 'Printed on 300 GSM Archival Matte Paper with vivid fade-resistant inks.',
-                    }));
-                  }
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '9px 12px',
-                  borderRadius: '9px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontWeight: 800,
-                  fontSize: '11.5px',
-                  transition: 'all 0.15s ease',
-                  background: productType === 'poster' ? 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)' : 'transparent',
-                  color: productType === 'poster' ? '#000000' : '#94a3b8',
-                  boxShadow: productType === 'poster' ? '0 2px 8px rgba(56, 189, 248, 0.35)' : 'none',
-                }}
-              >
-                <span style={{ fontSize: '15px' }}>🎨</span>
-                <span>Art Poster (A5/A4/A3)</span>
               </button>
             </div>
 
@@ -3031,7 +3008,7 @@ export function AdminDashboardPage() {
                       </button>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', scrollbarWidth: 'thin' }}>
+                    <div className="admin-category-chip-grid">
                       {CIRCLE_PRODUCT_CATEGORIES.map((cat) => {
                         const isSelected = productFormData.category === cat.slug;
                         return (
@@ -3057,17 +3034,18 @@ export function AdminDashboardPage() {
                             style={{
                               display: 'flex',
                               alignItems: 'center',
+                              justifyContent: 'center',
                               gap: '6px',
-                              padding: '6px 12px',
-                              borderRadius: '9999px',
-                              fontSize: '11px',
+                              padding: '9px 10px',
+                              borderRadius: '10px',
+                              fontSize: '12px',
                               fontWeight: 700,
                               whiteSpace: 'nowrap',
                               cursor: 'pointer',
                               border: isSelected ? '1px solid #38bdf8' : '1px solid #1e2638',
                               background: isSelected ? 'rgba(56, 189, 248, 0.15)' : '#0f172a',
                               color: isSelected ? '#38bdf8' : '#cbd5e1',
-                              flexShrink: 0,
+                              boxShadow: isSelected ? '0 0 0 3px rgba(56, 189, 248, 0.12)' : 'none',
                             }}
                           >
                             <span>{cat.icon}</span>
@@ -3140,7 +3118,7 @@ export function AdminDashboardPage() {
 
               {/* Poster Mode: Category & Orientation row */}
               {productType === 'poster' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="admin-form-grid-2">
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                       <label className="admin-input-label" style={{ margin: 0 }}>Category / Theme</label>
@@ -3254,7 +3232,7 @@ export function AdminDashboardPage() {
                     )}
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div className="admin-form-grid-2">
                     <div>
                       <label style={{ fontSize: '10px', color: '#94a3b8', display: 'block', marginBottom: '3px', fontWeight: 700 }}>
                         Selling Price (₹) <span style={{ color: '#ef4444' }}>*</span>
@@ -3305,7 +3283,7 @@ export function AdminDashboardPage() {
                 </div>
               ) : (
                 <div style={{ background: '#0b1120', border: '1px solid #1e293b', borderRadius: '12px', padding: '14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
                     <label className="admin-input-label" style={{ margin: 0, color: '#60a5fa', fontWeight: 800 }}>
                       📏 Poster Pricing by Size (₹)
                     </label>
@@ -3314,7 +3292,7 @@ export function AdminDashboardPage() {
                     </span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                  <div className="admin-form-grid-3">
                     {/* A5 Size */}
                     <div style={{ background: '#0f172a', border: '1px solid #1e2638', borderRadius: '8px', padding: '10px' }}>
                       <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px' }}>

@@ -43,6 +43,19 @@ enum AddressType {
   OTHER
 }
 
+enum SellerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum ListingStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 // ------------------------------------------------------------------------------
 // USER / CUSTOMER & AUTH
 // ------------------------------------------------------------------------------
@@ -111,11 +124,18 @@ model Product {
   isStaffPick    Boolean     @default(false)
   stock          Int         @default(100)
   isActive       Boolean     @default(true)
+  // Marketplace: null sellerId = listed by the store admin (first-party)
+  sellerId        String?
+  seller          Seller?       @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  approvalStatus  ListingStatus @default(APPROVED)
+  rejectionReason String?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
   @@index([category])
   @@index([slug])
+  @@index([sellerId])
+  @@index([approvalStatus])
   @@map("products")
 }
 
@@ -134,11 +154,14 @@ model Order {
   shippingAddress   Json                   // Saved address snapshot
   subtotal          Float
   shippingFee       Float                  @default(0)
+  platformFee       Float                  @default(0)
   discount          Float                  @default(0)
   total             Float
   paymentStatus     OrderPaymentStatus     @default(PENDING)
   paymentMethod     String                 @default("razorpay")
   paymentId         String?                // Payment Gateway Transaction ID
+  razorpayOrderId   String?                @unique // Server-created gateway order (amount locked server-side)
+  couponCode        String?
   fulfillmentStatus OrderFulfillmentStatus @default(PENDING)
   trackingNumber    String?
   notes             String?
@@ -166,11 +189,58 @@ model OrderItem {
   price        Float
   orientation  String   @default("portrait")
   customUpload Json?    // Snapshot of custom print files/options
+  // Marketplace: which seller fulfils this line item (null = store admin)
+  sellerId          String?
+  seller            Seller?                @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  commissionRate    Float?                 // % snapshot at time of order
+  fulfillmentStatus OrderFulfillmentStatus @default(PENDING)
+  trackingNumber    String?
   createdAt    DateTime @default(now())
 
   @@index([orderId])
   @@index([productId])
+  @@index([sellerId])
   @@map("order_items")
+}
+
+// ------------------------------------------------------------------------------
+// MARKETPLACE SELLERS
+// ------------------------------------------------------------------------------
+
+model Seller {
+  id                String       @id @default(cuid())
+  email             String       @unique
+  passwordHash      String
+  ownerName         String
+  businessName      String
+  storeSlug         String       @unique
+  phone             String
+  gstin             String?
+  pan               String?
+  description       String?
+  categories        String[]     @default([])
+  // Pickup / return address
+  addressLine       String
+  city              String
+  state             String
+  pincode           String
+  // Payout details (bank account number is never returned unmasked by the API)
+  bankAccountName   String?
+  bankAccountNumber String?
+  bankIfsc          String?
+  upiId             String?
+  status            SellerStatus @default(PENDING)
+  statusReason      String?
+  commissionRate    Float        @default(15)
+  approvedAt        DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  products          Product[]
+  orderItems        OrderItem[]
+
+  @@index([status])
+  @@map("sellers")
 }
 
 // ------------------------------------------------------------------------------

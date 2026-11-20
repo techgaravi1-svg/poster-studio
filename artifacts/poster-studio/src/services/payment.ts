@@ -1,11 +1,19 @@
 export type RazorpayPaymentSuccessResponse = {
   razorpay_payment_id: string;
-  razorpay_order_id?: string;
-  razorpay_signature?: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
 };
 
+/**
+ * Everything here comes from the server's POST /api/orders response.
+ * The browser never decides the amount or the Razorpay key.
+ */
 export type PaymentRequest = {
-  amount: number; // in INR
+  keyId: string;
+  razorpayOrderId: string;
+  amountPaise: number;
+  currency: string;
+  orderNumber: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -13,7 +21,7 @@ export type PaymentRequest = {
 };
 
 export type PaymentResult =
-  | { status: 'success'; paymentId: string; orderId?: string }
+  | { status: 'success'; response: RazorpayPaymentSuccessResponse }
   | { status: 'cancelled'; message: string }
   | { status: 'failed'; message: string };
 
@@ -33,72 +41,46 @@ export function loadRazorpaySDK(): Promise<boolean> {
 }
 
 export const paymentService = {
-  getRazorpayKey(): string {
-    return (
-      (import.meta as any).env?.VITE_RAZORPAY_KEY_ID ||
-      (import.meta as any).env?.RAZORPAY_KEY_ID ||
-      (typeof window !== 'undefined' && (window as any).__RAZORPAY_KEY_ID__) ||
-      'rzp_test_TsSW6nXs2DbghB'
-    );
-  },
-
   async openRazorpayCheckout(request: PaymentRequest): Promise<PaymentResult> {
     const isLoaded = await loadRazorpaySDK();
-    const key = this.getRazorpayKey();
+    if (!isLoaded || !request.keyId || !request.razorpayOrderId) {
+      // Never simulate a successful payment: the server would reject it anyway.
+      return { status: 'failed', message: 'Could not load the secure payment window. Check your connection and try again.' };
+    }
 
     return new Promise((resolve) => {
-      if (isLoaded && key) {
-        const options = {
-          key,
-          amount: Math.round(request.amount * 100), // in paise
-          currency: 'INR',
-          name: 'DUNGEONS',
-          description: request.orderDescription || 'Custom Wall Art & Posters',
-          image: '/images/header-logo.png',
-          prefill: {
-            name: request.customerName,
-            email: request.customerEmail,
-            contact: request.customerPhone,
-          },
-          notes: {
-            order_type: 'Dungeons Poster & Wall Art',
-            customer_contact: request.customerPhone,
-          },
-          theme: {
-            color: '#0f172a',
-          },
-          handler: (response: RazorpayPaymentSuccessResponse) => {
-            resolve({
-              status: 'success',
-              paymentId: response.razorpay_payment_id,
-              orderId: response.razorpay_order_id,
-            });
-          },
-          modal: {
-            ondismiss: () => {
-              resolve({
-                status: 'cancelled',
-                message: 'Payment was dismissed by user.',
-              });
-            },
-          },
-        };
+      let settled = false;
+      const settle = (r: PaymentResult) => {
+        if (!settled) {
+          settled = true;
+          resolve(r);
+        }
+      };
 
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on('payment.failed', (err: any) => {
-          resolve({
-            status: 'failed',
-            message: err?.error?.description || 'Payment failed.',
-          });
-        });
-        rzp.open();
-      } else {
-        // Safe development simulation when live credentials are not set
-        resolve({
-          status: 'success',
-          paymentId: `pay_test_${Date.now().toString(36)}`,
-        });
-      }
+      const rzp = new (window as any).Razorpay({
+        key: request.keyId,
+        order_id: request.razorpayOrderId,
+        amount: request.amountPaise,
+        currency: request.currency || 'INR',
+        name: 'DUNGEONS',
+        description: request.orderDescription || `Order ${request.orderNumber}`,
+        image: '/images/header-logo.png',
+        prefill: {
+          name: request.customerName,
+          email: request.customerEmail,
+          contact: request.customerPhone,
+        },
+        notes: { orderNumber: request.orderNumber },
+        theme: { color: '#0f172a' },
+        handler: (response: RazorpayPaymentSuccessResponse) => settle({ status: 'success', response }),
+        modal: {
+          ondismiss: () => settle({ status: 'cancelled', message: 'Payment was dismissed by user.' }),
+        },
+      });
+      rzp.on('payment.failed', (err: any) => {
+        settle({ status: 'failed', message: err?.error?.description || 'Payment failed.' });
+      });
+      rzp.open();
     });
   },
 };

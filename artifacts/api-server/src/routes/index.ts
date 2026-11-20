@@ -6,6 +6,8 @@ import couponsRouter from './coupons';
 import newsletterRouter from './newsletter';
 import productsRouter from './products';
 import adminRouter from './admin';
+import adminSellersRouter from './admin-sellers';
+import sellerRouter from './seller';
 
 const router: Router = Router();
 
@@ -16,5 +18,7 @@ router.use(couponsRouter);
 router.use(newsletterRouter);
 router.use(productsRouter);
 router.use(adminRouter);
+router.use(adminSellersRouter);
+router.use(sellerRouter);
 
 export default router;

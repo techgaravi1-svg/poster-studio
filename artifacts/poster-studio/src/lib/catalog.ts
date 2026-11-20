@@ -45,6 +45,8 @@ export type Product = {
   features?: Array<{ title: string; desc: string }>;
   notes?: Array<{ title: string; desc: string }>;
   shipping?: Array<{ title: string; desc: string }>;
+  /** Marketplace seller, when the item is not sold by the store itself */
+  soldBy?: { name: string; slug: string };
 };
 
 const defaultFeatures = [
@@ -1223,6 +1225,7 @@ export function transformDbProductToFrontend(p: any): Product {
     features: defaultFeatures,
     notes: defaultNotes,
     shipping: defaultShipping,
+    soldBy: p.seller?.businessName && p.seller?.storeSlug ? { name: String(p.seller.businessName), slug: String(p.seller.storeSlug) } : undefined,
   };
 }
 

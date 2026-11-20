@@ -3,9 +3,15 @@ const path = require('path');
 const https = require('https');
 const crypto = require('crypto');
 
-const CLOUD_NAME = 'pyjyrmry';
-const API_KEY = '848535755562423';
-const API_SECRET = 'a7Z4E8P9dCbr0EuyIXpQEdMliZs';
+try { require('dotenv').config({ path: path.resolve(__dirname, '../.env') }); } catch {}
+
+const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+const API_KEY = process.env.CLOUDINARY_API_KEY;
+const API_SECRET = process.env.CLOUDINARY_API_SECRET;
+if (!CLOUD_NAME || !API_KEY || !API_SECRET) {
+  console.error('Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in .env first.');
+  process.exit(1);
+}
 
 function uploadFileToCloudinary(filePath, publicId) {
   return new Promise((resolve, reject) => {
