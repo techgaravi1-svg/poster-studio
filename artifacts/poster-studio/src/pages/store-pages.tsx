@@ -185,6 +185,14 @@ export function HomePage() {
       available: true,
     },
     {
+      id: 'custom-wall-art',
+      title: 'Custom Wall Art',
+      subtitle: 'Your photo or artwork as gallery-style canvas wall art',
+      image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-2_3df893.jpg', 600, 80),
+      link: '/custom?type=wallart',
+      available: true,
+    },
+    {
       id: 'photo-strip',
       title: 'Custom Photobooth Strip',
       subtitle: 'Turn your camera roll into aesthetic 3-strip & 4-strip prints',
@@ -558,7 +566,7 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 6. SECTION 4: DESIGN YOUR OWN (3 CUSTOM CATEGORIES - PAGE 4) */}
+      {/* 6. SECTION 4: DESIGN YOUR OWN (CUSTOM CATEGORIES - PAGE 4) */}
       <section className="home-custom-print-section">
         <div className="poster-section-header">
           <h2 className="stencil-heading dark-title">DESIGN YOUR OWN</h2>
@@ -988,10 +996,6 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
               <SlidersHorizontal size={16} />
               <span>FILTER & SORT</span>
             </button>
-
-            <span className="text-xs font-semibold text-gray-500">
-              {isLoading && filteredProducts.length === 0 ? 'LOADING...' : `${filteredProducts.length} ${activeCategory.name.toUpperCase()} AVAILABLE`}
-            </span>
 
             <div className="view-mode-toggles">
               <button
@@ -1859,28 +1863,39 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
   );
 }
 
+/**
+ * Custom Wall Art (canvas) sizes and prices.
+ * Keep in sync with CUSTOM_PRODUCT_PRICES['custom-wall-art'] in artifacts/api-server/src/lib/pricing.ts.
+ */
+type WallArtSizeKey = 'small' | 'medium' | 'large';
+const WALL_ART_SIZES: Array<{ key: WallArtSizeKey; label: string; dims: string; price: number }> = [
+  { key: 'small', label: 'Small', dims: '12 × 16 in', price: 699 },
+  { key: 'medium', label: 'Medium', dims: '16 × 24 in', price: 999 },
+  { key: 'large', label: 'Large', dims: '24 × 36 in', price: 1599 },
+];
+
 export function CustomPage() {
   const [location] = useLocation();
   const [toast, setToast] = useState('');
 
   // Check initial type from query params or URL (strip and pocket are coming soon)
-  const getUrlType = (): 'strip' | 'pocket' | 'poster' | null => {
+  const getUrlType = (): 'strip' | 'pocket' | 'poster' | 'wallart' | null => {
     try {
       const sp = new URLSearchParams(window.location.search);
       const t = sp.get('type');
-      if (t === 'poster') return t;
+      if (t === 'poster' || t === 'wallart') return t;
     } catch { /* ignore */ }
     return null;
   };
 
-  const [selectedType, setSelectedType] = useState<'strip' | 'pocket' | 'poster' | null>(getUrlType);
+  const [selectedType, setSelectedType] = useState<'strip' | 'pocket' | 'poster' | 'wallart' | null>(getUrlType);
 
   useEffect(() => {
     const t = getUrlType();
     if (t) setSelectedType(t);
   }, [location]);
 
-  const selectFormat = (type: 'strip' | 'pocket' | 'poster') => {
+  const selectFormat = (type: 'strip' | 'pocket' | 'poster' | 'wallart') => {
     setSelectedType(type);
     window.history.pushState(null, '', `/custom?type=${type}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1924,6 +1939,13 @@ export function CustomPage() {
   const [posterQuantity, setPosterQuantity] = useState(1);
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const posterInputRef = useRef<HTMLInputElement>(null);
+
+  // 4. CUSTOM WALL ART (CANVAS) STATE — prices live in WALL_ART_SIZES (keep in sync with api-server lib/pricing.ts)
+  const [wallArtPhoto, setWallArtPhoto] = useState<string | null>(null);
+  const [wallArtOrientation, setWallArtOrientation] = useState<'portrait' | 'landscape' | 'square'>('portrait');
+  const [wallArtSize, setWallArtSize] = useState<WallArtSizeKey>('medium');
+  const wallArtInputRef = useRef<HTMLInputElement>(null);
+  const wallArtOption = WALL_ART_SIZES.find((o) => o.key === wallArtSize) || WALL_ART_SIZES[1];
 
   const posterSizePrices: Record<'A5' | 'A4' | 'A3', number> = {
     A5: 90,
@@ -2038,6 +2060,63 @@ export function CustomPage() {
       setToast(err.message || 'Error 400: Upload failed');
       window.setTimeout(() => setToast(''), 3000);
     }
+  };
+
+  const handleWallArtUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      setWallArtPhoto(await compressCustomImage(file));
+    } catch (err: any) {
+      setToast(err.message || 'Error 400: Upload failed');
+      window.setTimeout(() => setToast(''), 3000);
+    }
+  };
+
+  const addWallArtToCart = () => {
+    if (!wallArtPhoto) return false;
+    store.addToCart({
+      productId: 'custom-wall-art',
+      slug: 'custom-wall-art',
+      title: `Custom Wall Art (${wallArtOption.label} ${wallArtOption.dims} • ${wallArtOrientation.toUpperCase()})`,
+      price: wallArtOption.price,
+      size: 'Standard',
+      quantity: 1,
+      orientation: wallArtOrientation,
+      artTreatment: 'art-signal',
+      customUpload: {
+        name: `WallArt_${wallArtOption.key}_${Date.now()}`,
+        preview: wallArtPhoto,
+        customType: 'Custom Wall Art',
+        format: wallArtOption.key,
+      },
+    });
+    return true;
+  };
+
+  const resetWallArt = () => {
+    setWallArtPhoto(null);
+    setWallArtOrientation('portrait');
+    setWallArtSize('medium');
+  };
+
+  const handleAddWallArtToCart = () => {
+    if (!addWallArtToCart()) {
+      setToast('Please upload a photo for your custom wall art before adding to bag!');
+      window.setTimeout(() => setToast(''), 3000);
+      return;
+    }
+    setToast(`Custom Wall Art (${wallArtOption.label}) added to bag! Ready for another order.`);
+    resetWallArt();
+    window.setTimeout(() => setToast(''), 3000);
+  };
+
+  const handleNewWallArtOrder = () => {
+    setToast(addWallArtToCart() ? 'Previous wall art moved to Bag! Ready for your new order.' : 'Ready for new custom wall art order!');
+    resetWallArt();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.setTimeout(() => setToast(''), 3000);
   };
 
   const handlePosterUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -2247,7 +2326,7 @@ export function CustomPage() {
     window.setTimeout(() => setToast(''), 3000);
   };
 
-  // IF NO PRODUCT IS SELECTED: RENDER THE 3 BOXES
+  // IF NO PRODUCT IS SELECTED: RENDER THE FORMAT BOXES
   if (!selectedType) {
     return (
       <main className="postgenz-custom-studio">
@@ -2261,7 +2340,6 @@ export function CustomPage() {
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
               <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/custom-poster_1640a9.jpg" alt="Custom Wall Posters" className="box-thumb-img" />
-              <span className="box-tag-pill">ARCHIVAL MATTE</span>
             </div>
             <div className="box-body-wrap">
               <h2 className="box-title">Custom Wall Posters</h2>
@@ -2281,7 +2359,30 @@ export function CustomPage() {
             </div>
           </div>
 
-          {/* Box 2: Custom Photobooth Strip (Coming Soon) */}
+          {/* Box 2: Custom Wall Art (canvas) */}
+          <div className="custom-selection-box-card">
+            <div className="box-media-wrap">
+              <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-2_3df893.jpg" alt="Custom Wall Art" className="box-thumb-img" loading="lazy" />
+            </div>
+            <div className="box-body-wrap">
+              <h2 className="box-title">Custom Wall Art</h2>
+              <p className="box-desc">
+                Turn your favourite photo or artwork into gallery-style canvas wall art for your home.
+              </p>
+              <div className="box-footer-row">
+                <span className="box-price-hint">Starting from Rs. {WALL_ART_SIZES[0].price}</span>
+                <button
+                  type="button"
+                  className="btn-design-now-highlight"
+                  onClick={() => selectFormat('wallart')}
+                >
+                  DESIGN NOW →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Box 3: Custom Photobooth Strip (Coming Soon) */}
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
               <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793352215/dungeons_hero_assets/photobooth_strip_new.jpg" alt="Custom Photobooth Strip" className="box-thumb-img" />
@@ -2304,7 +2405,7 @@ export function CustomPage() {
             </div>
           </div>
 
-          {/* Box 3: Mini Pocket Photos (Coming Soon) */}
+          {/* Box 4: Mini Pocket Photos (Coming Soon) */}
           <div className="custom-selection-box-card">
             <div className="box-media-wrap">
               <img src="https://res.cloudinary.com/pyjyrmry/image/upload/v1793349695/dungeons_store_assets/minipocket_1d50a9.jpg" alt="Mini Pocket Photos" className="box-thumb-img" />
@@ -2801,6 +2902,106 @@ export function CustomPage() {
               className="btn-new-order-outline"
               onClick={handleNewPosterOrder}
             >
+              + Create New Order
+            </button>
+            <p className="new-order-subtext">
+              Your uploaded design is saved in Bag. Tap above to customize another order.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* 4. CUSTOM WALL ART (CANVAS) CUSTOMIZER */}
+      {/* ======================================================== */}
+      {selectedType === 'wallart' && (
+        <div className="custom-studio-content">
+          <div className="wallpaper-live-preview-wrap">
+            <div className={`wall-mockup-frame orientation-${wallArtOrientation}`}>
+              {wallArtPhoto ? (
+                <div className="wall-poster-art-box wall-art-canvas-box">
+                  <img src={wallArtPhoto} alt="Your custom wall art" className="wall-poster-custom-img" />
+                  <button type="button" className="btn-change-wallpaper-img" onClick={() => wallArtInputRef.current?.click()}>
+                    Change Image
+                  </button>
+                </div>
+              ) : (
+                <button type="button" className="wallpaper-upload-box" onClick={() => wallArtInputRef.current?.click()}>
+                  <UploadCloud size={32} />
+                  <strong>Upload Your Photo / Artwork</strong>
+                  <span>High-resolution JPG or PNG works best for canvas</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="custom-options-controls">
+            <h2 className="editor-heading">Customize Your Wall Art</h2>
+            <p className="editor-subheading">
+              Upload a photo or artwork, then pick the shape and canvas size. Printed on gallery-wrapped canvas, ready to hang.
+            </p>
+
+            <input ref={wallArtInputRef} type="file" accept="image/*" onChange={handleWallArtUpload} className="hidden" />
+
+            {wallArtPhoto && (
+              <div className="photo-uploaded-chip">
+                <Check size={16} className="text-emerald-500" />
+                <span>Image loaded successfully</span>
+                <button type="button" className="text-button" onClick={() => wallArtInputRef.current?.click()}>
+                  Replace
+                </button>
+              </div>
+            )}
+
+            {/* 1. SHAPE */}
+            <div className="control-group">
+              <label className="control-label">Shape</label>
+              <div className="option-pills-row">
+                {([
+                  ['portrait', 'Portrait (Vertical)'],
+                  ['landscape', 'Landscape (Horizontal)'],
+                  ['square', 'Square'],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`option-pill ${wallArtOrientation === value ? 'active-pill' : ''}`}
+                    onClick={() => setWallArtOrientation(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. CANVAS SIZE */}
+            <div className="control-group">
+              <label className="control-label">Canvas size</label>
+              <div className="option-pills-row size-pills-row">
+                {WALL_ART_SIZES.map((o) => (
+                  <button
+                    key={o.key}
+                    type="button"
+                    className={`option-pill ${wallArtSize === o.key ? 'active-pill' : ''}`}
+                    onClick={() => setWallArtSize(o.key)}
+                  >
+                    {o.label} {o.dims} • ₹{o.price}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <ul className="wall-art-features">
+              <li>Gallery-wrapped canvas on a wooden frame</li>
+              <li>Fade-resistant, vivid print</li>
+              <li>Ready to hang, hooks included</li>
+            </ul>
+
+            <button type="button" className="btn-buy-it-now-blue mt-4" onClick={handleAddWallArtToCart}>
+              ADD TO BAG • RS. {wallArtOption.price}.00
+            </button>
+
+            <button type="button" className="btn-new-order-outline" onClick={handleNewWallArtOrder}>
               + Create New Order
             </button>
             <p className="new-order-subtext">

@@ -195,8 +195,8 @@ export function MyntraItemCard({
 
         {/* Selectors Row: Size & Qty Pills + Stock alert */}
         <div className="myntra-selectors-row">
-          {/* Size Pill with Myntra/Flipkart Modal Trigger */}
-          {!isOrderMode ? (
+          {/* Size Pill with Myntra/Flipkart Modal Trigger (single-size items like decor or wall art can't switch to poster sizes) */}
+          {!isOrderMode && item.size !== 'Standard' ? (
             <button
               type="button"
               onClick={() => {

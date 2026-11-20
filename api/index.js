@@ -33086,7 +33086,9 @@ function isPosterCategory(cat) {
 var CUSTOM_PRODUCT_PRICES = {
   "custom-photobooth": { "3-strip": 149, "4-strip": 199 },
   "custom-mini-pocket": { "5-pack": 129, "7-pack": 169 },
-  "custom-wall-poster": { A5: 90, A4: 130, A3: 160 }
+  "custom-wall-poster": { A5: 90, A4: 130, A3: 160 },
+  // Keep in sync with WALL_ART_SIZES in poster-studio/src/pages/store-pages.tsx
+  "custom-wall-art": { small: 699, medium: 999, large: 1599 }
 };
 function isCustomProductId(productId) {
   return productId in CUSTOM_PRODUCT_PRICES;

@@ -1926,10 +1926,10 @@ button.desktop-nav-item:hover {
 @media (min-width: 768px) {
   .custom-orders-grid-three {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     overflow: visible;
     gap: 22px;
-    max-width: 1040px;
+    max-width: 760px;
     margin: 0 auto;
     padding: 12px 0 24px;
   }
@@ -5372,10 +5372,35 @@ button.desktop-nav-item:hover {
   margin: 24px auto 0;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .custom-boxes-selection-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 24px;
+  }
+}
+
+/* Four custom formats: one row on wide screens, 2 x 2 on tablets */
+@media (min-width: 1100px) {
+  .custom-orders-grid-three {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    max-width: 1240px;
+    gap: 20px;
+  }
+  .custom-boxes-selection-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    max-width: 1240px;
+    gap: 20px;
+  }
+  /* Narrower cards: stack price + button identically in every card */
+  .custom-boxes-selection-grid .box-footer-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .custom-boxes-selection-grid .btn-design-now-highlight {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
   }
 }
 
@@ -5458,6 +5483,7 @@ button.desktop-nav-item:hover {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
   border-top: 1px solid #f3f4f6;
   padding-top: 14px;
 }
@@ -12007,4 +12033,28 @@ button.desktop-nav-item:hover {
   background: #0284c7;
   color: #ffffff;
   transform: translateY(-1px);
+}
+
+/* Custom Wall Art (canvas) builder */
+.wall-art-canvas-box {
+  box-shadow: 6px 8px 18px rgba(0, 0, 0, 0.28), inset 0 0 0 6px rgba(255, 255, 255, 0.06);
+}
+
+.wall-art-features {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.wall-art-features li::before {
+  content: '✓ ';
+  color: #10b981;
+  font-weight: 800;
 }
