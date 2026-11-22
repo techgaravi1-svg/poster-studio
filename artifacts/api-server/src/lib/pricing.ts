@@ -20,6 +20,7 @@ export const NON_POSTER_CATEGORY_SLUGS = [
 ];
 
 export const POSTER_SIZES = ['A5', 'A4', 'A3'] as const;
+export const WALL_ART_SIZES = ['Small', 'Medium', 'Large'] as const;
 
 export function normalizeCategory(cat?: string | null): string {
   return (cat || '').toLowerCase().trim().replace(/&/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-');
@@ -63,7 +64,13 @@ type PricedProduct = {
 export function catalogUnitPrice(product: PricedProduct, size: string): number | null {
   const base = Number(product.price) || 0;
   if (!isPosterCategory(product.category)) {
-    return base > 0 ? base : null; // non-poster items have a single Standard price
+    // Wall Art Catalog items carry Small / Medium / Large prices; charge the chosen size.
+    if ((WALL_ART_SIZES as readonly string[]).includes(size)) {
+      const sp = (product.sizePrices && typeof product.sizePrices === 'object' ? product.sizePrices : {}) as Record<string, unknown>;
+      const n = Number(sp[size]);
+      return normalizeCategory(product.category) === 'wall-art' && Number.isFinite(n) && n > 0 ? n : null;
+    }
+    return base > 0 ? base : null; // other non-poster items have a single Standard price
   }
   if (!(POSTER_SIZES as readonly string[]).includes(size)) return null;
 

@@ -47,7 +47,7 @@ import {
   Store,
   Mail,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, transformDbProductToFrontend, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, isPosterCategory, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, transformDbProductToFrontend, getWallArtSizes, WALL_ART_SIZE_DIMS, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, isPosterCategory, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, ProductCardSkeleton, Toast, PARTNER_MAILTO_LINK } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
@@ -894,7 +894,8 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
       });
     }
 
-    list = list.filter((p) => p.price >= minPrice && p.price <= maxPrice);
+    // The slider's top value (₹1000+) is labelled "All Prices": it must not hide pricier items (wall art, mirrors, couches).
+    list = list.filter((p) => p.price >= minPrice && (maxPrice >= 1000 || p.price <= maxPrice));
 
     if (selectedSort === 'low') return [...list].sort((a, b) => a.price - b.price);
     if (selectedSort === 'high') return [...list].sort((a, b) => b.price - a.price);
@@ -1328,7 +1329,10 @@ export function ProductPage() {
 function ProductPageContent({ product, liveProducts }: { product: Product; liveProducts: Product[] }) {
   const [, navigate] = useLocation();
   const { cart, wishlist = [] } = useStore();
-  const [selectedSize, setSelectedSize] = useState<PosterSize>('A5');
+  // Wall Art Catalog items are sold in Small / Medium / Large; every other product is unchanged.
+  const wallArtSizes = getWallArtSizes(product);
+  const hasWallArtSizes = wallArtSizes.length > 0;
+  const [selectedSize, setSelectedSize] = useState<PosterSize>(hasWallArtSizes ? wallArtSizes[0] : 'A5');
   const [quantity, setQuantity] = useState(1);
   const [openAccordion, setOpenAccordion] = useState<string | null>('features');
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
@@ -1359,8 +1363,9 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
     : 50;
   const isOutOfStock = availableStock <= 0;
 
-  const currentSizePrice = isPoster ? getProductSizePrice(product, selectedSize) : (product.price || 999);
-  const currentSizeCompare = isPoster ? getProductSizeComparePrice(product, selectedSize) : (product.compareAtPrice || Math.round((product.price || 999) * 2));
+  const isSized = isPoster || hasWallArtSizes;
+  const currentSizePrice = isSized ? getProductSizePrice(product, selectedSize) : (product.price || 999);
+  const currentSizeCompare = isSized ? getProductSizeComparePrice(product, selectedSize) : (product.compareAtPrice || Math.round((product.price || 999) * 2));
   const currentSavings = Math.max(0, currentSizeCompare - currentSizePrice);
   const discountPct = currentSizeCompare > currentSizePrice
     ? Math.round(((currentSizeCompare - currentSizePrice) / currentSizeCompare) * 100)
@@ -1389,7 +1394,7 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
       slug: product.slug,
       title: product.title,
       price: currentSizePrice,
-      size: isPoster ? selectedSize : ('Standard' as any),
+      size: isSized ? selectedSize : ('Standard' as any),
       quantity: addQty,
       orientation: product.orientation || 'portrait',
       artTreatment: product.artTreatment || 'default',
@@ -1397,7 +1402,7 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
     if (buyNow) {
       navigate('/checkout');
     } else {
-      setToast(isPoster ? `${product.title} (${selectedSize}) added to bag!` : `${product.title} added to bag!`);
+      setToast(isSized ? `${product.title} (${selectedSize}) added to bag!` : `${product.title} added to bag!`);
       window.setTimeout(() => setToast(''), 3800);
     }
   };
@@ -1518,6 +1523,31 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
                     onClick={() => setSelectedSize(sz)}
                   >
                     {sz}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : hasWallArtSizes ? (
+          <>
+            <div className="product-size-header-bar">
+              <span className="product-size-heading-title">CHOOSE CANVAS SIZE</span>
+            </div>
+            <div className="product-size-boxes-row wall-art-size-row" role="radiogroup" aria-label="Select wall art size">
+              {wallArtSizes.map((sz) => {
+                const isSelected = selectedSize === sz;
+                return (
+                  <button
+                    type="button"
+                    key={sz}
+                    role="radio"
+                    aria-checked={isSelected}
+                    className={`product-size-box-btn wall-art-size-btn ${isSelected ? 'active-size-box' : ''}`}
+                    aria-label={`${sz} ${WALL_ART_SIZE_DIMS[sz] || ''}`}
+                    onClick={() => setSelectedSize(sz)}
+                  >
+                    <span className="wall-art-size-name">{sz}</span>
+                    <span className="wall-art-size-dims">{WALL_ART_SIZE_DIMS[sz]}</span>
                   </button>
                 );
               })}
@@ -3076,7 +3106,7 @@ export function WishlistPage() {
       slug: product.slug,
       title: product.title,
       price: product.price,
-      size: 'A5',
+      size: getWallArtSizes(product)[0] || 'A5',
       quantity: 1,
       orientation: product.orientation,
       artTreatment: product.artTreatment,

@@ -18,6 +18,28 @@ const PUBLIC_SELLER_SELECT = { select: { businessName: true, storeSlug: true } }
  * GET /api/products
  * Fetch products with optional filtering by category and search
  */
+/**
+ * GET /api/catalog-version
+ * Tiny, never-cached fingerprint of the public catalog. It changes whenever a
+ * product is added, edited, deleted, hidden or approved, so the storefront can
+ * request /api/products?v=<version> and still get instant updates while the
+ * full list stays cached on the CDN between changes.
+ */
+router.get('/catalog-version', async (_req: Request, res: Response) => {
+  try {
+    const [total, publicCount, latest] = await Promise.all([
+      prisma.product.count(),
+      prisma.product.count({ where: PUBLIC_LISTING_FILTER }),
+      prisma.product.aggregate({ _max: { updatedAt: true } }),
+    ]);
+    const stamp = latest._max.updatedAt ? latest._max.updatedAt.getTime() : 0;
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
+    return res.json({ success: true, version: `${total}-${publicCount}-${stamp}` });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Failed to read catalog version' });
+  }
+});
+
 router.get('/products', async (req: Request, res: Response) => {
   try {
     const { category, search, limit = '50', offset = '0' } = req.query;
@@ -52,7 +74,14 @@ router.get('/products', async (req: Request, res: Response) => {
       prisma.product.count({ where: whereClause }),
     ]);
 
-    res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=3600, stale-while-revalidate=86400');
+    // Versioned URLs (?v=) are immutable snapshots: cache them hard on the CDN.
+    // Un-versioned requests (older clients) get a short cache so edits/deletes show within about a minute.
+    res.setHeader(
+      'Cache-Control',
+      typeof req.query.v === 'string' && req.query.v
+        ? 'public, max-age=60, s-maxage=86400'
+        : 'public, max-age=0, s-maxage=60, stale-while-revalidate=120',
+    );
     return res.json({
       success: true,
       products,
@@ -86,7 +115,7 @@ router.get('/products/:slug', async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: 'Product not found' });
     }
 
-    res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=3600, stale-while-revalidate=86400');
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=60, stale-while-revalidate=120');
     return res.json({ success: true, product });
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Failed to fetch product details' });

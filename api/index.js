@@ -33074,6 +33074,7 @@ var NON_POSTER_CATEGORY_SLUGS = [
   "rugs-carpets"
 ];
 var POSTER_SIZES = ["A5", "A4", "A3"];
+var WALL_ART_SIZES = ["Small", "Medium", "Large"];
 function normalizeCategory(cat) {
   return (cat || "").toLowerCase().trim().replace(/&/g, "").replace(/[\s_]+/g, "-").replace(/-+/g, "-");
 }
@@ -33102,6 +33103,11 @@ function customUnitPrice(productId, format, size) {
 function catalogUnitPrice(product, size) {
   const base = Number(product.price) || 0;
   if (!isPosterCategory(product.category)) {
+    if (WALL_ART_SIZES.includes(size)) {
+      const sp = product.sizePrices && typeof product.sizePrices === "object" ? product.sizePrices : {};
+      const n = Number(sp[size]);
+      return normalizeCategory(product.category) === "wall-art" && Number.isFinite(n) && n > 0 ? n : null;
+    }
     return base > 0 ? base : null;
   }
   if (!POSTER_SIZES.includes(size)) return null;
@@ -33693,6 +33699,20 @@ var PUBLIC_LISTING_FILTER = {
   OR: [{ sellerId: null }, { seller: { status: "APPROVED" } }]
 };
 var PUBLIC_SELLER_SELECT = { select: { businessName: true, storeSlug: true } };
+router6.get("/catalog-version", async (_req, res) => {
+  try {
+    const [total, publicCount, latest] = await Promise.all([
+      prisma.product.count(),
+      prisma.product.count({ where: PUBLIC_LISTING_FILTER }),
+      prisma.product.aggregate({ _max: { updatedAt: true } })
+    ]);
+    const stamp = latest._max.updatedAt ? latest._max.updatedAt.getTime() : 0;
+    res.setHeader("Cache-Control", "no-store, max-age=0");
+    return res.json({ success: true, version: `${total}-${publicCount}-${stamp}` });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Failed to read catalog version" });
+  }
+});
 router6.get("/products", async (req, res) => {
   try {
     const { category, search, limit = "50", offset = "0" } = req.query;
@@ -33722,7 +33742,10 @@ router6.get("/products", async (req, res) => {
       }),
       prisma.product.count({ where: whereClause })
     ]);
-    res.setHeader("Cache-Control", "public, max-age=120, s-maxage=3600, stale-while-revalidate=86400");
+    res.setHeader(
+      "Cache-Control",
+      typeof req.query.v === "string" && req.query.v ? "public, max-age=60, s-maxage=86400" : "public, max-age=0, s-maxage=60, stale-while-revalidate=120"
+    );
     return res.json({
       success: true,
       products,
@@ -33748,7 +33771,7 @@ router6.get("/products/:slug", async (req, res) => {
     if (!product) {
       return res.status(404).json({ success: false, error: "Product not found" });
     }
-    res.setHeader("Cache-Control", "public, max-age=120, s-maxage=3600, stale-while-revalidate=86400");
+    res.setHeader("Cache-Control", "public, max-age=0, s-maxage=60, stale-while-revalidate=120");
     return res.json({ success: true, product });
   } catch (error) {
     return res.status(500).json({ success: false, error: "Failed to fetch product details" });

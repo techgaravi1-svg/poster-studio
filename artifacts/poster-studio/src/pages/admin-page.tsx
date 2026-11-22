@@ -36,6 +36,7 @@ import {
   Mail,
   Store as StoreIcon,
   Armchair,
+  Frame as FrameIcon,
 } from 'lucide-react';
 import './admin.css';
 import { AdminSellersPanel } from '@/pages/admin-sellers-panel';
@@ -51,6 +52,7 @@ import {
   setActiveCategorySlug,
   getDynamicPosterCategories,
   addDynamicPosterCategory,
+  isWallArtCategory,
   deleteDynamicPosterCategory,
   CIRCLE_PRODUCT_CATEGORIES,
   isPosterCategory,
@@ -197,7 +199,7 @@ export function AdminDashboardPage() {
   // -------------------------------------------------------------
   // DASHBOARD STATE
   // -------------------------------------------------------------
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'decor' | 'sellers' | 'coupons' | 'customers' | 'security'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'wallart' | 'decor' | 'sellers' | 'coupons' | 'customers' | 'security'>('dashboard');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -452,7 +454,7 @@ export function AdminDashboardPage() {
     return () => window.removeEventListener('dungeons:categories-updated', handler);
   }, []);
 
-  const [productType, setProductType] = useState<'product' | 'poster'>('product');
+  const [productType, setProductType] = useState<'product' | 'poster' | 'wallart'>('product');
 
   const defaultProductFormData = {
     title: '',
@@ -510,6 +512,21 @@ export function AdminDashboardPage() {
     isTrending: false,
     rating: 4.9,
     reviewsCount: 148,
+  };
+
+  // Wall Art Catalog: Small / Medium / Large canvas pricing (category 'wall-art')
+  const defaultWallArtFormData = {
+    ...defaultPosterFormData,
+    description: 'Gallery-wrapped canvas on a solid wooden frame. Fade-resistant, vivid print. Ready to hang with hooks included.',
+    category: 'wall-art',
+    price: 699,
+    compareAtPrice: 1399,
+    sizePrices: { Small: 699, Medium: 999, Large: 1599 } as Record<string, number>,
+    sizeComparePrices: { Small: 1399, Medium: 1999, Large: 3199 } as Record<string, number>,
+    images: ['https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-2_3df893.jpg'],
+    tags: 'wall art, canvas, home decor',
+    stock: 25,
+    reviewsCount: 48,
   };
 
   const [productFormData, setProductFormData] = useState(defaultProductFormData);
@@ -1056,7 +1073,9 @@ export function AdminDashboardPage() {
       setDynamicCats(getDynamicPosterCategories());
     }
 
-    const isCurrentProduct = productType === 'product' || !isPosterCategory(finalCategory);
+    const isWallArtItem = productType === 'wallart';
+    if (isWallArtItem) finalCategory = 'wall-art';
+    const isCurrentProduct = !isWallArtItem && (productType === 'product' || !isPosterCategory(finalCategory));
 
     // 1. Validation
     if (!productFormData.title || productFormData.title.trim().length < 2) {
@@ -1102,19 +1121,38 @@ export function AdminDashboardPage() {
     // Automatically activate circle category if product belongs to it
     setActiveCategorySlug(finalCategory, true);
 
-    const sellingPrice = isCurrentProduct
+    const wallArtPrices = {
+      Small: Number(productFormData.sizePrices?.Small) || 699,
+      Medium: Number(productFormData.sizePrices?.Medium) || 999,
+      Large: Number(productFormData.sizePrices?.Large) || 1599,
+    };
+    const wallArtCompare = {
+      Small: Number(productFormData.sizeComparePrices?.Small) || Math.round(wallArtPrices.Small * 2),
+      Medium: Number(productFormData.sizeComparePrices?.Medium) || Math.round(wallArtPrices.Medium * 2),
+      Large: Number(productFormData.sizeComparePrices?.Large) || Math.round(wallArtPrices.Large * 2),
+    };
+
+    const sellingPrice = isWallArtItem
+      ? wallArtPrices.Small
+      : isCurrentProduct
       ? (Number(productFormData.price) || 999)
       : (Number(productFormData.sizePrices?.A5) || Number(productFormData.price) || 79);
 
-    const comparePrice = isCurrentProduct
+    const comparePrice = isWallArtItem
+      ? wallArtCompare.Small
+      : isCurrentProduct
       ? (Number(productFormData.compareAtPrice) || Math.round(sellingPrice * 2))
       : (Number(productFormData.sizeComparePrices?.A5) || Number(productFormData.compareAtPrice) || Math.round(sellingPrice * 2));
 
-    const effectiveSizePrices = isCurrentProduct
+    const effectiveSizePrices = isWallArtItem
+      ? wallArtPrices
+      : isCurrentProduct
       ? { Standard: sellingPrice }
       : (productFormData.sizePrices || { A5: 79, A4: 119, A3: 179 });
 
-    const effectiveSizeComparePrices = isCurrentProduct
+    const effectiveSizeComparePrices = isWallArtItem
+      ? wallArtCompare
+      : isCurrentProduct
       ? { Standard: comparePrice }
       : (productFormData.sizeComparePrices || { A5: 159, A4: 239, A3: 359 });
 
@@ -1218,7 +1256,7 @@ export function AdminDashboardPage() {
       });
 
       // Update React Admin state
-      const itemLabel = isCurrentProduct ? 'Product' : 'Poster';
+      const itemLabel = isWallArtItem ? 'Wall art' : isCurrentProduct ? 'Product' : 'Poster';
       if (editingProduct) {
         setProducts((prev) => prev.map((p) => (p.id === editingProduct.id ? savedProduct : p)));
         showToast(`${itemLabel} "${savedProduct.title}" updated successfully!`);
@@ -1404,10 +1442,11 @@ export function AdminDashboardPage() {
 
   // Poster Catalog shows art posters; Product Catalog shows home & decor items (mirrors, rugs, ...)
   const posterProducts = useMemo(() => products.filter((p) => isPosterCategory(p.category)), [products]);
-  const decorProducts = useMemo(() => products.filter((p) => !isPosterCategory(p.category)), [products]);
+  const wallArtProducts = useMemo(() => products.filter((p) => isWallArtCategory(p.category)), [products]);
+  const decorProducts = useMemo(() => products.filter((p) => !isPosterCategory(p.category) && !isWallArtCategory(p.category)), [products]);
 
   const filteredProducts = useMemo(() => {
-    const source = activeTab === 'decor' ? decorProducts : posterProducts;
+    const source = activeTab === 'decor' ? decorProducts : activeTab === 'wallart' ? wallArtProducts : posterProducts;
     return source.filter((p) => {
       const matchesCat =
         productCategoryFilter === 'all' ||
@@ -1419,17 +1458,21 @@ export function AdminDashboardPage() {
         p.slug.toLowerCase().includes(productSearch.toLowerCase());
       return matchesCat && matchesSearch;
     });
-  }, [activeTab, posterProducts, decorProducts, productCategoryFilter, productSearch]);
+  }, [activeTab, posterProducts, wallArtProducts, decorProducts, productCategoryFilter, productSearch]);
 
   const catalogCategoryFilters = useMemo(() => {
+    if (activeTab === 'wallart') return [{ slug: 'all', label: 'All Wall Art' }];
     if (activeTab === 'decor') {
-      return [{ slug: 'all', label: 'All Products' }, ...CIRCLE_PRODUCT_CATEGORIES.map((c) => ({ slug: c.slug, label: `${c.icon} ${c.name}` }))];
+      return [
+        { slug: 'all', label: 'All Products' },
+        ...CIRCLE_PRODUCT_CATEGORIES.filter((c) => c.slug !== 'wall-art').map((c) => ({ slug: c.slug, label: `${c.icon} ${c.name}` })),
+      ];
     }
     return [{ slug: 'all', label: 'All Posters' }, ...dynamicCats.map((c) => ({ slug: c.slug, label: c.name || c.title }))];
   }, [activeTab, dynamicCats]);
 
   /** Opens the add form already set to the right type: posters (A5/A4/A3) or home & decor products. */
-  const openAddForm = (type: 'poster' | 'product') => {
+  const openAddForm = (type: 'poster' | 'product' | 'wallart') => {
     setEditingProduct(null);
     setProductModalError(null);
     setIsCustomCategoryMode(false);
@@ -1438,6 +1481,8 @@ export function AdminDashboardPage() {
     setProductFormData(
       type === 'poster'
         ? defaultPosterFormData
+        : type === 'wallart'
+        ? defaultWallArtFormData
         : {
             ...defaultProductFormData,
             title: CIRCLE_PRODUCT_CATEGORIES[0].placeholderTitle,
@@ -1704,6 +1749,20 @@ export function AdminDashboardPage() {
 
             <button
               type="button"
+              onClick={() => { setActiveTab('wallart'); setProductCategoryFilter('all'); setProductSearch(''); setMobileSidebarOpen(false); }}
+              className={`admin-nav-link ${activeTab === 'wallart' ? 'active' : ''}`}
+            >
+              <span className="admin-nav-link-left">
+                <FrameIcon size={16} />
+                <span>Wall Art Catalog</span>
+              </span>
+              <span className="admin-nav-badge">
+                {wallArtProducts.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => { setActiveTab('decor'); setProductCategoryFilter('all'); setProductSearch(''); setMobileSidebarOpen(false); }}
               className={`admin-nav-link ${activeTab === 'decor' ? 'active' : ''}`}
             >
@@ -1813,6 +1872,7 @@ export function AdminDashboardPage() {
                 {activeTab === 'dashboard' && 'Executive Store Overview'}
                 {activeTab === 'orders' && 'Orders Fulfillment & Tracking'}
                 {activeTab === 'products' && 'Poster Catalog & Inventory'}
+                {activeTab === 'wallart' && 'Wall Art Catalog & Inventory'}
                 {activeTab === 'decor' && 'Product Catalog & Inventory'}
                 {activeTab === 'sellers' && 'Marketplace Sellers & Listing Review'}
                 {activeTab === 'coupons' && 'Discount Vouchers & Offers'}
@@ -1824,7 +1884,7 @@ export function AdminDashboardPage() {
             <div className="admin-header-actions">
               <button
                 type="button"
-                onClick={() => openAddForm(activeTab === 'decor' ? 'product' : 'poster')}
+                onClick={() => openAddForm(activeTab === 'decor' ? 'product' : activeTab === 'wallart' ? 'wallart' : 'poster')}
                 className="admin-btn-accent"
                 style={{
                   background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
@@ -1836,7 +1896,7 @@ export function AdminDashboardPage() {
                 }}
               >
                 <Plus size={15} strokeWidth={3} />
-                <span>{activeTab === 'decor' ? 'Add Product' : 'Add Poster'}</span>
+                <span>{activeTab === 'decor' ? 'Add Product' : activeTab === 'wallart' ? 'Add Wall Art' : 'Add Poster'}</span>
               </button>
 
               <button
@@ -2441,14 +2501,14 @@ export function AdminDashboardPage() {
             {/* ===================================================== */}
             {/* TAB 3: POSTERS CATALOG */}
             {/* ===================================================== */}
-            {(activeTab === 'products' || activeTab === 'decor') && (
+            {(activeTab === 'products' || activeTab === 'wallart' || activeTab === 'decor') && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div className="admin-catalog-toolbar">
                   <div className="admin-catalog-search">
                     <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
                     <input
                       type="text"
-                      placeholder={activeTab === 'decor' ? 'Search products...' : 'Search posters...'}
+                      placeholder={activeTab === 'decor' ? 'Search products...' : activeTab === 'wallart' ? 'Search wall art...' : 'Search posters...'}
                       value={productSearch}
                       onChange={(e) => setProductSearch(e.target.value)}
                       className="admin-input-field"
@@ -2511,23 +2571,25 @@ export function AdminDashboardPage() {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    Showing {filteredProducts.length} of {(activeTab === 'decor' ? decorProducts : posterProducts).length} {activeTab === 'decor' ? 'products' : 'posters'}
+                    Showing {filteredProducts.length} of {(activeTab === 'decor' ? decorProducts : activeTab === 'wallart' ? wallArtProducts : posterProducts).length} {activeTab === 'decor' ? 'products' : activeTab === 'wallart' ? 'wall art items' : 'posters'}
                   </span>
                 </div>
 
                 {filteredProducts.length === 0 && (
                   <div className="admin-panel-card" style={{ textAlign: 'center', padding: '40px 20px' }}>
-                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>{activeTab === 'decor' ? '🪞' : '🎨'}</div>
+                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>{activeTab === 'decor' ? '🪞' : activeTab === 'wallart' ? '🖼️' : '🎨'}</div>
                     <div style={{ color: '#ffffff', fontWeight: 800, fontSize: '14px' }}>
-                      {activeTab === 'decor' ? 'No home & decor products yet' : 'No posters match this view'}
+                      {activeTab === 'decor' ? 'No home & decor products yet' : activeTab === 'wallart' ? 'No wall art yet' : 'No posters match this view'}
                     </div>
                     <p style={{ color: '#94a3b8', fontSize: '12px', margin: '6px 0 14px' }}>
                       {activeTab === 'decor'
-                        ? 'Add mirrors, wall art, bean bags, rugs and more. They appear in the store under their category circle.'
+                        ? 'Add mirrors, bean bags, rugs and more. They appear in the store under their category circle.'
+                        : activeTab === 'wallart'
+                        ? 'Add canvas wall art with Small, Medium and Large pricing. It appears in the store under the Wall Art circle.'
                         : 'Try another category or search term, or add a new poster.'}
                     </p>
-                    <button type="button" className="admin-btn-accent" onClick={() => openAddForm(activeTab === 'decor' ? 'product' : 'poster')}>
-                      <Plus size={14} /> {activeTab === 'decor' ? 'Add Product' : 'Add Poster'}
+                    <button type="button" className="admin-btn-accent" onClick={() => openAddForm(activeTab === 'decor' ? 'product' : activeTab === 'wallart' ? 'wallart' : 'poster')}>
+                      <Plus size={14} /> {activeTab === 'decor' ? 'Add Product' : activeTab === 'wallart' ? 'Add Wall Art' : 'Add Poster'}
                     </button>
                   </div>
                 )}
@@ -2584,7 +2646,8 @@ export function AdminDashboardPage() {
                                 setEditingProduct(prod);
                                 setProductModalError(null);
                                 const isProdPoster = isPosterCategory(prod.category);
-                                setProductType(isProdPoster ? 'poster' : 'product');
+                                const isProdWallArt = isWallArtCategory(prod.category);
+                                setProductType(isProdPoster ? 'poster' : isProdWallArt ? 'wallart' : 'product');
 
                                 const prodSizePrices = (prod as any).sizePrices || {};
                                 const prodSizeCompare = (prod as any).sizeComparePrices || {};
@@ -2616,14 +2679,22 @@ export function AdminDashboardPage() {
                                   description: prod.description || '',
                                   category: prod.category,
                                   orientation: prod.orientation || 'portrait',
-                                  price: isProdPoster ? a5p : baseSellingPrice,
-                                  compareAtPrice: isProdPoster ? a5c : baseComparePrice,
-                                  sizePrices: isProdPoster ? {
+                                  price: isProdPoster ? a5p : isProdWallArt ? (prodSizePrices.Small || baseSellingPrice) : baseSellingPrice,
+                                  compareAtPrice: isProdPoster ? a5c : isProdWallArt ? (prodSizeCompare.Small || baseComparePrice) : baseComparePrice,
+                                  sizePrices: isProdWallArt ? {
+                                    Small: prodSizePrices.Small || baseSellingPrice,
+                                    Medium: prodSizePrices.Medium || Math.round((prodSizePrices.Small || baseSellingPrice) * 1.43),
+                                    Large: prodSizePrices.Large || Math.round((prodSizePrices.Small || baseSellingPrice) * 2.29),
+                                  } : isProdPoster ? {
                                     A5: a5p,
                                     A4: prodSizePrices.A4 || Math.round(a5p * 1.5),
                                     A3: prodSizePrices.A3 || Math.round(a5p * 2.2),
                                   } : { Standard: baseSellingPrice },
-                                  sizeComparePrices: isProdPoster ? {
+                                  sizeComparePrices: isProdWallArt ? {
+                                    Small: prodSizeCompare.Small || baseComparePrice,
+                                    Medium: prodSizeCompare.Medium || Math.round((prodSizeCompare.Small || baseComparePrice) * 1.43),
+                                    Large: prodSizeCompare.Large || Math.round((prodSizeCompare.Small || baseComparePrice) * 2.29),
+                                  } : isProdPoster ? {
                                     A5: a5c,
                                     A4: prodSizeCompare.A4 || Math.round(a5c * 1.5),
                                     A3: prodSizeCompare.A3 || Math.round(a5c * 2.2),
@@ -2895,16 +2966,22 @@ export function AdminDashboardPage() {
       {/* Product Add/Edit Modal */}
       {isProductModalOpen && (
         <div className="admin-product-modal-backdrop">
-          <div className="admin-product-modal" role="dialog" aria-modal="true" aria-label={productType === 'product' ? 'Product form' : 'Poster form'}>
+          <div className="admin-product-modal" role="dialog" aria-modal="true" aria-label={productType === 'product' ? 'Product form' : productType === 'wallart' ? 'Wall art form' : 'Poster form'}>
             <div className="admin-product-modal-head">
               <div>
                 <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span className="admin-product-modal-icon">{productType === 'product' ? '🪞' : '🎨'}</span>
-                  <span>{editingProduct ? (productType === 'product' ? 'Edit Product' : 'Edit Poster') : (productType === 'product' ? 'Add New Product' : 'Add New Poster')}</span>
+                  <span className="admin-product-modal-icon">{productType === 'product' ? '🪞' : productType === 'wallart' ? '🖼️' : '🎨'}</span>
+                  <span>
+                    {productType === 'wallart'
+                      ? (editingProduct ? 'Edit Wall Art' : 'Add New Wall Art')
+                      : editingProduct ? (productType === 'product' ? 'Edit Product' : 'Edit Poster') : (productType === 'product' ? 'Add New Product' : 'Add New Poster')}
+                  </span>
                 </h3>
                 <p style={{ fontSize: '11px', color: '#94a3b8', margin: '2px 0 0 0' }}>
                   {productType === 'product'
-                    ? 'Home & decor product: mirrors, wall art, bean bags, flags, couches, rugs and more'
+                    ? 'Home & decor product: mirrors, bean bags, flags, couches, rugs and more'
+                    : productType === 'wallart'
+                    ? 'Canvas wall art with separate Small, Medium and Large pricing'
                     : 'Art poster with separate A5, A4 and A3 pricing'}
                 </p>
               </div>
@@ -3009,7 +3086,7 @@ export function AdminDashboardPage() {
                     </div>
                   ) : (
                     <div className="admin-category-chip-grid">
-                      {CIRCLE_PRODUCT_CATEGORIES.map((cat) => {
+                      {CIRCLE_PRODUCT_CATEGORIES.filter((cat) => cat.slug !== 'wall-art').map((cat) => {
                         const isSelected = productFormData.category === cat.slug;
                         return (
                           <button
@@ -3060,7 +3137,7 @@ export function AdminDashboardPage() {
 
               <div>
                 <label className="admin-input-label">
-                  {productType === 'product' ? 'Product Name / Title' : 'Poster Title'}
+                  {productType === 'product' ? 'Product Name / Title' : productType === 'wallart' ? 'Wall Art Title' : 'Poster Title'}
                 </label>
                 <input
                   type="text"
@@ -3086,6 +3163,8 @@ export function AdminDashboardPage() {
                   placeholder={
                     productType === 'product'
                       ? (CIRCLE_PRODUCT_CATEGORIES.find((c) => c.slug === productFormData.category)?.placeholderTitle || 'Aesthetic Full Length Vanity Mirror')
+                      : productType === 'wallart'
+                      ? 'Golden Horizon | Canvas Wall Art'
                       : 'ASTA POSTER | BLACK CLOVER'
                   }
                   className="admin-input-field"
@@ -3109,6 +3188,8 @@ export function AdminDashboardPage() {
                   placeholder={
                     productType === 'product'
                       ? 'aesthetic-full-length-vanity-mirror'
+                      : productType === 'wallart'
+                      ? 'golden-horizon-canvas-wall-art'
                       : 'asta-black-clover-anime-poster'
                   }
                   className="admin-input-field"
@@ -3218,6 +3299,30 @@ export function AdminDashboardPage() {
                 </div>
               )}
 
+              {productType === 'wallart' && (
+                <div className="admin-form-grid-2">
+                  <div>
+                    <label className="admin-input-label">Category</label>
+                    <div className="admin-input-field" style={{ height: '40px', display: 'flex', alignItems: 'center', color: '#cbd5e1' }}>
+                      🖼️ Wall Art
+                    </div>
+                  </div>
+                  <div>
+                    <label className="admin-input-label">Orientation</label>
+                    <select
+                      value={productFormData.orientation}
+                      onChange={(e) => setProductFormData({ ...productFormData, orientation: e.target.value })}
+                      className="admin-input-field"
+                      style={{ height: '40px' }}
+                    >
+                      <option value="portrait">Portrait</option>
+                      <option value="landscape">Landscape</option>
+                      <option value="square">Square</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
               {/* Pricing section: adapts between Product Pricing (Selling & MRP) and Poster Pricing (A5, A4, A3) */}
               {productType === 'product' ? (
                 <div style={{ background: '#0b1120', border: '1px solid #1e293b', borderRadius: '12px', padding: '14px' }}>
@@ -3279,6 +3384,66 @@ export function AdminDashboardPage() {
                       />
                       <span style={{ fontSize: '9.5px', color: '#64748b' }}>Original strikethrough price shown crossed out</span>
                     </div>
+                  </div>
+                </div>
+              ) : productType === 'wallart' ? (
+                <div style={{ background: '#0b1120', border: '1px solid #1e293b', borderRadius: '12px', padding: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                    <label className="admin-input-label" style={{ margin: 0, color: '#60a5fa', fontWeight: 800 }}>
+                      📏 Wall Art Pricing by Size (₹)
+                    </label>
+                    <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>
+                      Customers pick the size on the product page
+                    </span>
+                  </div>
+                  <div className="admin-form-grid-3">
+                    {([
+                      ['Small', '12 × 16 in'],
+                      ['Medium', '16 × 24 in'],
+                      ['Large', '24 × 36 in'],
+                    ] as const).map(([key, dims]) => (
+                      <div key={key} style={{ background: '#0f172a', border: '1px solid #1e2638', borderRadius: '8px', padding: '10px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                          <span>{key} ({dims})</span>
+                          {key === 'Medium' && (
+                            <span style={{ fontSize: '9px', background: '#f59e0b', color: '#000', padding: '1px 5px', borderRadius: '9999px', fontWeight: 800 }}>POPULAR</span>
+                          )}
+                        </div>
+                        <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>Selling Price (₹)</label>
+                        <input
+                          type="number"
+                          required
+                          min={1}
+                          value={productFormData.sizePrices?.[key] ?? ''}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setProductFormData((prev) => ({
+                              ...prev,
+                              ...(key === 'Small' ? { price: val } : {}),
+                              sizePrices: { ...prev.sizePrices, [key]: val },
+                            }));
+                          }}
+                          className="admin-input-field"
+                          style={{ height: '36px', marginBottom: '6px' }}
+                        />
+                        <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>MRP / Strike (₹)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={productFormData.sizeComparePrices?.[key] ?? ''}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setProductFormData((prev) => ({
+                              ...prev,
+                              ...(key === 'Small' ? { compareAtPrice: val } : {}),
+                              sizeComparePrices: { ...prev.sizeComparePrices, [key]: val },
+                            }));
+                          }}
+                          className="admin-input-field"
+                          style={{ height: '36px' }}
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
               ) : (
@@ -3416,7 +3581,7 @@ export function AdminDashboardPage() {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <label className="admin-input-label">
-                    {productType === 'product' ? 'Product Description & Specifications' : 'Poster Description (Optional)'}
+                    {productType === 'product' ? 'Product Description & Specifications' : productType === 'wallart' ? 'Wall Art Description & Materials' : 'Poster Description (Optional)'}
                   </label>
                   <span style={{ fontSize: '11px', color: '#64748b' }}>Displayed on storefront page</span>
                 </div>
@@ -3462,7 +3627,7 @@ export function AdminDashboardPage() {
 
               <div>
                 <label className="admin-input-label">
-                  {productType === 'product' ? 'Product Photo / Image (JPG, PNG, WEBP)' : 'Poster Artwork Image (JPG, PNG, WEBP)'}
+                  {productType === 'product' ? 'Product Photo / Image (JPG, PNG, WEBP)' : productType === 'wallart' ? 'Wall Art Image (JPG, PNG, WEBP)' : 'Poster Artwork Image (JPG, PNG, WEBP)'}
                 </label>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -3650,10 +3815,10 @@ export function AdminDashboardPage() {
                   style={{ opacity: savingProduct || imageCompressing ? 0.7 : 1 }}
                 >
                   {savingProduct
-                    ? (productType === 'product' ? 'Saving Product to Server...' : 'Saving Poster to Server...')
+                    ? (productType === 'product' ? 'Saving Product to Server...' : productType === 'wallart' ? 'Saving Wall Art to Server...' : 'Saving Poster to Server...')
                     : (imageCompressing
                       ? 'Optimizing Image...'
-                      : (productType === 'product' ? 'Save Product to Catalog' : 'Save Poster to Catalog'))}
+                      : (productType === 'product' ? 'Save Product to Catalog' : productType === 'wallart' ? 'Save Wall Art to Catalog' : 'Save Poster to Catalog'))}
                 </button>
               </div>
             </form>

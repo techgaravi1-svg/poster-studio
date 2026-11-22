@@ -18,7 +18,7 @@ import {
   AlertCircle,
   Trash2,
 } from 'lucide-react';
-import { formatPrice, getProductSizePrice, getProductSizeComparePrice, products, type PosterSize } from '@/lib/catalog';
+import { formatPrice, getProductSizePrice, getProductSizeComparePrice, getWallArtSizes, WALL_ART_SIZE_DIMS, products, type PosterSize } from '@/lib/catalog';
 import { store, useStore, fetchLiveCoupons, type CartItem, type ActiveCoupon } from '@/lib/store';
 
 export const sizeInfoMap: Record<string, { name: string; dims: string; badge?: string; recommendation: string }> = {
@@ -123,7 +123,10 @@ export function MyntraItemCard({
     year: 'numeric',
   });
 
-  const availableSizes: PosterSize[] = ['A5', 'A4', 'A3'];
+  // Wall Art Catalog items switch between Small / Medium / Large; posters keep A5 / A4 / A3.
+  const wallArtSizes = matchProduct ? getWallArtSizes(matchProduct) : [];
+  const isWallArtItem = wallArtSizes.length > 0 && wallArtSizes.includes(item.size);
+  const availableSizes: PosterSize[] = isWallArtItem ? wallArtSizes : ['A5', 'A4', 'A3'];
 
   const maxStock = item.customUpload
     ? 999
@@ -330,7 +333,7 @@ export function MyntraItemCard({
             <div className="ecommerce-size-modal-header">
               <div>
                 <h3 className="ecommerce-size-title">Select Size</h3>
-                <p className="ecommerce-size-subtitle">Premium Archival Prints</p>
+                <p className="ecommerce-size-subtitle">{isWallArtItem ? 'Gallery-wrapped canvas' : 'Premium Archival Prints'}</p>
               </div>
               <button
                 type="button"
@@ -366,7 +369,7 @@ export function MyntraItemCard({
             {/* Size Options Grid */}
             <div className="ecommerce-size-options-container">
               <div className="ecommerce-size-section-heading">
-                <span>CHOOSE POSTER SIZE</span>
+                <span>{isWallArtItem ? 'CHOOSE CANVAS SIZE' : 'CHOOSE POSTER SIZE'}</span>
                 <span className="ecommerce-size-guide-pill">
                   <Ruler size={12} /> Standard Dimensions
                 </span>
@@ -399,10 +402,10 @@ export function MyntraItemCard({
                     >
                       <div className="ecommerce-size-card-left">
                         <div className={`ecommerce-size-letter-badge ${isSelected ? 'active-badge' : ''}`}>
-                          {sz}
+                          {isWallArtItem ? sz.charAt(0) : sz}
                         </div>
                         <div className="ecommerce-size-card-info">
-                          <span className="ecommerce-size-card-name">{sz} Size</span>
+                          <span className="ecommerce-size-card-name">{isWallArtItem ? `${sz} • ${WALL_ART_SIZE_DIMS[sz] || ''}` : `${sz} Size`}</span>
                         </div>
                       </div>
 

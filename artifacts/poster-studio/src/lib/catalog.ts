@@ -14,7 +14,26 @@ export function optimizeCloudinary(url?: string, width?: number, quality: number
   return url.replace('/image/upload/', `/image/upload/${transforms.join(',')}/`);
 }
 
-export type PosterSize = 'A5' | 'A4' | 'A3' | 'Standard';
+export type PosterSize = 'A5' | 'A4' | 'A3' | 'Standard' | 'Small' | 'Medium' | 'Large';
+
+/** Wall Art Catalog sizes (admin "Wall Art Catalog"). Only used for category 'wall-art' items that have these prices. */
+export const WALL_ART_SIZE_KEYS = ['Small', 'Medium', 'Large'] as const;
+export const WALL_ART_SIZE_DIMS: Record<string, string> = {
+  Small: '12 × 16 in',
+  Medium: '16 × 24 in',
+  Large: '24 × 36 in',
+};
+
+export function isWallArtCategory(cat?: string | null): boolean {
+  return (cat || '').toLowerCase().trim().replace(/&/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-') === 'wall-art';
+}
+
+/** Sizes a wall-art product is sold in, or [] for every other product (posters / standard products unchanged). */
+export function getWallArtSizes(product: { category?: string; sizePrices?: Partial<Record<string, number>> | null }): PosterSize[] {
+  if (!isWallArtCategory(product.category)) return [];
+  const prices = product.sizePrices || {};
+  return WALL_ART_SIZE_KEYS.filter((k) => typeof prices[k] === 'number' && (prices[k] as number) > 0) as PosterSize[];
+}
 export type Orientation = 'portrait' | 'landscape' | 'square';
 
 export type Product = {
@@ -1191,6 +1210,11 @@ export function transformDbProductToFrontend(p: any): Product {
     sizeComparePrices.Standard = baseCompare;
   }
 
+  // Wall Art Catalog items: sold in Small / Medium / Large (from the admin Wall Art form)
+  const wallArtSizes = isPoster ? [] : getWallArtSizes({ category: p.category, sizePrices });
+  const wallArtFrom = wallArtSizes.length ? (sizePrices[wallArtSizes[0]] as number) : 0;
+  const wallArtFromCompare = wallArtSizes.length ? ((sizeComparePrices[wallArtSizes[0]] as number) || Math.round(wallArtFrom * 2)) : 0;
+
   return {
     id: p.id,
     slug: p.slug,
@@ -1202,10 +1226,10 @@ export function transformDbProductToFrontend(p: any): Product {
       ? p.images.filter((img: any) => typeof img === 'string' && img.trim().length > 0)
       : ['https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg'],
     artTreatment: 'art-signal',
-    price: isPoster ? (sizePrices.A5 || basePrice) : basePrice,
-    compareAtPrice: isPoster ? (sizeComparePrices.A5 || baseCompare) : baseCompare,
+    price: isPoster ? (sizePrices.A5 || basePrice) : wallArtSizes.length ? wallArtFrom : basePrice,
+    compareAtPrice: isPoster ? (sizeComparePrices.A5 || baseCompare) : wallArtSizes.length ? wallArtFromCompare : baseCompare,
     discount,
-    sizes: isPoster ? (['A5', 'A4', 'A3'] as PosterSize[]) : (['Standard'] as PosterSize[]),
+    sizes: isPoster ? (['A5', 'A4', 'A3'] as PosterSize[]) : wallArtSizes.length ? wallArtSizes : (['Standard'] as PosterSize[]),
     sizePrices,
     sizeComparePrices,
     orientation: (p.orientation as Orientation) || 'portrait',
@@ -1291,6 +1315,24 @@ export function getProductTierRank(p: Product): number {
 }
 
 const STORAGE_KEY = 'dungeons_catalog_products_v4';
+
+/** Set once the stored catalog came from the server, so stale local copies can never re-add deleted items. */
+const SERVER_SYNC_KEY = 'dungeons_catalog_server_synced_v1';
+
+function markServerSynced(version: string) {
+  try {
+    localStorage.setItem(SERVER_SYNC_KEY, version || '1');
+  } catch { /* private mode */ }
+}
+
+function isServerSynced(): boolean {
+  try {
+    return Boolean(localStorage.getItem(SERVER_SYNC_KEY));
+  } catch {
+    return false;
+  }
+}
+
 const IDB_NAME = 'dungeons_store_db';
 const IDB_STORE = 'catalog_products';
 
@@ -1336,7 +1378,8 @@ export function loadCatalogFromStorage(): Product[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length >= defaultCatalogProducts.length) {
+      // A server-synced catalog is authoritative even when smaller than the bundled list (items were deleted)
+      if (Array.isArray(parsed) && parsed.length > 0 && (parsed.length >= defaultCatalogProducts.length || isServerSynced())) {
         return parsed.map((item: any, idx: number) => {
           const fallback = defaultCatalogProducts.find(
             (d) => d.id === item.id || (item.slug && d.slug === item.slug)
@@ -1388,7 +1431,7 @@ if (typeof window !== 'undefined') {
       const store = tx.objectStore(IDB_STORE);
       const req = store.getAll();
       req.onsuccess = () => {
-        if (Array.isArray(req.result) && req.result.length > products.length) {
+        if (!isServerSynced() && Array.isArray(req.result) && req.result.length > products.length) {
           products.length = 0;
           products.push(...req.result);
           window.dispatchEvent(new CustomEvent('dungeons:products-updated', { detail: req.result }));
@@ -1540,24 +1583,52 @@ export function deleteSingleProduct(productId: string): Product[] {
 
 let activeFetchPromise: Promise<Product[]> | null = null;
 let lastFetchTimestamp = 0;
+let lastVersionCheck = 0;
+let loadedCatalogVersion = '';
+
+/** Tiny never-cached fingerprint that changes whenever the catalog changes ('' if the API does not support it). */
+async function fetchCatalogVersion(): Promise<string> {
+  try {
+    const res = await fetch('/api/catalog-version', { cache: 'no-store' });
+    if (!res.ok || !(res.headers.get('content-type') || '').includes('application/json')) return '';
+    const data = await res.json();
+    return data?.success && typeof data.version === 'string' ? data.version : '';
+  } catch {
+    return '';
+  }
+}
 
 export async function fetchLiveProducts(force = false): Promise<Product[]> {
   const now = Date.now();
-  // If fetched within the last 30 minutes, reuse storage/memory and do not burn serverless bandwidth
-  if (!force && lastFetchTimestamp > 0 && now - lastFetchTimestamp < 30 * 60 * 1000) {
-    const stored = loadCatalogFromStorage();
-    if (stored && stored.length > 0) return stored;
-  }
 
   // Deduplicate concurrent calls: return existing in-flight promise
   if (activeFetchPromise && !force) {
     return activeFetchPromise;
   }
 
+  // Recently synced: reuse memory/storage (many components call this on mount)
+  if (!force && lastFetchTimestamp > 0 && now - lastVersionCheck < 60 * 1000) {
+    const stored = loadCatalogFromStorage();
+    if (stored && stored.length > 0) return stored;
+  }
+
   activeFetchPromise = (async () => {
     try {
-      // Clean request without unique timestamp query so Vercel Edge CDN caches it
-      const res = await fetch('/api/products?limit=2000');
+      lastVersionCheck = Date.now();
+      const version = await fetchCatalogVersion();
+
+      // Nothing changed since our last full load: keep the stored catalog (no big download)
+      if (!force && version && version === loadedCatalogVersion) {
+        const stored = loadCatalogFromStorage();
+        if (stored && stored.length > 0) return stored;
+      }
+
+      // Versioned URL: the CDN caches each snapshot, and a new version means a new URL,
+      // so admin edits/deletes appear immediately. Older APIs without versions fall back to
+      // a revalidated request so the browser never reuses a stale copy.
+      const res = version
+        ? await fetch(`/api/products?limit=2000&v=${encodeURIComponent(version)}`)
+        : await fetch('/api/products?limit=2000', { cache: 'no-cache' });
       const contentType = res.headers.get('content-type') || '';
       if (!res.ok || !contentType.includes('application/json')) {
         const stored = loadCatalogFromStorage();
@@ -1566,8 +1637,10 @@ export async function fetchLiveProducts(force = false): Promise<Product[]> {
       const data = await res.json();
       if (data.success && Array.isArray(data.products) && data.products.length > 0) {
         const transformed = data.products.map(transformDbProductToFrontend);
+        markServerSynced(version);
         saveCatalogToStorage(transformed);
         lastFetchTimestamp = Date.now();
+        loadedCatalogVersion = version;
         return transformed;
       }
     } catch (err) {
