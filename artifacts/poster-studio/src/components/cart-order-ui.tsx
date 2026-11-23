@@ -18,7 +18,7 @@ import {
   AlertCircle,
   Trash2,
 } from 'lucide-react';
-import { formatPrice, getProductSizePrice, getProductSizeComparePrice, getWallArtSizes, products, type PosterSize } from '@/lib/catalog';
+import { formatPrice, getProductSizePrice, getProductSizeComparePrice, getWallArtSizes, getAvailableSizes, products, type PosterSize } from '@/lib/catalog';
 import { store, useStore, fetchLiveCoupons, type CartItem, type ActiveCoupon } from '@/lib/store';
 
 export const sizeInfoMap: Record<string, { name: string; dims: string; badge?: string; recommendation: string }> = {
@@ -125,8 +125,10 @@ export function MyntraItemCard({
 
   // Wall Art Catalog items switch between Small / Medium / Large; posters keep A5 / A4 / A3.
   const wallArtSizes = matchProduct ? getWallArtSizes(matchProduct) : [];
-  const isWallArtItem = wallArtSizes.length > 0 && wallArtSizes.includes(item.size);
-  const availableSizes: PosterSize[] = isWallArtItem ? wallArtSizes : ['A5', 'A4', 'A3'];
+  const isWallArtItem = wallArtSizes.length > 0;
+  // Only sizes the admin offers for this product (posters default to A5 / A4 / A3)
+  const offeredPosterSizes = matchProduct ? getAvailableSizes(matchProduct) : [];
+  const availableSizes: PosterSize[] = isWallArtItem ? wallArtSizes : offeredPosterSizes.length ? offeredPosterSizes : ['A5', 'A4', 'A3'];
 
   const maxStock = item.customUpload
     ? 999

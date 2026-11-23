@@ -20,10 +20,37 @@ export const NON_POSTER_CATEGORY_SLUGS = [
 ];
 
 export const POSTER_SIZES = ['A5', 'A4', 'A3'] as const;
-/** Legacy wall art sizes (older carts) and the wall art sizes on sale now. Keep in sync with lib/catalog.ts. */
-export const WALL_ART_SIZES = ['Small', 'Medium', 'Large'] as const;
-export const WALL_ART_ACTIVE_SIZES = ['A4'] as const;
+/**
+ * Per-product sizes / frame colours are saved as product tags by the admin
+ * (avail-size:A4, frame-color:Black). Products without them use the defaults.
+ * Keep in sync with poster-studio/src/lib/catalog.ts.
+ */
+export const WALL_ART_SIZES = ['Small', 'Medium', 'Large'] as const; // legacy carts
+export const WALL_ART_DISPLAY_SIZES = ['A3', 'A4', 'A5'] as const;
+export const DEFAULT_WALL_ART_SIZES = ['A4'] as const;
 export const WALL_ART_FRAME_COLORS = ['Black', 'Brown', 'White'] as const;
+export const DEFAULT_WALL_ART_FRAME_COLORS = ['Black'] as const;
+export const CUSTOM_WALL_ART_FRAME_COLORS = ['Black'] as const;
+
+export function readTagList(tags: unknown, prefix: string, allowed: readonly string[]): string[] {
+  if (!Array.isArray(tags)) return [];
+  const found = new Set(
+    tags
+      .filter((t): t is string => typeof t === 'string' && t.toLowerCase().startsWith(prefix))
+      .map((t) => t.slice(prefix.length).trim().toLowerCase()),
+  );
+  return allowed.filter((a) => found.has(a.toLowerCase()));
+}
+
+export function wallArtSizesFor(tags: unknown): string[] {
+  const list = readTagList(tags, 'avail-size:', WALL_ART_DISPLAY_SIZES);
+  return list.length ? list : [...DEFAULT_WALL_ART_SIZES];
+}
+
+export function wallArtFramesFor(tags: unknown): string[] {
+  const list = readTagList(tags, 'frame-color:', WALL_ART_FRAME_COLORS);
+  return list.length ? list : [...DEFAULT_WALL_ART_FRAME_COLORS];
+}
 
 export function normalizeCategory(cat?: string | null): string {
   return (cat || '').toLowerCase().trim().replace(/&/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-');
@@ -71,17 +98,22 @@ export function catalogUnitPrice(product: PricedProduct, size: string): number |
     const sp = (product.sizePrices && typeof product.sizePrices === 'object' ? product.sizePrices : {}) as Record<string, unknown>;
     const positive = (v: unknown) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : null);
     if (normalizeCategory(product.category) === 'wall-art') {
-      // A4 (on sale now): its own price, else the older Small price, else the base price (same as the storefront)
-      const a4 = positive(sp.A4) ?? positive(sp.Small) ?? positive(base);
-      if (size === 'A4' || size === 'Standard') return a4;
+      // Only sizes the admin offers; a size without its own price uses the item's older price (same as the storefront)
+      const offered = wallArtSizesFor(product.tags);
+      const fallback = positive(sp.A4) ?? positive(sp.A3) ?? positive(sp.Small) ?? positive(base);
+      if (offered.includes(size)) return positive(sp[size]) ?? fallback;
+      if (size === 'Standard') return positive(sp[offered[0]]) ?? fallback;
       // Older carts that still hold Small / Medium / Large
       if ((WALL_ART_SIZES as readonly string[]).includes(size)) return positive(sp[size]);
-      return null; // A5 / A3 not on sale yet
+      return null; // size not offered for this item
     }
     if ((WALL_ART_SIZES as readonly string[]).includes(size)) return null;
     return base > 0 ? base : null; // other non-poster items have a single Standard price
   }
   if (!(POSTER_SIZES as readonly string[]).includes(size)) return null;
+  // Admin can switch sizes off per poster (no tags = all sizes on)
+  const posterOffered = readTagList(product.tags, 'avail-size:', POSTER_SIZES);
+  if (posterOffered.length && !posterOffered.includes(size)) return null;
 
   const explicit: Record<string, number> = {};
   if (product.sizePrices && typeof product.sizePrices === 'object') {
@@ -145,6 +177,10 @@ export async function resolveCart(lines: CartLineInput[]): Promise<ResolvedLine[
 
   for (const line of lines) {
     if (isCustomProductId(line.productId)) {
+      const customFrame = typeof line.customUpload?.frameColor === 'string' ? (line.customUpload.frameColor as string) : null;
+      if (customFrame && !(CUSTOM_WALL_ART_FRAME_COLORS as readonly string[]).includes(customFrame)) {
+        throw new PricingError(`The ${customFrame} frame is not available yet. Please choose another frame colour.`);
+      }
       const format = typeof line.customUpload?.format === 'string' ? (line.customUpload.format as string) : undefined;
       const unit = customUnitPrice(line.productId, format, line.size);
       if (!unit || !line.customUpload) {
@@ -185,14 +221,22 @@ export async function resolveCart(lines: CartLineInput[]): Promise<ResolvedLine[
       throw new PricingError(`Size "${line.size}" is not available for "${product.title}".`);
     }
 
+    // Wall art: frame colour must be one the admin offers for this item (defaults to the first one)
+    const isWallArtItem = normalizeCategory(product.category) === 'wall-art';
+    let frameForTitle: string | null = null;
+    if (isWallArtItem) {
+      const frames = wallArtFramesFor(product.tags);
+      if (line.frameColor && !frames.includes(line.frameColor)) {
+        throw new PricingError(`The ${line.frameColor} frame is not available for "${product.title}". Please choose another frame colour.`);
+      }
+      frameForTitle = line.frameColor || frames[0];
+    }
+
     resolved.push({
       productId: product.id,
       dbProductId: product.id,
       // Wall art: record the chosen frame colour on the order line (shown in admin & seller orders)
-      title:
-        normalizeCategory(product.category) === 'wall-art' && line.frameColor && (WALL_ART_FRAME_COLORS as readonly string[]).includes(line.frameColor)
-          ? `${product.title} (${line.frameColor} Frame)`.slice(0, 200)
-          : product.title,
+      title: frameForTitle ? `${product.title} (${frameForTitle} Frame)`.slice(0, 200) : product.title,
       slug: product.slug,
       size: line.size,
       quantity: line.quantity,

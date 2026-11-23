@@ -12161,3 +12161,65 @@ button.desktop-nav-item:hover {
   cursor: not-allowed;
   pointer-events: none;
 }
+
+/* Wall art: colour buttons share the size-button look; uniform grid in the custom builder */
+.wall-art-size-row .wall-art-color-btn .wall-art-color-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wall-art-size-row .wall-art-color-btn .wall-art-frame-swatch {
+  width: 18px;
+  height: 18px;
+}
+
+.wa-uniform-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.option-pill.wa-uniform-btn {
+  height: 46px;
+  min-width: 0;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.option-pill.wa-uniform-btn .wall-art-frame-swatch {
+  width: 18px;
+  height: 18px;
+}
+
+/* Keep the colour swatch visible on a selected (dark) button */
+.option-pill.wa-uniform-btn.active-pill .wall-art-frame-swatch,
+.wall-art-color-btn.active-size-box .wall-art-frame-swatch {
+  border-color: rgba(255, 255, 255, 0.85);
+}
+
+/* Sizes the admin has not offered for a poster */
+.product-size-box-btn.size-unavailable {
+  opacity: 0.4;
+  filter: grayscale(1);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Wall art theme pills sit under the Wall Art heading */
+.wall-art-pills-bar {
+  margin-top: 14px;
+  justify-content: center;
+}
+
+.wall-art-pills-bar .category-pills-scroll {
+  justify-content: flex-start;
+  justify-content: safe center;
+}

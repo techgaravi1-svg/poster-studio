@@ -360,7 +360,7 @@ function buildProductData(input: z.infer<typeof SellerProductSchema>) {
     price = sizePrices.A5;
   }
   // Sellers cannot inject the internal pricing/rating tags the storefront parses
-  const tags = input.tags.filter((t) => !/^(sizeprice|sizecompare|rating|reviews):/i.test(t) && t.toLowerCase() !== 'trending');
+  const tags = input.tags.filter((t) => !/^(sizeprice|sizecompare|rating|reviews|avail-size|frame-color|wall-art-cat):/i.test(t) && t.toLowerCase() !== 'trending');
   return {
     title: input.title,
     description: input.description,

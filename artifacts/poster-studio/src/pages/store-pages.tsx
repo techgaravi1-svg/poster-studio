@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
-import { Link, useLocation, useParams } from 'wouter';
+import { Link, useLocation, useParams, useSearch } from 'wouter';
 import {
   ArrowLeft,
   ArrowRight,
@@ -47,7 +47,7 @@ import {
   Store,
   Mail,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, transformDbProductToFrontend, getWallArtSizes, isWallArtCategory, WALL_ART_DISPLAY_SIZES, WALL_ART_ACTIVE_SIZES, WALL_ART_FRAME_COLORS, type WallArtFrameColor, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, isPosterCategory, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, transformDbProductToFrontend, getWallArtSizes, isWallArtCategory, WALL_ART_DISPLAY_SIZES, WALL_ART_FRAME_COLORS, CUSTOM_WALL_ART_FRAME_COLORS, getAvailableSizes, getFrameColors, getDefaultSize, WALL_ART_CATEGORIES, getWallArtCategory, type WallArtFrameColor, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, isPosterCategory, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, ProductCardSkeleton, Toast, PARTNER_MAILTO_LINK } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
@@ -789,6 +789,12 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
 
   const activeCategory: StoreCategory = matchedCategory || computedCategories[0] || storeCategories[0];
 
+  // Wall art themes (like poster categories): /collections/wall-art?cat=pop-art
+  const isWallArtPage = matchedCategory?.slug === 'wall-art';
+  const searchString = useSearch();
+  const requestedWallArtCat = new URLSearchParams(searchString).get('cat') || 'all';
+  const activeWallArtCat = WALL_ART_CATEGORIES.some((c) => c.slug === requestedWallArtCat) ? requestedWallArtCat : 'all';
+
   const activePosterSubSlug = bestsellers
     ? 'bestsellers'
     : normalizedSlug === 'posters' || normalizedSlug === 'all' || !normalizedSlug
@@ -914,6 +920,9 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
         })) return true;
         return false;
       });
+      if (isWallArtPage && activeWallArtCat !== 'all') {
+        list = list.filter((p) => getWallArtCategory(p) === activeWallArtCat);
+      }
     } else if (activePosterSubSlug === 'bestsellers') {
       list = liveProducts.filter((p) => p.bestseller);
     } else if (activePosterSubSlug !== 'all') {
@@ -950,7 +959,7 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
       if (b.rating !== a.rating) return b.rating - a.rating;
       return a.id.localeCompare(b.id);
     });
-  }, [liveProducts, isDisplayingActiveStorefront, isPostersActive, matchedCategory, activePosterSubSlug, minPrice, maxPrice, selectedSort]);
+  }, [liveProducts, isDisplayingActiveStorefront, isPostersActive, matchedCategory, activePosterSubSlug, minPrice, maxPrice, selectedSort, isWallArtPage, activeWallArtCat]);
 
   const handleVipSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1025,6 +1034,21 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
                 <p className="collection-sub-text" style={{ marginTop: '4px', color: '#64748b', fontSize: '13px' }}>
                   {activeCategory.description}
                 </p>
+              )}
+              {isWallArtPage && (
+                <div className="category-pills-bar wall-art-pills-bar">
+                  <div className="category-pills-scroll">
+                    {[{ slug: 'all', name: 'All Wall Art' }, ...WALL_ART_CATEGORIES].map((c) => (
+                      <Link
+                        key={c.slug}
+                        href={c.slug === 'all' ? '/collections/wall-art' : `/collections/wall-art?cat=${c.slug}`}
+                        className={`category-filter-pill ${activeWallArtCat === c.slug ? 'pill-active' : ''}`}
+                      >
+                        {c.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -1374,8 +1398,11 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
   // Wall Art Catalog items are sold in Small / Medium / Large; every other product is unchanged.
   const wallArtSizes = getWallArtSizes(product);
   const hasWallArtSizes = wallArtSizes.length > 0;
-  const [selectedSize, setSelectedSize] = useState<PosterSize>(hasWallArtSizes ? wallArtSizes[0] : 'A5');
-  const [frameColor, setFrameColor] = useState<WallArtFrameColor>('Black');
+  // Sizes / frame colours the admin offers for this product; the rest show greyed out
+  const availableSizes = getAvailableSizes(product);
+  const frameOptions = getFrameColors(product);
+  const [selectedSize, setSelectedSize] = useState<PosterSize>(() => getDefaultSize(product));
+  const [frameColor, setFrameColor] = useState<WallArtFrameColor>(() => ((frameOptions[0] as WallArtFrameColor) || 'Black'));
   const [quantity, setQuantity] = useState(1);
   const [openAccordion, setOpenAccordion] = useState<string | null>('features');
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
@@ -1560,15 +1587,19 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
             {/* 3. SIZE SELECTOR BOXES (A3, A4, A5 - ONLY SIZE TEXT) */}
             <div className="product-size-boxes-row" role="radiogroup" aria-label="Select poster size">
               {(['A3', 'A4', 'A5'] as PosterSize[]).map((sz) => {
-                const isSelected = selectedSize === sz;
+                const isOffered = availableSizes.includes(sz);
+                const isSelected = isOffered && selectedSize === sz;
                 return (
                   <button
                     type="button"
                     key={sz}
                     role="radio"
                     aria-checked={isSelected}
-                    className={`product-size-box-btn ${isSelected ? 'active-size-box' : ''}`}
-                    onClick={() => setSelectedSize(sz)}
+                    aria-disabled={!isOffered}
+                    disabled={!isOffered}
+                    title={isOffered ? undefined : 'Not available for this poster'}
+                    className={`product-size-box-btn ${isSelected ? 'active-size-box' : ''} ${!isOffered ? 'size-unavailable' : ''}`}
+                    onClick={() => isOffered && setSelectedSize(sz)}
                   >
                     {sz}
                   </button>
@@ -1583,21 +1614,27 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
               <span className="product-size-heading-title">CHOOSE FRAME COLOR</span>
               <span className="wall-art-frame-picked">{frameColor}</span>
             </div>
-            <div className="wall-art-frame-row" role="radiogroup" aria-label="Select frame color">
+            <div className="product-size-boxes-row wall-art-size-row" role="radiogroup" aria-label="Select frame color">
               {WALL_ART_FRAME_COLORS.map((color) => {
-                const isSelected = frameColor === color;
+                const isActive = frameOptions.includes(color);
+                const isSelected = isActive && frameColor === color;
                 return (
                   <button
                     type="button"
                     key={color}
                     role="radio"
                     aria-checked={isSelected}
-                    aria-label={`${color} frame`}
-                    className={`wall-art-frame-btn ${isSelected ? 'active-frame' : ''}`}
-                    onClick={() => setFrameColor(color)}
+                    aria-disabled={!isActive}
+                    disabled={!isActive}
+                    title={isActive ? undefined : 'Coming soon'}
+                    aria-label={isActive ? `${color} frame` : `${color} frame coming soon`}
+                    className={`product-size-box-btn wall-art-size-btn wall-art-color-btn ${isSelected ? 'active-size-box' : ''} ${!isActive ? 'wall-art-size-disabled' : ''}`}
+                    onClick={() => isActive && setFrameColor(color)}
                   >
-                    <span className={`wall-art-frame-swatch swatch-${color.toLowerCase()}`} />
-                    <span>{color}</span>
+                    <span className="wall-art-color-inner">
+                      <span className={`wall-art-frame-swatch swatch-${color.toLowerCase()}`} />
+                      <span>{color}</span>
+                    </span>
                   </button>
                 );
               })}
@@ -1609,7 +1646,7 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
             </div>
             <div className="product-size-boxes-row wall-art-size-row" role="radiogroup" aria-label="Select wall art size">
               {WALL_ART_DISPLAY_SIZES.map((sz) => {
-                const isActive = WALL_ART_ACTIVE_SIZES.includes(sz) && wallArtSizes.includes(sz as PosterSize);
+                const isActive = wallArtSizes.includes(sz as PosterSize);
                 const isSelected = isActive && selectedSize === sz;
                 return (
                   <button
@@ -1974,11 +2011,11 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
  * Custom Wall Art (canvas) sizes and prices.
  * Keep in sync with CUSTOM_PRODUCT_PRICES['custom-wall-art'] in artifacts/api-server/src/lib/pricing.ts.
  */
-type WallArtSizeKey = 'A4' | 'A3' | 'A5';
-// Same sizes as the Wall Art catalog: A4 on sale now, A3 / A5 shown as "coming soon".
+type WallArtSizeKey = 'A3' | 'A4' | 'A5';
+// A4 on sale now; A3 / A5 shown greyed out ("coming soon"). Keep prices in sync with api-server pricing.ts.
 const WALL_ART_SIZES: Array<{ key: WallArtSizeKey; label: string; dims: string; price: number; active: boolean }> = [
-  { key: 'A4', label: 'A4', dims: '21 × 29.7 cm', price: 699, active: true },
   { key: 'A3', label: 'A3', dims: '29.7 × 42 cm', price: 0, active: false },
+  { key: 'A4', label: 'A4', dims: '21 × 29.7 cm', price: 699, active: true },
   { key: 'A5', label: 'A5', dims: '14.8 × 21 cm', price: 0, active: false },
 ];
 
@@ -3071,28 +3108,34 @@ export function CustomPage() {
             {/* 1. FRAME COLOUR */}
             <div className="control-group">
               <label className="control-label">Frame color: {wallArtFrame}</label>
-              <div className="wall-art-frame-row" role="radiogroup" aria-label="Select frame color">
-                {WALL_ART_FRAME_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    role="radio"
-                    aria-checked={wallArtFrame === color}
-                    aria-label={`${color} frame`}
-                    className={`wall-art-frame-btn ${wallArtFrame === color ? 'active-frame' : ''}`}
-                    onClick={() => setWallArtFrame(color)}
-                  >
-                    <span className={`wall-art-frame-swatch swatch-${color.toLowerCase()}`} />
-                    <span>{color}</span>
-                  </button>
-                ))}
+              <div className="wa-uniform-row" role="radiogroup" aria-label="Select frame color">
+                {WALL_ART_FRAME_COLORS.map((color) => {
+                  const isActive = CUSTOM_WALL_ART_FRAME_COLORS.includes(color);
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      role="radio"
+                      aria-checked={isActive && wallArtFrame === color}
+                      aria-disabled={!isActive}
+                      disabled={!isActive}
+                      title={isActive ? undefined : 'Coming soon'}
+                      aria-label={isActive ? `${color} frame` : `${color} frame coming soon`}
+                      className={`option-pill wa-uniform-btn ${isActive && wallArtFrame === color ? 'active-pill' : ''} ${!isActive ? 'wall-art-pill-disabled' : ''}`}
+                      onClick={() => isActive && setWallArtFrame(color)}
+                    >
+                      <span className={`wall-art-frame-swatch swatch-${color.toLowerCase()}`} />
+                      <span>{color}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* 2. SHAPE */}
             <div className="control-group">
               <label className="control-label">Shape</label>
-              <div className="option-pills-row">
+              <div className="wa-uniform-row">
                 {([
                   ['portrait', 'Portrait (Vertical)'],
                   ['landscape', 'Landscape (Horizontal)'],
@@ -3100,7 +3143,7 @@ export function CustomPage() {
                   <button
                     key={value}
                     type="button"
-                    className={`option-pill ${wallArtOrientation === value ? 'active-pill' : ''}`}
+                    className={`option-pill wa-uniform-btn ${wallArtOrientation === value ? 'active-pill' : ''}`}
                     onClick={() => setWallArtOrientation(value)}
                   >
                     {label}
@@ -3112,7 +3155,7 @@ export function CustomPage() {
             {/* 3. SIZE (A4 on sale; A3 / A5 coming soon) */}
             <div className="control-group">
               <label className="control-label">Size</label>
-              <div className="option-pills-row size-pills-row">
+              <div className="wa-uniform-row">
                 {WALL_ART_SIZES.map((o) => (
                   <button
                     key={o.key}
@@ -3120,7 +3163,7 @@ export function CustomPage() {
                     disabled={!o.active}
                     aria-disabled={!o.active}
                     title={o.active ? undefined : 'Coming soon'}
-                    className={`option-pill ${o.active && wallArtSize === o.key ? 'active-pill' : ''} ${!o.active ? 'wall-art-pill-disabled' : ''}`}
+                    className={`option-pill wa-uniform-btn ${o.active && wallArtSize === o.key ? 'active-pill' : ''} ${!o.active ? 'wall-art-pill-disabled' : ''}`}
                     onClick={() => o.active && setWallArtSize(o.key)}
                   >
                     {o.label}
@@ -3130,7 +3173,7 @@ export function CustomPage() {
             </div>
 
             <ul className="wall-art-features">
-              <li>Solid wooden frame in black, brown or white</li>
+              <li>Solid black wooden frame (brown and white coming soon)</li>
               <li>Fade-resistant, vivid print</li>
               <li>Ready to hang, hooks included</li>
             </ul>
@@ -3214,7 +3257,7 @@ export function WishlistPage() {
       slug: product.slug,
       title: product.title,
       price: product.price,
-      size: getWallArtSizes(product)[0] || 'A5',
+      size: getDefaultSize(product),
       quantity: 1,
       orientation: product.orientation,
       artTreatment: product.artTreatment,

@@ -23,7 +23,7 @@ import {
   Store,
 } from 'lucide-react';
 import type { Product } from '@/lib/catalog';
-import { formatPrice, products, storeCategories, getStoreCategories, getProductStock, optimizeCloudinary, getWallArtSizes } from '@/lib/catalog';
+import { formatPrice, products, storeCategories, getStoreCategories, getProductStock, optimizeCloudinary, getDefaultSize } from '@/lib/catalog';
 import { cartTotals, store, useStore } from '@/lib/store';
 
 export const PARTNER_MAILTO_LINK =
@@ -815,7 +815,7 @@ export function Header() {
                                 slug: item.slug,
                                 title: item.title,
                                 price: item.price,
-                                size: getWallArtSizes(item)[0] || 'A5',
+                                size: getDefaultSize(item),
                                 quantity: 1,
                                 orientation: item.orientation,
                                 artTreatment: item.artTreatment,

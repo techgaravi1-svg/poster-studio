@@ -53,6 +53,17 @@ import {
   getDynamicPosterCategories,
   addDynamicPosterCategory,
   isWallArtCategory,
+  getAvailableSizes,
+  getFrameColors,
+  wallArtSalePrice,
+  WALL_ART_DISPLAY_SIZES,
+  WALL_ART_FRAME_COLORS,
+  AVAILABLE_SIZE_TAG,
+  FRAME_COLOR_TAG,
+  WALL_ART_CATEGORY_TAG,
+  WALL_ART_CATEGORIES,
+  getWallArtCategory,
+  getWallArtCategoryName,
   deleteDynamicPosterCategory,
   CIRCLE_PRODUCT_CATEGORIES,
   isPosterCategory,
@@ -477,6 +488,9 @@ export function AdminDashboardPage() {
       A3: 359,
     } as Record<string, number>,
     images: ['https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-6_71a8b7.jpg'],
+    availableSizes: ['A5', 'A4', 'A3'] as string[],
+    frameColors: ['Black'] as string[],
+    wallArtCategory: '' as string,
     tags: 'mirrors, aesthetic, home decor',
     stock: 25,
     isBestSeller: true,
@@ -505,6 +519,9 @@ export function AdminDashboardPage() {
       A3: 359,
     } as Record<string, number>,
     images: ['https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg'],
+    availableSizes: ['A5', 'A4', 'A3'] as string[],
+    frameColors: ['Black'] as string[],
+    wallArtCategory: '' as string,
     tags: 'anime, poster, art',
     stock: 50,
     isBestSeller: true,
@@ -523,6 +540,9 @@ export function AdminDashboardPage() {
     compareAtPrice: 1399,
     sizePrices: { A4: 699 } as Record<string, number>,
     sizeComparePrices: { A4: 1399 } as Record<string, number>,
+    availableSizes: ['A4'] as string[],
+    frameColors: ['Black'] as string[],
+    wallArtCategory: WALL_ART_CATEGORIES[0].slug,
     images: ['https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-2_3df893.jpg'],
     tags: 'wall art, canvas, home decor',
     stock: 25,
@@ -1098,6 +1118,31 @@ export function AdminDashboardPage() {
       return;
     }
 
+    // Sizes / frame colours offered to customers
+    if ((productType === 'poster' || productType === 'wallart') && !(productFormData.availableSizes || []).length) {
+      setProductModalError({ title: 'Error 400 (Bad Request)', message: 'Select at least one size customers can buy.', statusCode: 400 });
+      setSavingProduct(false);
+      return;
+    }
+    if (productType === 'wallart') {
+      if (!productFormData.wallArtCategory) {
+        setProductModalError({ title: 'Error 400 (Bad Request)', message: 'Choose a wall art category.', statusCode: 400 });
+        setSavingProduct(false);
+        return;
+      }
+      if (!(productFormData.frameColors || []).length) {
+        setProductModalError({ title: 'Error 400 (Bad Request)', message: 'Select at least one frame colour customers can choose.', statusCode: 400 });
+        setSavingProduct(false);
+        return;
+      }
+      const missing = (productFormData.availableSizes || []).filter((sz) => !(Number(productFormData.sizePrices?.[sz]) > 0));
+      if (missing.length) {
+        setProductModalError({ title: 'Error 400 (Bad Request)', message: `Enter a selling price for ${missing.join(', ')}.`, statusCode: 400 });
+        setSavingProduct(false);
+        return;
+      }
+    }
+
     // Auto-clean URL slug: alphanumeric and hyphens only
     const safeSlug = (productFormData.slug || productFormData.title)
       .toLowerCase()
@@ -1108,12 +1153,19 @@ export function AdminDashboardPage() {
     const cleanTags = (typeof productFormData.tags === 'string'
       ? productFormData.tags.split(',').map((t) => t.trim()).filter(Boolean)
       : Array.isArray(productFormData.tags) ? productFormData.tags : [])
-      .filter((t) => !t.startsWith('rating:') && !t.startsWith('reviews:'));
+      .filter((t) => !t.startsWith('rating:') && !t.startsWith('reviews:') && !t.startsWith(AVAILABLE_SIZE_TAG) && !t.startsWith(FRAME_COLOR_TAG) && !t.startsWith(WALL_ART_CATEGORY_TAG));
 
     const ratingVal = Number(productFormData.rating) || 4.9;
     const reviewsVal = Number(productFormData.reviewsCount) >= 0 ? Number(productFormData.reviewsCount) : (isCurrentProduct ? 48 : 148);
     cleanTags.push(`rating:${ratingVal}`);
     cleanTags.push(`reviews:${reviewsVal}`);
+    if (productType === 'poster' || productType === 'wallart') {
+      for (const sz of productFormData.availableSizes || []) cleanTags.push(`${AVAILABLE_SIZE_TAG}${sz}`);
+    }
+    if (productType === 'wallart') {
+      for (const color of productFormData.frameColors || []) cleanTags.push(`${FRAME_COLOR_TAG}${color}`);
+      if (productFormData.wallArtCategory) cleanTags.push(`${WALL_ART_CATEGORY_TAG}${productFormData.wallArtCategory}`);
+    }
     if (productFormData.isTrending && !cleanTags.some((t: string) => t.toLowerCase() === 'trending')) {
       cleanTags.push('trending');
     }
@@ -1121,22 +1173,24 @@ export function AdminDashboardPage() {
     // Automatically activate circle category if product belongs to it
     setActiveCategorySlug(finalCategory, true);
 
-    // Wall art is sold in A4 for now (A5 / A3 coming soon)
-    const wallArtPrices = {
-      A4: Number(productFormData.sizePrices?.A4) || Number(productFormData.price) || 699,
-    };
-    const wallArtCompare = {
-      A4: Number(productFormData.sizeComparePrices?.A4) || Number(productFormData.compareAtPrice) || Math.round(wallArtPrices.A4 * 2),
-    };
+    // Wall art: a price for every size the admin offers
+    const wallArtSizesOn = WALL_ART_DISPLAY_SIZES.filter((sz) => (productFormData.availableSizes || []).includes(sz));
+    const wallArtPrices: Record<string, number> = {};
+    const wallArtCompare: Record<string, number> = {};
+    for (const sz of wallArtSizesOn) {
+      wallArtPrices[sz] = Number(productFormData.sizePrices?.[sz]) || 699;
+      wallArtCompare[sz] = Number(productFormData.sizeComparePrices?.[sz]) || Math.round(wallArtPrices[sz] * 2);
+    }
+    const wallArtFirstSize = wallArtSizesOn[0] || 'A4';
 
     const sellingPrice = isWallArtItem
-      ? wallArtPrices.A4
+      ? (wallArtPrices[wallArtFirstSize] || 699)
       : isCurrentProduct
       ? (Number(productFormData.price) || 999)
       : (Number(productFormData.sizePrices?.A5) || Number(productFormData.price) || 79);
 
     const comparePrice = isWallArtItem
-      ? wallArtCompare.A4
+      ? (wallArtCompare[wallArtFirstSize] || 1399)
       : isCurrentProduct
       ? (Number(productFormData.compareAtPrice) || Math.round(sellingPrice * 2))
       : (Number(productFormData.sizeComparePrices?.A5) || Number(productFormData.compareAtPrice) || Math.round(sellingPrice * 2));
@@ -1447,8 +1501,10 @@ export function AdminDashboardPage() {
     return source.filter((p) => {
       const matchesCat =
         productCategoryFilter === 'all' ||
-        p.category.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-') ===
-          productCategoryFilter.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-');
+        (activeTab === 'wallart'
+          ? getWallArtCategory(p) === productCategoryFilter
+          : p.category.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-') ===
+            productCategoryFilter.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-'));
       const matchesSearch =
         !productSearch ||
         p.title.toLowerCase().includes(productSearch.toLowerCase()) ||
@@ -1458,7 +1514,7 @@ export function AdminDashboardPage() {
   }, [activeTab, posterProducts, wallArtProducts, decorProducts, productCategoryFilter, productSearch]);
 
   const catalogCategoryFilters = useMemo(() => {
-    if (activeTab === 'wallart') return [{ slug: 'all', label: 'All Wall Art' }];
+    if (activeTab === 'wallart') return [{ slug: 'all', label: 'All Wall Art' }, ...WALL_ART_CATEGORIES.map((c) => ({ slug: c.slug, label: c.name }))];
     if (activeTab === 'decor') {
       return [
         { slug: 'all', label: 'All Products' },
@@ -2372,6 +2428,19 @@ export function AdminDashboardPage() {
                                             <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700 }}>
                                               × {item.quantity} pc{item.quantity > 1 ? 's' : ''}
                                             </span>
+                                            {(() => {
+                                              const frame =
+                                                (item as any).customUpload?.frameColor ||
+                                                String(item.productTitle || (item as any).title || '').match(/\b(Black|Brown|White) Frame\b/)?.[1];
+                                              if (!frame) return null;
+                                              const swatch = frame === 'Black' ? '#111111' : frame === 'Brown' ? '#7b4a2a' : '#ffffff';
+                                              return (
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(250, 204, 21, 0.12)', border: '1px solid rgba(250, 204, 21, 0.4)', color: '#facc15', fontSize: '9.5px', fontWeight: 800, padding: '1px 6px', borderRadius: '4px' }}>
+                                                  <span style={{ width: '9px', height: '9px', borderRadius: '2px', background: swatch, border: '1px solid #94a3b8' }} />
+                                                  {frame} frame
+                                                </span>
+                                              );
+                                            })()}
                                             {item.customUpload && (
                                               <span style={{ background: 'rgba(236, 72, 153, 0.2)', border: '1px solid rgba(236, 72, 153, 0.4)', color: '#f472b6', fontSize: '9px', fontWeight: 800, padding: '1px 4px', borderRadius: '4px' }}>
                                                 Custom
@@ -2582,7 +2651,7 @@ export function AdminDashboardPage() {
                       {activeTab === 'decor'
                         ? 'Add mirrors, bean bags, rugs and more. They appear in the store under their category circle.'
                         : activeTab === 'wallart'
-                        ? 'Add canvas wall art with A4 pricing. It appears in the store under the Wall Art circle and in the homepage wall art sections.'
+                        ? 'Add canvas wall art with its sizes, prices and frame colours. It appears in the store under the Wall Art circle and in the homepage wall art sections.'
                         : 'Try another category or search term, or add a new poster.'}
                     </p>
                     <button type="button" className="admin-btn-accent" onClick={() => openAddForm(activeTab === 'decor' ? 'product' : activeTab === 'wallart' ? 'wallart' : 'poster')}>
@@ -2600,7 +2669,7 @@ export function AdminDashboardPage() {
                           alt={prod.title}
                         />
                         <span style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.8)', color: '#ffffff', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase' }}>
-                          {prod.category}
+                          {isWallArtCategory(prod.category) ? getWallArtCategoryName(getWallArtCategory(prod)) || 'Wall Art' : prod.category}
                         </span>
                         {prod.isBestSeller && (
                           <span style={{ position: 'absolute', top: '8px', right: '8px', background: '#f59e0b', color: '#000000', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase' }}>
@@ -2676,24 +2745,29 @@ export function AdminDashboardPage() {
                                   description: prod.description || '',
                                   category: prod.category,
                                   orientation: prod.orientation || 'portrait',
-                                  price: isProdPoster ? a5p : isProdWallArt ? (prodSizePrices.A4 || prodSizePrices.Small || baseSellingPrice) : baseSellingPrice,
-                                  compareAtPrice: isProdPoster ? a5c : isProdWallArt ? (prodSizeCompare.A4 || prodSizeCompare.Small || baseComparePrice) : baseComparePrice,
-                                  sizePrices: isProdWallArt ? {
-                                    A4: prodSizePrices.A4 || prodSizePrices.Small || baseSellingPrice,
-                                  } : isProdPoster ? {
+                                  price: isProdPoster ? a5p : isProdWallArt ? wallArtSalePrice(prodSizePrices, baseSellingPrice) : baseSellingPrice,
+                                  compareAtPrice: isProdPoster ? a5c : isProdWallArt ? wallArtSalePrice(prodSizeCompare, baseComparePrice) : baseComparePrice,
+                                  availableSizes: getAvailableSizes(prod as any),
+                                  frameColors: isProdWallArt ? getFrameColors(prod as any) : ['Black'],
+                                  wallArtCategory: isProdWallArt ? getWallArtCategory(prod as any) || WALL_ART_CATEGORIES[0].slug : '',
+                                  sizePrices: isProdWallArt ? Object.fromEntries(
+                                    WALL_ART_DISPLAY_SIZES.map((sz) => [sz, prodSizePrices[sz] || wallArtSalePrice(prodSizePrices, baseSellingPrice)]),
+                                  ) : isProdPoster ? {
                                     A5: a5p,
                                     A4: prodSizePrices.A4 || Math.round(a5p * 1.5),
                                     A3: prodSizePrices.A3 || Math.round(a5p * 2.2),
                                   } : { Standard: baseSellingPrice },
-                                  sizeComparePrices: isProdWallArt ? {
-                                    A4: prodSizeCompare.A4 || prodSizeCompare.Small || baseComparePrice,
-                                  } : isProdPoster ? {
+                                  sizeComparePrices: isProdWallArt ? Object.fromEntries(
+                                    WALL_ART_DISPLAY_SIZES.map((sz) => [sz, prodSizeCompare[sz] || wallArtSalePrice(prodSizeCompare, baseComparePrice)]),
+                                  ) : isProdPoster ? {
                                     A5: a5c,
                                     A4: prodSizeCompare.A4 || Math.round(a5c * 1.5),
                                     A3: prodSizeCompare.A3 || Math.round(a5c * 2.2),
                                   } : { Standard: baseComparePrice },
                                   images: prod.images,
-                                  tags: Array.isArray(prod.tags) ? prod.tags.join(', ') : '',
+                                  tags: Array.isArray(prod.tags)
+                                    ? prod.tags.filter((t: string) => !t.startsWith(AVAILABLE_SIZE_TAG) && !t.startsWith(FRAME_COLOR_TAG) && !t.startsWith(WALL_ART_CATEGORY_TAG)).join(', ')
+                                    : '',
                                   stock: prod.stock,
                                   isBestSeller: prod.isBestSeller,
                                   isNewRelease: prod.isNewRelease,
@@ -2974,7 +3048,7 @@ export function AdminDashboardPage() {
                   {productType === 'product'
                     ? 'Home & decor product: mirrors, bean bags, flags, couches, rugs and more'
                     : productType === 'wallart'
-                    ? 'Canvas wall art: A4 on sale now (A5 and A3 coming soon), with Black, Brown or White frames'
+                    ? 'Canvas wall art: choose the sizes and frame colours customers can buy'
                     : 'Art poster with separate A5, A4 and A3 pricing'}
                 </p>
               </div>
@@ -3295,10 +3369,19 @@ export function AdminDashboardPage() {
               {productType === 'wallart' && (
                 <div className="admin-form-grid-2">
                   <div>
-                    <label className="admin-input-label">Category</label>
-                    <div className="admin-input-field" style={{ height: '40px', display: 'flex', alignItems: 'center', color: '#cbd5e1' }}>
-                      🖼️ Wall Art
-                    </div>
+                    <label className="admin-input-label">Wall Art Category</label>
+                    <select
+                      value={productFormData.wallArtCategory || ''}
+                      onChange={(e) => setProductFormData({ ...productFormData, wallArtCategory: e.target.value })}
+                      className="admin-input-field"
+                      style={{ height: '40px' }}
+                      required
+                    >
+                      <option value="" disabled>Choose a category</option>
+                      {WALL_ART_CATEGORIES.map((c) => (
+                        <option key={c.slug} value={c.slug}>{c.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="admin-input-label">Orientation</label>
@@ -3313,6 +3396,94 @@ export function AdminDashboardPage() {
                       <option value="square">Square</option>
                     </select>
                   </div>
+                </div>
+              )}
+
+              {(productType === 'poster' || productType === 'wallart') && (
+                <div style={{ background: '#0b1120', border: '1px solid #1e293b', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <label className="admin-input-label" style={{ marginBottom: '6px', display: 'block' }}>
+                      Sizes customers can buy
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {(productType === 'wallart' ? WALL_ART_DISPLAY_SIZES : (['A3', 'A4', 'A5'] as const)).map((sz) => {
+                        const on = (productFormData.availableSizes || []).includes(sz);
+                        return (
+                          <button
+                            key={sz}
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() =>
+                              setProductFormData((prev) => {
+                                const current = prev.availableSizes || [];
+                                return { ...prev, availableSizes: current.includes(sz) ? current.filter((x) => x !== sz) : [...current, sz] };
+                              })
+                            }
+                            style={{
+                              minWidth: '72px',
+                              height: '38px',
+                              borderRadius: '10px',
+                              fontWeight: 800,
+                              fontSize: '13px',
+                              cursor: 'pointer',
+                              border: on ? '1px solid #38bdf8' : '1px solid #1e2638',
+                              background: on ? 'rgba(56, 189, 248, 0.15)' : '#0f172a',
+                              color: on ? '#38bdf8' : '#64748b',
+                            }}
+                          >
+                            {on ? '✓ ' : ''}{sz}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {productType === 'wallart' && (
+                    <div>
+                      <label className="admin-input-label" style={{ marginBottom: '6px', display: 'block' }}>
+                        Frame colours customers can choose
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {WALL_ART_FRAME_COLORS.map((color) => {
+                          const on = (productFormData.frameColors || []).includes(color);
+                          const swatch = color === 'Black' ? '#111111' : color === 'Brown' ? '#7b4a2a' : '#ffffff';
+                          return (
+                            <button
+                              key={color}
+                              type="button"
+                              aria-pressed={on}
+                              onClick={() =>
+                                setProductFormData((prev) => {
+                                  const current = prev.frameColors || [];
+                                  return { ...prev, frameColors: current.includes(color) ? current.filter((x) => x !== color) : [...current, color] };
+                                })
+                              }
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                minWidth: '96px',
+                                height: '38px',
+                                padding: '0 12px',
+                                borderRadius: '10px',
+                                fontWeight: 800,
+                                fontSize: '13px',
+                                cursor: 'pointer',
+                                border: on ? '1px solid #38bdf8' : '1px solid #1e2638',
+                                background: on ? 'rgba(56, 189, 248, 0.15)' : '#0f172a',
+                                color: on ? '#38bdf8' : '#64748b',
+                              }}
+                            >
+                              <span style={{ width: '16px', height: '16px', borderRadius: '4px', background: swatch, border: '1px solid #475569' }} />
+                              {on ? '✓ ' : ''}{color}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  <span style={{ fontSize: '10.5px', color: '#64748b' }}>
+                    Customers can only pick what is ticked. Everything else shows greyed out on the product page.
+                  </span>
                 </div>
               )}
 
@@ -3386,60 +3557,52 @@ export function AdminDashboardPage() {
                       📏 Wall Art Pricing by Size (₹)
                     </label>
                     <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>
-                      A4 is on sale now. A5 and A3 show as "coming soon" in the store.
+                      Only sizes ticked above are sold. Others show greyed out in the store.
                     </span>
                   </div>
                   <div className="admin-form-grid-3">
                     {([
-                      ['A4', '21 × 29.7 cm', true],
-                      ['A3', '29.7 × 42 cm', false],
-                      ['A5', '14.8 × 21 cm', false],
-                    ] as const).map(([key, dims, enabled]) => !enabled ? (
-                      <div key={key} style={{ background: '#0f172a', border: '1px dashed #1e2638', borderRadius: '8px', padding: '10px', opacity: 0.45 }} aria-disabled="true">
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px' }}>{key} ({dims})</div>
-                        <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.4 }}>Coming soon. Not sold yet.</div>
-                      </div>
-                    ) : (
-                      <div key={key} style={{ background: '#0f172a', border: '1px solid #38bdf8', borderRadius: '8px', padding: '10px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-                          <span>{key} ({dims})</span>
-                          <span style={{ fontSize: '9px', background: '#10b981', color: '#000', padding: '1px 5px', borderRadius: '9999px', fontWeight: 800 }}>ON SALE</span>
+                      ['A3', '29.7 × 42 cm'],
+                      ['A4', '21 × 29.7 cm'],
+                      ['A5', '14.8 × 21 cm'],
+                    ] as const).map(([key, dims]) => {
+                      const on = (productFormData.availableSizes || []).includes(key);
+                      return (
+                        <div key={key} style={{ background: '#0f172a', border: on ? '1px solid #38bdf8' : '1px dashed #1e2638', borderRadius: '8px', padding: '10px', opacity: on ? 1 : 0.5 }}>
+                          <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                            <span>{key} ({dims})</span>
+                            <span style={{ fontSize: '9px', background: on ? '#10b981' : '#334155', color: on ? '#000' : '#cbd5e1', padding: '1px 5px', borderRadius: '9999px', fontWeight: 800 }}>
+                              {on ? 'ON SALE' : 'OFF'}
+                            </span>
+                          </div>
+                          <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>Selling Price (₹)</label>
+                          <input
+                            type="number"
+                            required={on}
+                            min={1}
+                            value={productFormData.sizePrices?.[key] ?? ''}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setProductFormData((prev) => ({ ...prev, sizePrices: { ...prev.sizePrices, [key]: val } }));
+                            }}
+                            className="admin-input-field"
+                            style={{ height: '36px', marginBottom: '6px' }}
+                          />
+                          <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>MRP / Strike (₹)</label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={productFormData.sizeComparePrices?.[key] ?? ''}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setProductFormData((prev) => ({ ...prev, sizeComparePrices: { ...prev.sizeComparePrices, [key]: val } }));
+                            }}
+                            className="admin-input-field"
+                            style={{ height: '36px' }}
+                          />
                         </div>
-                        <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>Selling Price (₹)</label>
-                        <input
-                          type="number"
-                          required
-                          min={1}
-                          value={productFormData.sizePrices?.[key] ?? ''}
-                          onChange={(e) => {
-                            const val = Number(e.target.value);
-                            setProductFormData((prev) => ({
-                              ...prev,
-                              ...(key === 'A4' ? { price: val } : {}),
-                              sizePrices: { ...prev.sizePrices, [key]: val },
-                            }));
-                          }}
-                          className="admin-input-field"
-                          style={{ height: '36px', marginBottom: '6px' }}
-                        />
-                        <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>MRP / Strike (₹)</label>
-                        <input
-                          type="number"
-                          min={1}
-                          value={productFormData.sizeComparePrices?.[key] ?? ''}
-                          onChange={(e) => {
-                            const val = Number(e.target.value);
-                            setProductFormData((prev) => ({
-                              ...prev,
-                              ...(key === 'A4' ? { compareAtPrice: val } : {}),
-                              sizeComparePrices: { ...prev.sizeComparePrices, [key]: val },
-                            }));
-                          }}
-                          className="admin-input-field"
-                          style={{ height: '36px' }}
-                        />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ) : (

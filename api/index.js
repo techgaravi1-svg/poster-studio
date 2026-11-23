@@ -33075,7 +33075,26 @@ var NON_POSTER_CATEGORY_SLUGS = [
 ];
 var POSTER_SIZES = ["A5", "A4", "A3"];
 var WALL_ART_SIZES = ["Small", "Medium", "Large"];
+var WALL_ART_DISPLAY_SIZES = ["A3", "A4", "A5"];
+var DEFAULT_WALL_ART_SIZES = ["A4"];
 var WALL_ART_FRAME_COLORS = ["Black", "Brown", "White"];
+var DEFAULT_WALL_ART_FRAME_COLORS = ["Black"];
+var CUSTOM_WALL_ART_FRAME_COLORS = ["Black"];
+function readTagList(tags, prefix, allowed) {
+  if (!Array.isArray(tags)) return [];
+  const found = new Set(
+    tags.filter((t) => typeof t === "string" && t.toLowerCase().startsWith(prefix)).map((t) => t.slice(prefix.length).trim().toLowerCase())
+  );
+  return allowed.filter((a) => found.has(a.toLowerCase()));
+}
+function wallArtSizesFor(tags) {
+  const list = readTagList(tags, "avail-size:", WALL_ART_DISPLAY_SIZES);
+  return list.length ? list : [...DEFAULT_WALL_ART_SIZES];
+}
+function wallArtFramesFor(tags) {
+  const list = readTagList(tags, "frame-color:", WALL_ART_FRAME_COLORS);
+  return list.length ? list : [...DEFAULT_WALL_ART_FRAME_COLORS];
+}
 function normalizeCategory(cat) {
   return (cat || "").toLowerCase().trim().replace(/&/g, "").replace(/[\s_]+/g, "-").replace(/-+/g, "-");
 }
@@ -33108,8 +33127,10 @@ function catalogUnitPrice(product, size) {
     const sp = product.sizePrices && typeof product.sizePrices === "object" ? product.sizePrices : {};
     const positive = (v) => Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : null;
     if (normalizeCategory(product.category) === "wall-art") {
-      const a4 = positive(sp.A4) ?? positive(sp.Small) ?? positive(base);
-      if (size === "A4" || size === "Standard") return a4;
+      const offered = wallArtSizesFor(product.tags);
+      const fallback = positive(sp.A4) ?? positive(sp.A3) ?? positive(sp.Small) ?? positive(base);
+      if (offered.includes(size)) return positive(sp[size]) ?? fallback;
+      if (size === "Standard") return positive(sp[offered[0]]) ?? fallback;
       if (WALL_ART_SIZES.includes(size)) return positive(sp[size]);
       return null;
     }
@@ -33117,6 +33138,8 @@ function catalogUnitPrice(product, size) {
     return base > 0 ? base : null;
   }
   if (!POSTER_SIZES.includes(size)) return null;
+  const posterOffered = readTagList(product.tags, "avail-size:", POSTER_SIZES);
+  if (posterOffered.length && !posterOffered.includes(size)) return null;
   const explicit = {};
   if (product.sizePrices && typeof product.sizePrices === "object") {
     for (const [k, v] of Object.entries(product.sizePrices)) {
@@ -33145,6 +33168,10 @@ async function resolveCart(lines) {
   const resolved = [];
   for (const line of lines) {
     if (isCustomProductId(line.productId)) {
+      const customFrame = typeof line.customUpload?.frameColor === "string" ? line.customUpload.frameColor : null;
+      if (customFrame && !CUSTOM_WALL_ART_FRAME_COLORS.includes(customFrame)) {
+        throw new PricingError(`The ${customFrame} frame is not available yet. Please choose another frame colour.`);
+      }
       const format = typeof line.customUpload?.format === "string" ? line.customUpload.format : void 0;
       const unit2 = customUnitPrice(line.productId, format, line.size);
       if (!unit2 || !line.customUpload) {
@@ -33181,11 +33208,20 @@ async function resolveCart(lines) {
     if (!unit) {
       throw new PricingError(`Size "${line.size}" is not available for "${product.title}".`);
     }
+    const isWallArtItem = normalizeCategory(product.category) === "wall-art";
+    let frameForTitle = null;
+    if (isWallArtItem) {
+      const frames = wallArtFramesFor(product.tags);
+      if (line.frameColor && !frames.includes(line.frameColor)) {
+        throw new PricingError(`The ${line.frameColor} frame is not available for "${product.title}". Please choose another frame colour.`);
+      }
+      frameForTitle = line.frameColor || frames[0];
+    }
     resolved.push({
       productId: product.id,
       dbProductId: product.id,
       // Wall art: record the chosen frame colour on the order line (shown in admin & seller orders)
-      title: normalizeCategory(product.category) === "wall-art" && line.frameColor && WALL_ART_FRAME_COLORS.includes(line.frameColor) ? `${product.title} (${line.frameColor} Frame)`.slice(0, 200) : product.title,
+      title: frameForTitle ? `${product.title} (${frameForTitle} Frame)`.slice(0, 200) : product.title,
       slug: product.slug,
       size: line.size,
       quantity: line.quantity,
@@ -34849,7 +34885,7 @@ function buildProductData(input) {
     };
     price = sizePrices.A5;
   }
-  const tags = input.tags.filter((t) => !/^(sizeprice|sizecompare|rating|reviews):/i.test(t) && t.toLowerCase() !== "trending");
+  const tags = input.tags.filter((t) => !/^(sizeprice|sizecompare|rating|reviews|avail-size|frame-color|wall-art-cat):/i.test(t) && t.toLowerCase() !== "trending");
   return {
     title: input.title,
     description: input.description,
