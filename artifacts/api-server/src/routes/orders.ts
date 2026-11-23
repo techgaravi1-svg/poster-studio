@@ -19,6 +19,7 @@ const CustomUploadSchema = z
     borderStyle: z.string().max(40).optional(),
     customType: z.string().max(60).optional(),
     format: z.string().max(20).optional(),
+    frameColor: z.enum(['Black', 'Brown', 'White']).optional(),
   })
   .strip();
 
@@ -31,6 +32,7 @@ const OrderItemInputSchema = z.object({
   quantity: z.number().int().min(1).max(50),
   orientation: z.enum(['portrait', 'landscape', 'square']).optional(),
   customUpload: CustomUploadSchema.optional().nullable(),
+  frameColor: z.enum(['Black', 'Brown', 'White']).optional().nullable(),
 });
 
 const CreateOrderSchema = z.object({

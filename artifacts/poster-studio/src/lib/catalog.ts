@@ -16,23 +16,40 @@ export function optimizeCloudinary(url?: string, width?: number, quality: number
 
 export type PosterSize = 'A5' | 'A4' | 'A3' | 'Standard' | 'Small' | 'Medium' | 'Large';
 
-/** Wall Art Catalog sizes (admin "Wall Art Catalog"). Only used for category 'wall-art' items that have these prices. */
-export const WALL_ART_SIZE_KEYS = ['Small', 'Medium', 'Large'] as const;
+/**
+ * Wall Art Catalog sizes. Wall art is shown in A5 / A4 / A3 like posters; for now only A4 is
+ * sold (A5 and A3 are shown greyed out as "coming soon"). Enable more sizes by adding them to
+ * WALL_ART_ACTIVE_SIZES here and in api-server/src/lib/pricing.ts.
+ */
+export const WALL_ART_DISPLAY_SIZES = ['A4', 'A3', 'A5'] as const;
+export const WALL_ART_ACTIVE_SIZES: readonly string[] = ['A4'];
 export const WALL_ART_SIZE_DIMS: Record<string, string> = {
-  Small: '12 × 16 in',
-  Medium: '16 × 24 in',
-  Large: '24 × 36 in',
+  A5: '14.8 × 21 cm',
+  A4: '21 × 29.7 cm',
+  A3: '29.7 × 42 cm',
 };
+export const WALL_ART_FRAME_COLORS = ['Black', 'Brown', 'White'] as const;
+export type WallArtFrameColor = (typeof WALL_ART_FRAME_COLORS)[number];
 
 export function isWallArtCategory(cat?: string | null): boolean {
   return (cat || '').toLowerCase().trim().replace(/&/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-') === 'wall-art';
 }
 
-/** Sizes a wall-art product is sold in, or [] for every other product (posters / standard products unchanged). */
+/**
+ * A4 price for a wall art item. Falls back to older pricing (Small, then the base price)
+ * so wall art added before the A-size switch keeps the price it already shows.
+ */
+export function wallArtA4Price(sizePrices: Partial<Record<string, number>> | null | undefined, base: number): number {
+  const sp = sizePrices || {};
+  const pick = [sp.A4, sp.Small, base].find((v) => typeof v === 'number' && v > 0);
+  return (pick as number) || 0;
+}
+
+/** Sizes a wall-art product can be bought in, or [] for every other product (posters / standard products unchanged). */
 export function getWallArtSizes(product: { category?: string; sizePrices?: Partial<Record<string, number>> | null }): PosterSize[] {
   if (!isWallArtCategory(product.category)) return [];
   const prices = product.sizePrices || {};
-  return WALL_ART_SIZE_KEYS.filter((k) => typeof prices[k] === 'number' && (prices[k] as number) > 0) as PosterSize[];
+  return WALL_ART_ACTIVE_SIZES.filter((k) => typeof prices[k] === 'number' && (prices[k] as number) > 0) as PosterSize[];
 }
 export type Orientation = 'portrait' | 'landscape' | 'square';
 
@@ -1210,7 +1227,15 @@ export function transformDbProductToFrontend(p: any): Product {
     sizeComparePrices.Standard = baseCompare;
   }
 
-  // Wall Art Catalog items: sold in Small / Medium / Large (from the admin Wall Art form)
+  // Wall Art Catalog items: sold in A4 for now (older items priced Small/Medium/Large keep their price as A4)
+  if (!isPoster && isWallArtCategory(p.category)) {
+    const a4 = wallArtA4Price(sizePrices, basePrice);
+    const a4Compare = wallArtA4Price(sizeComparePrices, baseCompare) || Math.round(a4 * 2);
+    if (a4 > 0) {
+      sizePrices.A4 = a4;
+      sizeComparePrices.A4 = a4Compare;
+    }
+  }
   const wallArtSizes = isPoster ? [] : getWallArtSizes({ category: p.category, sizePrices });
   const wallArtFrom = wallArtSizes.length ? (sizePrices[wallArtSizes[0]] as number) : 0;
   const wallArtFromCompare = wallArtSizes.length ? ((sizeComparePrices[wallArtSizes[0]] as number) || Math.round(wallArtFrom * 2)) : 0;

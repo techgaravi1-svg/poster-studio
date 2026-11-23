@@ -20,7 +20,10 @@ export const NON_POSTER_CATEGORY_SLUGS = [
 ];
 
 export const POSTER_SIZES = ['A5', 'A4', 'A3'] as const;
+/** Legacy wall art sizes (older carts) and the wall art sizes on sale now. Keep in sync with lib/catalog.ts. */
 export const WALL_ART_SIZES = ['Small', 'Medium', 'Large'] as const;
+export const WALL_ART_ACTIVE_SIZES = ['A4'] as const;
+export const WALL_ART_FRAME_COLORS = ['Black', 'Brown', 'White'] as const;
 
 export function normalizeCategory(cat?: string | null): string {
   return (cat || '').toLowerCase().trim().replace(/&/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-');
@@ -39,7 +42,8 @@ const CUSTOM_PRODUCT_PRICES: Record<string, Record<string, number>> = {
   'custom-mini-pocket': { '5-pack': 129, '7-pack': 169 },
   'custom-wall-poster': { A5: 90, A4: 130, A3: 160 },
   // Keep in sync with WALL_ART_SIZES in poster-studio/src/pages/store-pages.tsx
-  'custom-wall-art': { small: 699, medium: 999, large: 1599 },
+  // A4 is on sale now; small/medium/large stay so carts from before the switch still check out
+  'custom-wall-art': { A4: 699, small: 699, medium: 999, large: 1599 },
 };
 
 export function isCustomProductId(productId: string): boolean {
@@ -64,12 +68,17 @@ type PricedProduct = {
 export function catalogUnitPrice(product: PricedProduct, size: string): number | null {
   const base = Number(product.price) || 0;
   if (!isPosterCategory(product.category)) {
-    // Wall Art Catalog items carry Small / Medium / Large prices; charge the chosen size.
-    if ((WALL_ART_SIZES as readonly string[]).includes(size)) {
-      const sp = (product.sizePrices && typeof product.sizePrices === 'object' ? product.sizePrices : {}) as Record<string, unknown>;
-      const n = Number(sp[size]);
-      return normalizeCategory(product.category) === 'wall-art' && Number.isFinite(n) && n > 0 ? n : null;
+    const sp = (product.sizePrices && typeof product.sizePrices === 'object' ? product.sizePrices : {}) as Record<string, unknown>;
+    const positive = (v: unknown) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : null);
+    if (normalizeCategory(product.category) === 'wall-art') {
+      // A4 (on sale now): its own price, else the older Small price, else the base price (same as the storefront)
+      const a4 = positive(sp.A4) ?? positive(sp.Small) ?? positive(base);
+      if (size === 'A4' || size === 'Standard') return a4;
+      // Older carts that still hold Small / Medium / Large
+      if ((WALL_ART_SIZES as readonly string[]).includes(size)) return positive(sp[size]);
+      return null; // A5 / A3 not on sale yet
     }
+    if ((WALL_ART_SIZES as readonly string[]).includes(size)) return null;
     return base > 0 ? base : null; // other non-poster items have a single Standard price
   }
   if (!(POSTER_SIZES as readonly string[]).includes(size)) return null;
@@ -108,6 +117,7 @@ export interface CartLineInput {
   orientation?: string;
   title?: string;
   customUpload?: Record<string, unknown> | null;
+  frameColor?: string | null;
 }
 
 export interface ResolvedLine {
@@ -178,7 +188,11 @@ export async function resolveCart(lines: CartLineInput[]): Promise<ResolvedLine[
     resolved.push({
       productId: product.id,
       dbProductId: product.id,
-      title: product.title,
+      // Wall art: record the chosen frame colour on the order line (shown in admin & seller orders)
+      title:
+        normalizeCategory(product.category) === 'wall-art' && line.frameColor && (WALL_ART_FRAME_COLORS as readonly string[]).includes(line.frameColor)
+          ? `${product.title} (${line.frameColor} Frame)`.slice(0, 200)
+          : product.title,
       slug: product.slug,
       size: line.size,
       quantity: line.quantity,

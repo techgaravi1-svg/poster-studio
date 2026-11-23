@@ -33075,6 +33075,7 @@ var NON_POSTER_CATEGORY_SLUGS = [
 ];
 var POSTER_SIZES = ["A5", "A4", "A3"];
 var WALL_ART_SIZES = ["Small", "Medium", "Large"];
+var WALL_ART_FRAME_COLORS = ["Black", "Brown", "White"];
 function normalizeCategory(cat) {
   return (cat || "").toLowerCase().trim().replace(/&/g, "").replace(/[\s_]+/g, "-").replace(/-+/g, "-");
 }
@@ -33089,7 +33090,8 @@ var CUSTOM_PRODUCT_PRICES = {
   "custom-mini-pocket": { "5-pack": 129, "7-pack": 169 },
   "custom-wall-poster": { A5: 90, A4: 130, A3: 160 },
   // Keep in sync with WALL_ART_SIZES in poster-studio/src/pages/store-pages.tsx
-  "custom-wall-art": { small: 699, medium: 999, large: 1599 }
+  // A4 is on sale now; small/medium/large stay so carts from before the switch still check out
+  "custom-wall-art": { A4: 699, small: 699, medium: 999, large: 1599 }
 };
 function isCustomProductId(productId) {
   return productId in CUSTOM_PRODUCT_PRICES;
@@ -33103,11 +33105,15 @@ function customUnitPrice(productId, format, size) {
 function catalogUnitPrice(product, size) {
   const base = Number(product.price) || 0;
   if (!isPosterCategory(product.category)) {
-    if (WALL_ART_SIZES.includes(size)) {
-      const sp = product.sizePrices && typeof product.sizePrices === "object" ? product.sizePrices : {};
-      const n = Number(sp[size]);
-      return normalizeCategory(product.category) === "wall-art" && Number.isFinite(n) && n > 0 ? n : null;
+    const sp = product.sizePrices && typeof product.sizePrices === "object" ? product.sizePrices : {};
+    const positive = (v) => Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : null;
+    if (normalizeCategory(product.category) === "wall-art") {
+      const a4 = positive(sp.A4) ?? positive(sp.Small) ?? positive(base);
+      if (size === "A4" || size === "Standard") return a4;
+      if (WALL_ART_SIZES.includes(size)) return positive(sp[size]);
+      return null;
     }
+    if (WALL_ART_SIZES.includes(size)) return null;
     return base > 0 ? base : null;
   }
   if (!POSTER_SIZES.includes(size)) return null;
@@ -33178,7 +33184,8 @@ async function resolveCart(lines) {
     resolved.push({
       productId: product.id,
       dbProductId: product.id,
-      title: product.title,
+      // Wall art: record the chosen frame colour on the order line (shown in admin & seller orders)
+      title: normalizeCategory(product.category) === "wall-art" && line.frameColor && WALL_ART_FRAME_COLORS.includes(line.frameColor) ? `${product.title} (${line.frameColor} Frame)`.slice(0, 200) : product.title,
       slug: product.slug,
       size: line.size,
       quantity: line.quantity,
@@ -33252,7 +33259,8 @@ var CustomUploadSchema = external_exports.object({
   photos: external_exports.array(external_exports.string().max(3e6)).max(10).optional(),
   borderStyle: external_exports.string().max(40).optional(),
   customType: external_exports.string().max(60).optional(),
-  format: external_exports.string().max(20).optional()
+  format: external_exports.string().max(20).optional(),
+  frameColor: external_exports.enum(["Black", "Brown", "White"]).optional()
 }).strip();
 var OrderItemInputSchema = external_exports.object({
   productId: external_exports.string().min(1).max(100),
@@ -33261,7 +33269,8 @@ var OrderItemInputSchema = external_exports.object({
   size: external_exports.string().min(1).max(20),
   quantity: external_exports.number().int().min(1).max(50),
   orientation: external_exports.enum(["portrait", "landscape", "square"]).optional(),
-  customUpload: CustomUploadSchema.optional().nullable()
+  customUpload: CustomUploadSchema.optional().nullable(),
+  frameColor: external_exports.enum(["Black", "Brown", "White"]).optional().nullable()
 });
 var CreateOrderSchema = external_exports.object({
   customerName: external_exports.string().min(2).max(100),

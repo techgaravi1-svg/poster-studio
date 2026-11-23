@@ -11,6 +11,8 @@ export type CartItem = {
   quantity: number;
   orientation: Orientation;
   artTreatment: string;
+  /** Wall art frame colour (Black / Brown / White) */
+  frameColor?: string;
   customUpload?: {
     name: string;
     preview: string;
@@ -18,6 +20,7 @@ export type CartItem = {
     borderStyle?: string;
     customType?: string;
     format?: string;
+    frameColor?: string;
   };
 };
 

@@ -521,8 +521,8 @@ export function AdminDashboardPage() {
     category: 'wall-art',
     price: 699,
     compareAtPrice: 1399,
-    sizePrices: { Small: 699, Medium: 999, Large: 1599 } as Record<string, number>,
-    sizeComparePrices: { Small: 1399, Medium: 1999, Large: 3199 } as Record<string, number>,
+    sizePrices: { A4: 699 } as Record<string, number>,
+    sizeComparePrices: { A4: 1399 } as Record<string, number>,
     images: ['https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-2_3df893.jpg'],
     tags: 'wall art, canvas, home decor',
     stock: 25,
@@ -1121,25 +1121,22 @@ export function AdminDashboardPage() {
     // Automatically activate circle category if product belongs to it
     setActiveCategorySlug(finalCategory, true);
 
+    // Wall art is sold in A4 for now (A5 / A3 coming soon)
     const wallArtPrices = {
-      Small: Number(productFormData.sizePrices?.Small) || 699,
-      Medium: Number(productFormData.sizePrices?.Medium) || 999,
-      Large: Number(productFormData.sizePrices?.Large) || 1599,
+      A4: Number(productFormData.sizePrices?.A4) || Number(productFormData.price) || 699,
     };
     const wallArtCompare = {
-      Small: Number(productFormData.sizeComparePrices?.Small) || Math.round(wallArtPrices.Small * 2),
-      Medium: Number(productFormData.sizeComparePrices?.Medium) || Math.round(wallArtPrices.Medium * 2),
-      Large: Number(productFormData.sizeComparePrices?.Large) || Math.round(wallArtPrices.Large * 2),
+      A4: Number(productFormData.sizeComparePrices?.A4) || Number(productFormData.compareAtPrice) || Math.round(wallArtPrices.A4 * 2),
     };
 
     const sellingPrice = isWallArtItem
-      ? wallArtPrices.Small
+      ? wallArtPrices.A4
       : isCurrentProduct
       ? (Number(productFormData.price) || 999)
       : (Number(productFormData.sizePrices?.A5) || Number(productFormData.price) || 79);
 
     const comparePrice = isWallArtItem
-      ? wallArtCompare.Small
+      ? wallArtCompare.A4
       : isCurrentProduct
       ? (Number(productFormData.compareAtPrice) || Math.round(sellingPrice * 2))
       : (Number(productFormData.sizeComparePrices?.A5) || Number(productFormData.compareAtPrice) || Math.round(sellingPrice * 2));
@@ -2585,7 +2582,7 @@ export function AdminDashboardPage() {
                       {activeTab === 'decor'
                         ? 'Add mirrors, bean bags, rugs and more. They appear in the store under their category circle.'
                         : activeTab === 'wallart'
-                        ? 'Add canvas wall art with Small, Medium and Large pricing. It appears in the store under the Wall Art circle.'
+                        ? 'Add canvas wall art with A4 pricing. It appears in the store under the Wall Art circle and in the homepage wall art sections.'
                         : 'Try another category or search term, or add a new poster.'}
                     </p>
                     <button type="button" className="admin-btn-accent" onClick={() => openAddForm(activeTab === 'decor' ? 'product' : activeTab === 'wallart' ? 'wallart' : 'poster')}>
@@ -2679,21 +2676,17 @@ export function AdminDashboardPage() {
                                   description: prod.description || '',
                                   category: prod.category,
                                   orientation: prod.orientation || 'portrait',
-                                  price: isProdPoster ? a5p : isProdWallArt ? (prodSizePrices.Small || baseSellingPrice) : baseSellingPrice,
-                                  compareAtPrice: isProdPoster ? a5c : isProdWallArt ? (prodSizeCompare.Small || baseComparePrice) : baseComparePrice,
+                                  price: isProdPoster ? a5p : isProdWallArt ? (prodSizePrices.A4 || prodSizePrices.Small || baseSellingPrice) : baseSellingPrice,
+                                  compareAtPrice: isProdPoster ? a5c : isProdWallArt ? (prodSizeCompare.A4 || prodSizeCompare.Small || baseComparePrice) : baseComparePrice,
                                   sizePrices: isProdWallArt ? {
-                                    Small: prodSizePrices.Small || baseSellingPrice,
-                                    Medium: prodSizePrices.Medium || Math.round((prodSizePrices.Small || baseSellingPrice) * 1.43),
-                                    Large: prodSizePrices.Large || Math.round((prodSizePrices.Small || baseSellingPrice) * 2.29),
+                                    A4: prodSizePrices.A4 || prodSizePrices.Small || baseSellingPrice,
                                   } : isProdPoster ? {
                                     A5: a5p,
                                     A4: prodSizePrices.A4 || Math.round(a5p * 1.5),
                                     A3: prodSizePrices.A3 || Math.round(a5p * 2.2),
                                   } : { Standard: baseSellingPrice },
                                   sizeComparePrices: isProdWallArt ? {
-                                    Small: prodSizeCompare.Small || baseComparePrice,
-                                    Medium: prodSizeCompare.Medium || Math.round((prodSizeCompare.Small || baseComparePrice) * 1.43),
-                                    Large: prodSizeCompare.Large || Math.round((prodSizeCompare.Small || baseComparePrice) * 2.29),
+                                    A4: prodSizeCompare.A4 || prodSizeCompare.Small || baseComparePrice,
                                   } : isProdPoster ? {
                                     A5: a5c,
                                     A4: prodSizeCompare.A4 || Math.round(a5c * 1.5),
@@ -2981,7 +2974,7 @@ export function AdminDashboardPage() {
                   {productType === 'product'
                     ? 'Home & decor product: mirrors, bean bags, flags, couches, rugs and more'
                     : productType === 'wallart'
-                    ? 'Canvas wall art with separate Small, Medium and Large pricing'
+                    ? 'Canvas wall art: A4 on sale now (A5 and A3 coming soon), with Black, Brown or White frames'
                     : 'Art poster with separate A5, A4 and A3 pricing'}
                 </p>
               </div>
@@ -3393,21 +3386,24 @@ export function AdminDashboardPage() {
                       📏 Wall Art Pricing by Size (₹)
                     </label>
                     <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>
-                      Customers pick the size on the product page
+                      A4 is on sale now. A5 and A3 show as "coming soon" in the store.
                     </span>
                   </div>
                   <div className="admin-form-grid-3">
                     {([
-                      ['Small', '12 × 16 in'],
-                      ['Medium', '16 × 24 in'],
-                      ['Large', '24 × 36 in'],
-                    ] as const).map(([key, dims]) => (
-                      <div key={key} style={{ background: '#0f172a', border: '1px solid #1e2638', borderRadius: '8px', padding: '10px' }}>
+                      ['A4', '21 × 29.7 cm', true],
+                      ['A3', '29.7 × 42 cm', false],
+                      ['A5', '14.8 × 21 cm', false],
+                    ] as const).map(([key, dims, enabled]) => !enabled ? (
+                      <div key={key} style={{ background: '#0f172a', border: '1px dashed #1e2638', borderRadius: '8px', padding: '10px', opacity: 0.45 }} aria-disabled="true">
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px' }}>{key} ({dims})</div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.4 }}>Coming soon. Not sold yet.</div>
+                      </div>
+                    ) : (
+                      <div key={key} style={{ background: '#0f172a', border: '1px solid #38bdf8', borderRadius: '8px', padding: '10px' }}>
                         <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
                           <span>{key} ({dims})</span>
-                          {key === 'Medium' && (
-                            <span style={{ fontSize: '9px', background: '#f59e0b', color: '#000', padding: '1px 5px', borderRadius: '9999px', fontWeight: 800 }}>POPULAR</span>
-                          )}
+                          <span style={{ fontSize: '9px', background: '#10b981', color: '#000', padding: '1px 5px', borderRadius: '9999px', fontWeight: 800 }}>ON SALE</span>
                         </div>
                         <label style={{ fontSize: '10px', color: '#64748b', display: 'block', marginBottom: '2px' }}>Selling Price (₹)</label>
                         <input
@@ -3419,7 +3415,7 @@ export function AdminDashboardPage() {
                             const val = Number(e.target.value);
                             setProductFormData((prev) => ({
                               ...prev,
-                              ...(key === 'Small' ? { price: val } : {}),
+                              ...(key === 'A4' ? { price: val } : {}),
                               sizePrices: { ...prev.sizePrices, [key]: val },
                             }));
                           }}
@@ -3435,7 +3431,7 @@ export function AdminDashboardPage() {
                             const val = Number(e.target.value);
                             setProductFormData((prev) => ({
                               ...prev,
-                              ...(key === 'Small' ? { compareAtPrice: val } : {}),
+                              ...(key === 'A4' ? { compareAtPrice: val } : {}),
                               sizeComparePrices: { ...prev.sizeComparePrices, [key]: val },
                             }));
                           }}

@@ -18,7 +18,7 @@ import {
   AlertCircle,
   Trash2,
 } from 'lucide-react';
-import { formatPrice, getProductSizePrice, getProductSizeComparePrice, getWallArtSizes, WALL_ART_SIZE_DIMS, products, type PosterSize } from '@/lib/catalog';
+import { formatPrice, getProductSizePrice, getProductSizeComparePrice, getWallArtSizes, products, type PosterSize } from '@/lib/catalog';
 import { store, useStore, fetchLiveCoupons, type CartItem, type ActiveCoupon } from '@/lib/store';
 
 export const sizeInfoMap: Record<string, { name: string; dims: string; badge?: string; recommendation: string }> = {
@@ -199,7 +199,7 @@ export function MyntraItemCard({
         {/* Selectors Row: Size & Qty Pills + Stock alert */}
         <div className="myntra-selectors-row">
           {/* Size Pill with Myntra/Flipkart Modal Trigger (single-size items like decor or wall art can't switch to poster sizes) */}
-          {!isOrderMode && item.size !== 'Standard' ? (
+          {!isOrderMode && item.size !== 'Standard' && item.productId !== 'custom-wall-art' ? (
             <button
               type="button"
               onClick={() => {
@@ -402,10 +402,10 @@ export function MyntraItemCard({
                     >
                       <div className="ecommerce-size-card-left">
                         <div className={`ecommerce-size-letter-badge ${isSelected ? 'active-badge' : ''}`}>
-                          {isWallArtItem ? sz.charAt(0) : sz}
+                          {sz}
                         </div>
                         <div className="ecommerce-size-card-info">
-                          <span className="ecommerce-size-card-name">{isWallArtItem ? `${sz} • ${WALL_ART_SIZE_DIMS[sz] || ''}` : `${sz} Size`}</span>
+                          <span className="ecommerce-size-card-name">{`${sz} Size`}</span>
                         </div>
                       </div>
 

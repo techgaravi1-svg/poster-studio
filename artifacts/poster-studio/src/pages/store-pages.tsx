@@ -47,7 +47,7 @@ import {
   Store,
   Mail,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, transformDbProductToFrontend, getWallArtSizes, WALL_ART_SIZE_DIMS, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, isPosterCategory, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, transformDbProductToFrontend, getWallArtSizes, isWallArtCategory, WALL_ART_DISPLAY_SIZES, WALL_ART_ACTIVE_SIZES, WALL_ART_FRAME_COLORS, type WallArtFrameColor, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, isPosterCategory, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, ProductCardSkeleton, Toast, PARTNER_MAILTO_LINK } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
@@ -120,25 +120,31 @@ export function HomePage() {
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const { products: liveProducts, isLoading } = useLiveProductsWithStatus();
 
+  // Poster sections only show posters; wall art has its own sections below
+  const posterPool = useMemo(
+    () => (liveProducts || []).filter((p) => isPosterCategory(p.category) && !isWallArtCategory(p.category)),
+    [liveProducts],
+  );
+
   // Distinct curated sections on HomePage with zero mixed badges:
   // 1. Best Sellers: STRICTLY Bestseller posters with BEST SELLER badge only
   const bestSellers = useMemo(() => {
-    if (!liveProducts || liveProducts.length === 0) return [];
-    const filtered = liveProducts.filter((p) => Boolean(p.bestseller || (p as any).isBestSeller));
-    const pool = filtered.length >= 5 ? filtered : liveProducts;
+    if (posterPool.length === 0) return [];
+    const filtered = posterPool.filter((p) => Boolean(p.bestseller || (p as any).isBestSeller));
+    const pool = filtered.length >= 5 ? filtered : posterPool;
     return pool.slice(0, 10).map((p) => ({
       ...p,
       bestseller: true,
       newArrival: false,
       trending: false,
     }));
-  }, [liveProducts]);
+  }, [posterPool]);
 
   // 2. Trending: STRICTLY Trending posters with 🔥 TRENDING badge only
   const trending = useMemo(() => {
-    if (!liveProducts || liveProducts.length === 0) return [];
+    if (posterPool.length === 0) return [];
     const bestSellerIds = new Set(bestSellers.map((p) => p.id));
-    const filtered = liveProducts.filter(
+    const filtered = posterPool.filter(
       (p) =>
         !bestSellerIds.has(p.id) &&
         Boolean(
@@ -148,32 +154,32 @@ export function HomePage() {
           p.tags?.some((t) => typeof t === 'string' && t.toLowerCase().includes('trending'))
         )
     );
-    const pool = filtered.length >= 5 ? filtered : liveProducts.filter((p) => !bestSellerIds.has(p.id));
+    const pool = filtered.length >= 5 ? filtered : posterPool.filter((p) => !bestSellerIds.has(p.id));
     return pool.slice(0, 10).map((p) => ({
       ...p,
       bestseller: false,
       newArrival: false,
       trending: true,
     }));
-  }, [liveProducts, bestSellers]);
+  }, [posterPool, bestSellers]);
 
-  // 3. New Arrivals: STRICTLY New Arrival posters with ⚡ NEW ARRIVALS badge only
-  const newArrivals = useMemo(() => {
-    if (!liveProducts || liveProducts.length === 0) return [];
-    const usedIds = new Set([...bestSellers.map((p) => p.id), ...trending.map((p) => p.id)]);
-    const filtered = liveProducts.filter(
-      (p) =>
-        !usedIds.has(p.id) &&
-        Boolean(p.newArrival || (p as any).isNewRelease || p.tags?.some((t) => typeof t === 'string' && t.toLowerCase().includes('new')))
-    );
-    const pool = filtered.length >= 5 ? filtered : liveProducts.filter((p) => !usedIds.has(p.id));
-    return pool.slice(0, 10).map((p) => ({
-      ...p,
-      bestseller: false,
-      newArrival: true,
-      trending: false,
-    }));
-  }, [liveProducts, bestSellers, trending]);
+  // 3 & 4. Wall art sections: items the admin marks Best Seller / Trending in the Wall Art Catalog
+  const wallArtPool = useMemo(() => (liveProducts || []).filter((p) => isWallArtCategory(p.category)), [liveProducts]);
+  const isTrendingItem = (p: Product) =>
+    Boolean(p.trending || (p as any).isStaffPick || p.tags?.some((t) => typeof t === 'string' && t.toLowerCase().includes('trending')));
+
+  const bestSellingWallArt = useMemo(() => {
+    const flagged = wallArtPool.filter((p) => Boolean(p.bestseller || (p as any).isBestSeller));
+    // Until the admin marks any wall art as Best Seller, show the latest wall art so the section is never empty
+    const pool = flagged.length > 0 ? flagged : wallArtPool.filter((p) => !isTrendingItem(p));
+    return pool.slice(0, 10).map((p) => ({ ...p, bestseller: true, newArrival: false, trending: false }));
+  }, [wallArtPool]);
+
+  const trendingWallArt = useMemo(() => {
+    const bestIds = new Set(bestSellingWallArt.map((p) => p.id));
+    const flagged = wallArtPool.filter((p) => isTrendingItem(p) && !bestIds.has(p.id));
+    return flagged.slice(0, 10).map((p) => ({ ...p, bestseller: false, newArrival: false, trending: true }));
+  }, [wallArtPool, bestSellingWallArt]);
 
   const customCategories = [
     {
@@ -534,37 +540,73 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 5. SECTION 3: NEW ARRIVALS POSTERS (SINGLE LINE - 5 POSTERS ONLY) */}
-      <section className="home-poster-section">
-        <div className="poster-section-header">
-          <h2 className="stencil-heading">NEW ARRIVALS POSTERS</h2>
-          <span className="stencil-subheading">LATEST DROPS</span>
-        </div>
-
-        <div className="poster-single-line-carousel-wrap">
-          <div className="poster-single-line-track">
-            {(isLoading || newArrivals.length === 0) ? (
-              [1, 2, 3, 4, 5].map((n) => (
-                <div key={n} className="single-line-poster-item">
-                  <ProductCardSkeleton />
-                </div>
-              ))
-            ) : (
-              newArrivals.map((product) => (
-                <div key={product.id} className="single-line-poster-item">
-                  <ProductCard product={product} onAdded={notify} />
-                </div>
-              ))
-            )}
+      {/* 5. SECTION 3: BEST SELLING WALL ART (hidden when there is no wall art yet) */}
+      {(isLoading || bestSellingWallArt.length > 0) && (
+        <section className="home-poster-section">
+          <div className="poster-section-header">
+            <h2 className="stencil-heading">BEST SELLING WALL ART</h2>
+            <span className="stencil-subheading">CANVAS FAVOURITES</span>
           </div>
-        </div>
 
-        <div className="explore-more-wrap">
-          <Link href="/collections/posters" className="btn-explore-more">
-            EXPLORE MORE
-          </Link>
-        </div>
-      </section>
+          <div className="poster-single-line-carousel-wrap">
+            <div className="poster-single-line-track">
+              {(isLoading && bestSellingWallArt.length === 0) ? (
+                [1, 2, 3, 4, 5].map((n) => (
+                  <div key={n} className="single-line-poster-item">
+                    <ProductCardSkeleton />
+                  </div>
+                ))
+              ) : (
+                bestSellingWallArt.map((product) => (
+                  <div key={product.id} className="single-line-poster-item">
+                    <ProductCard product={product} onAdded={notify} />
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="explore-more-wrap">
+            <Link href="/collections/wall-art" className="btn-explore-more">
+              EXPLORE MORE
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* 5b. SECTION 3B: TRENDING WALL ART (items the admin marks Trending) */}
+      {(isLoading || trendingWallArt.length > 0) && (
+        <section className="home-poster-section">
+          <div className="poster-section-header">
+            <h2 className="stencil-heading">TRENDING WALL ART</h2>
+            <span className="stencil-subheading">FRESH ON THE WALL</span>
+          </div>
+
+          <div className="poster-single-line-carousel-wrap">
+            <div className="poster-single-line-track">
+              {(isLoading && trendingWallArt.length === 0) ? (
+                [1, 2, 3, 4, 5].map((n) => (
+                  <div key={n} className="single-line-poster-item">
+                    <ProductCardSkeleton />
+                  </div>
+                ))
+              ) : (
+                trendingWallArt.map((product) => (
+                  <div key={product.id} className="single-line-poster-item">
+                    <ProductCard product={product} onAdded={notify} />
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="explore-more-wrap">
+            <Link href="/collections/wall-art" className="btn-explore-more">
+              EXPLORE MORE
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* 6. SECTION 4: DESIGN YOUR OWN (CUSTOM CATEGORIES - PAGE 4) */}
       <section className="home-custom-print-section">
@@ -1333,6 +1375,7 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
   const wallArtSizes = getWallArtSizes(product);
   const hasWallArtSizes = wallArtSizes.length > 0;
   const [selectedSize, setSelectedSize] = useState<PosterSize>(hasWallArtSizes ? wallArtSizes[0] : 'A5');
+  const [frameColor, setFrameColor] = useState<WallArtFrameColor>('Black');
   const [quantity, setQuantity] = useState(1);
   const [openAccordion, setOpenAccordion] = useState<string | null>('features');
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
@@ -1390,9 +1433,10 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
     const addQty = Math.min(quantity, availableStock - currentQty);
 
     store.addToCart({
+      ...(hasWallArtSizes ? { key: `${product.id}-${selectedSize}-${frameColor}`, frameColor } : {}),
       productId: product.id,
       slug: product.slug,
-      title: product.title,
+      title: hasWallArtSizes ? `${product.title} (${frameColor} Frame)` : product.title,
       price: currentSizePrice,
       size: isSized ? selectedSize : ('Standard' as any),
       quantity: addQty,
@@ -1402,7 +1446,11 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
     if (buyNow) {
       navigate('/checkout');
     } else {
-      setToast(isSized ? `${product.title} (${selectedSize}) added to bag!` : `${product.title} added to bag!`);
+      setToast(
+        hasWallArtSizes
+          ? `${product.title} (${selectedSize}, ${frameColor} frame) added to bag!`
+          : isSized ? `${product.title} (${selectedSize}) added to bag!` : `${product.title} added to bag!`,
+      );
       window.setTimeout(() => setToast(''), 3800);
     }
   };
@@ -1530,24 +1578,53 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
           </>
         ) : hasWallArtSizes ? (
           <>
+            {/* FRAME COLOUR */}
+            <div className="product-size-header-bar">
+              <span className="product-size-heading-title">CHOOSE FRAME COLOR</span>
+              <span className="wall-art-frame-picked">{frameColor}</span>
+            </div>
+            <div className="wall-art-frame-row" role="radiogroup" aria-label="Select frame color">
+              {WALL_ART_FRAME_COLORS.map((color) => {
+                const isSelected = frameColor === color;
+                return (
+                  <button
+                    type="button"
+                    key={color}
+                    role="radio"
+                    aria-checked={isSelected}
+                    aria-label={`${color} frame`}
+                    className={`wall-art-frame-btn ${isSelected ? 'active-frame' : ''}`}
+                    onClick={() => setFrameColor(color)}
+                  >
+                    <span className={`wall-art-frame-swatch swatch-${color.toLowerCase()}`} />
+                    <span>{color}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* SIZE: A5 / A4 / A3 like posters; only active sizes are selectable */}
             <div className="product-size-header-bar">
               <span className="product-size-heading-title">CHOOSE CANVAS SIZE</span>
             </div>
             <div className="product-size-boxes-row wall-art-size-row" role="radiogroup" aria-label="Select wall art size">
-              {wallArtSizes.map((sz) => {
-                const isSelected = selectedSize === sz;
+              {WALL_ART_DISPLAY_SIZES.map((sz) => {
+                const isActive = WALL_ART_ACTIVE_SIZES.includes(sz) && wallArtSizes.includes(sz as PosterSize);
+                const isSelected = isActive && selectedSize === sz;
                 return (
                   <button
                     type="button"
                     key={sz}
                     role="radio"
                     aria-checked={isSelected}
-                    className={`product-size-box-btn wall-art-size-btn ${isSelected ? 'active-size-box' : ''}`}
-                    aria-label={`${sz} ${WALL_ART_SIZE_DIMS[sz] || ''}`}
-                    onClick={() => setSelectedSize(sz)}
+                    aria-disabled={!isActive}
+                    disabled={!isActive}
+                    aria-label={isActive ? sz : `${sz} coming soon`}
+                    title={isActive ? undefined : 'Coming soon'}
+                    className={`product-size-box-btn wall-art-size-btn ${isSelected ? 'active-size-box' : ''} ${!isActive ? 'wall-art-size-disabled' : ''}`}
+                    onClick={() => isActive && setSelectedSize(sz as PosterSize)}
                   >
                     <span className="wall-art-size-name">{sz}</span>
-                    <span className="wall-art-size-dims">{WALL_ART_SIZE_DIMS[sz]}</span>
                   </button>
                 );
               })}
@@ -1897,11 +1974,12 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
  * Custom Wall Art (canvas) sizes and prices.
  * Keep in sync with CUSTOM_PRODUCT_PRICES['custom-wall-art'] in artifacts/api-server/src/lib/pricing.ts.
  */
-type WallArtSizeKey = 'small' | 'medium' | 'large';
-const WALL_ART_SIZES: Array<{ key: WallArtSizeKey; label: string; dims: string; price: number }> = [
-  { key: 'small', label: 'Small', dims: '12 × 16 in', price: 699 },
-  { key: 'medium', label: 'Medium', dims: '16 × 24 in', price: 999 },
-  { key: 'large', label: 'Large', dims: '24 × 36 in', price: 1599 },
+type WallArtSizeKey = 'A4' | 'A3' | 'A5';
+// Same sizes as the Wall Art catalog: A4 on sale now, A3 / A5 shown as "coming soon".
+const WALL_ART_SIZES: Array<{ key: WallArtSizeKey; label: string; dims: string; price: number; active: boolean }> = [
+  { key: 'A4', label: 'A4', dims: '21 × 29.7 cm', price: 699, active: true },
+  { key: 'A3', label: 'A3', dims: '29.7 × 42 cm', price: 0, active: false },
+  { key: 'A5', label: 'A5', dims: '14.8 × 21 cm', price: 0, active: false },
 ];
 
 export function CustomPage() {
@@ -1972,10 +2050,11 @@ export function CustomPage() {
 
   // 4. CUSTOM WALL ART (CANVAS) STATE — prices live in WALL_ART_SIZES (keep in sync with api-server lib/pricing.ts)
   const [wallArtPhoto, setWallArtPhoto] = useState<string | null>(null);
-  const [wallArtOrientation, setWallArtOrientation] = useState<'portrait' | 'landscape' | 'square'>('portrait');
-  const [wallArtSize, setWallArtSize] = useState<WallArtSizeKey>('medium');
+  const [wallArtOrientation, setWallArtOrientation] = useState<'portrait' | 'landscape'>('portrait');
+  const [wallArtSize, setWallArtSize] = useState<WallArtSizeKey>('A4');
+  const [wallArtFrame, setWallArtFrame] = useState<WallArtFrameColor>('Black');
   const wallArtInputRef = useRef<HTMLInputElement>(null);
-  const wallArtOption = WALL_ART_SIZES.find((o) => o.key === wallArtSize) || WALL_ART_SIZES[1];
+  const wallArtOption = WALL_ART_SIZES.find((o) => o.key === wallArtSize && o.active) || WALL_ART_SIZES[0];
 
   const posterSizePrices: Record<'A5' | 'A4' | 'A3', number> = {
     A5: 90,
@@ -2109,9 +2188,10 @@ export function CustomPage() {
     store.addToCart({
       productId: 'custom-wall-art',
       slug: 'custom-wall-art',
-      title: `Custom Wall Art (${wallArtOption.label} ${wallArtOption.dims} • ${wallArtOrientation.toUpperCase()})`,
+      title: `Custom Wall Art (${wallArtOption.label} • ${wallArtFrame} Frame • ${wallArtOrientation.toUpperCase()})`,
       price: wallArtOption.price,
-      size: 'Standard',
+      size: wallArtOption.key,
+      frameColor: wallArtFrame,
       quantity: 1,
       orientation: wallArtOrientation,
       artTreatment: 'art-signal',
@@ -2120,6 +2200,7 @@ export function CustomPage() {
         preview: wallArtPhoto,
         customType: 'Custom Wall Art',
         format: wallArtOption.key,
+        frameColor: wallArtFrame,
       },
     });
     return true;
@@ -2128,7 +2209,8 @@ export function CustomPage() {
   const resetWallArt = () => {
     setWallArtPhoto(null);
     setWallArtOrientation('portrait');
-    setWallArtSize('medium');
+    setWallArtSize('A4');
+    setWallArtFrame('Black');
   };
 
   const handleAddWallArtToCart = () => {
@@ -2137,7 +2219,7 @@ export function CustomPage() {
       window.setTimeout(() => setToast(''), 3000);
       return;
     }
-    setToast(`Custom Wall Art (${wallArtOption.label}) added to bag! Ready for another order.`);
+    setToast(`Custom Wall Art (${wallArtOption.label}, ${wallArtFrame} frame) added to bag! Ready for another order.`);
     resetWallArt();
     window.setTimeout(() => setToast(''), 3000);
   };
@@ -2400,7 +2482,7 @@ export function CustomPage() {
                 Turn your favourite photo or artwork into gallery-style canvas wall art for your home.
               </p>
               <div className="box-footer-row">
-                <span className="box-price-hint">Starting from Rs. {WALL_ART_SIZES[0].price}</span>
+                <span className="box-price-hint">Starting from Rs. {Math.min(...WALL_ART_SIZES.filter((o) => o.active).map((o) => o.price))}</span>
                 <button
                   type="button"
                   className="btn-design-now-highlight"
@@ -2947,10 +3029,13 @@ export function CustomPage() {
       {selectedType === 'wallart' && (
         <div className="custom-studio-content">
           <div className="wallpaper-live-preview-wrap">
-            <div className={`wall-mockup-frame orientation-${wallArtOrientation}`}>
+            <div
+              className={`wall-mockup-frame orientation-${wallArtOrientation} ${wallArtPhoto ? `wall-art-framed wa-frame-${wallArtFrame.toLowerCase()}` : ''}`}
+              aria-label={wallArtPhoto ? `Preview with ${wallArtFrame.toLowerCase()} frame` : undefined}
+            >
               {wallArtPhoto ? (
                 <div className="wall-poster-art-box wall-art-canvas-box">
-                  <img src={wallArtPhoto} alt="Your custom wall art" className="wall-poster-custom-img" />
+                  <img src={wallArtPhoto} alt={`Your custom wall art in a ${wallArtFrame.toLowerCase()} frame`} className="wall-poster-custom-img" />
                   <button type="button" className="btn-change-wallpaper-img" onClick={() => wallArtInputRef.current?.click()}>
                     Change Image
                   </button>
@@ -2968,7 +3053,7 @@ export function CustomPage() {
           <div className="custom-options-controls">
             <h2 className="editor-heading">Customize Your Wall Art</h2>
             <p className="editor-subheading">
-              Upload a photo or artwork, then pick the shape and canvas size. Printed on gallery-wrapped canvas, ready to hang.
+              Upload a photo or artwork, then pick the frame colour, orientation and size. The preview shows your frame.
             </p>
 
             <input ref={wallArtInputRef} type="file" accept="image/*" onChange={handleWallArtUpload} className="hidden" />
@@ -2983,14 +3068,34 @@ export function CustomPage() {
               </div>
             )}
 
-            {/* 1. SHAPE */}
+            {/* 1. FRAME COLOUR */}
+            <div className="control-group">
+              <label className="control-label">Frame color: {wallArtFrame}</label>
+              <div className="wall-art-frame-row" role="radiogroup" aria-label="Select frame color">
+                {WALL_ART_FRAME_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    role="radio"
+                    aria-checked={wallArtFrame === color}
+                    aria-label={`${color} frame`}
+                    className={`wall-art-frame-btn ${wallArtFrame === color ? 'active-frame' : ''}`}
+                    onClick={() => setWallArtFrame(color)}
+                  >
+                    <span className={`wall-art-frame-swatch swatch-${color.toLowerCase()}`} />
+                    <span>{color}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. SHAPE */}
             <div className="control-group">
               <label className="control-label">Shape</label>
               <div className="option-pills-row">
                 {([
                   ['portrait', 'Portrait (Vertical)'],
                   ['landscape', 'Landscape (Horizontal)'],
-                  ['square', 'Square'],
                 ] as const).map(([value, label]) => (
                   <button
                     key={value}
@@ -3004,25 +3109,28 @@ export function CustomPage() {
               </div>
             </div>
 
-            {/* 2. CANVAS SIZE */}
+            {/* 3. SIZE (A4 on sale; A3 / A5 coming soon) */}
             <div className="control-group">
-              <label className="control-label">Canvas size</label>
+              <label className="control-label">Size</label>
               <div className="option-pills-row size-pills-row">
                 {WALL_ART_SIZES.map((o) => (
                   <button
                     key={o.key}
                     type="button"
-                    className={`option-pill ${wallArtSize === o.key ? 'active-pill' : ''}`}
-                    onClick={() => setWallArtSize(o.key)}
+                    disabled={!o.active}
+                    aria-disabled={!o.active}
+                    title={o.active ? undefined : 'Coming soon'}
+                    className={`option-pill ${o.active && wallArtSize === o.key ? 'active-pill' : ''} ${!o.active ? 'wall-art-pill-disabled' : ''}`}
+                    onClick={() => o.active && setWallArtSize(o.key)}
                   >
-                    {o.label} {o.dims} • ₹{o.price}
+                    {o.label}
                   </button>
                 ))}
               </div>
             </div>
 
             <ul className="wall-art-features">
-              <li>Gallery-wrapped canvas on a wooden frame</li>
+              <li>Solid wooden frame in black, brown or white</li>
               <li>Fade-resistant, vivid print</li>
               <li>Ready to hang, hooks included</li>
             </ul>
@@ -3613,6 +3721,7 @@ export function CheckoutPage() {
               quantity: item.quantity,
               orientation: item.orientation || 'portrait',
               customUpload: item.customUpload,
+              ...(item.frameColor ? { frameColor: item.frameColor } : {}),
             })),
             couponCode: coupon || undefined,
           }),
