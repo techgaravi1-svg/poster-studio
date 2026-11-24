@@ -18,7 +18,7 @@ import {
   AlertCircle,
   Trash2,
 } from 'lucide-react';
-import { formatPrice, getProductSizePrice, getProductSizeComparePrice, getWallArtSizes, getAvailableSizes, products, type PosterSize } from '@/lib/catalog';
+import { formatPrice, getProductSizePrice, getProductSizeComparePrice, getWallArtSizes, getAvailableSizes, getFrameImage, products, type PosterSize } from '@/lib/catalog';
 import { store, useStore, fetchLiveCoupons, type CartItem, type ActiveCoupon } from '@/lib/store';
 
 export const sizeInfoMap: Record<string, { name: string; dims: string; badge?: string; recommendation: string }> = {
@@ -112,7 +112,7 @@ export function MyntraItemCard({
     : Math.round(item.price * 1.5);
   const discountPct = Math.max(10, Math.round(((itemMrp - item.price) / itemMrp) * 100));
 
-  const imageSrc = item.customUpload?.preview || matchProduct?.images?.[0] || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349699/dungeons_store_assets/poster-03_a9d962.jpg';
+  const imageSrc = item.customUpload?.preview || (matchProduct && item.frameColor ? getFrameImage(matchProduct, item.frameColor) : '') || matchProduct?.images?.[0] || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349699/dungeons_store_assets/poster-03_a9d962.jpg';
 
   // Calculate estimated delivery date: 4 days from today
   const estDate = new Date();

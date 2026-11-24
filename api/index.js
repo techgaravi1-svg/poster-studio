@@ -20713,27 +20713,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module2.exports = Router11;
+    module2.exports = Router12;
     module2.exports.Route = Route;
-    function Router11(options) {
-      if (!(this instanceof Router11)) {
-        return new Router11(options);
+    function Router12(options) {
+      if (!(this instanceof Router12)) {
+        return new Router12(options);
       }
       const opts = options || {};
-      function router11(req, res, next) {
-        router11.handle(req, res, next);
+      function router12(req, res, next) {
+        router12.handle(req, res, next);
       }
-      Object.setPrototypeOf(router11, this);
-      router11.caseSensitive = opts.caseSensitive;
-      router11.mergeParams = opts.mergeParams;
-      router11.params = {};
-      router11.strict = opts.strict;
-      router11.stack = [];
-      return router11;
+      Object.setPrototypeOf(router12, this);
+      router12.caseSensitive = opts.caseSensitive;
+      router12.mergeParams = opts.mergeParams;
+      router12.params = {};
+      router12.strict = opts.strict;
+      router12.stack = [];
+      return router12;
     }
-    Router11.prototype = function() {
+    Router12.prototype = function() {
     };
-    Router11.prototype.param = function param(name, fn) {
+    Router12.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20753,7 +20753,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router11.prototype.handle = function handle(req, res, callback) {
+    Router12.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20880,7 +20880,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router11.prototype.use = function use(handler) {
+    Router12.prototype.use = function use(handler) {
       let offset = 0;
       let path = "/";
       if (typeof handler !== "function") {
@@ -20913,7 +20913,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router11.prototype.route = function route(path) {
+    Router12.prototype.route = function route(path) {
       const route2 = new Route(path);
       const layer = new Layer(path, {
         sensitive: this.caseSensitive,
@@ -20928,7 +20928,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router11.prototype[method] = function(path) {
+      Router12.prototype[method] = function(path) {
         const route = this.route(path);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -21111,13 +21111,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = require("node:path").resolve;
     var once = require_once();
-    var Router11 = require_router();
+    var Router12 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports2 = module2.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router11 = null;
+      var router12 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21126,13 +21126,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router11 === null) {
-            router11 = new Router11({
+          if (router12 === null) {
+            router12 = new Router12({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router11;
+          return router12;
         }
       });
     };
@@ -21203,15 +21203,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router11 = this.router;
+      var router12 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router11.use(path, fn2);
+          return router12.use(path, fn2);
         }
         debug(".use app under %s", path);
         fn2.mountpath = path;
         fn2.parent = this;
-        router11.use(path, function mounted_app(req, res, next) {
+        router12.use(path, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -22421,7 +22421,7 @@ var require_cookie = __commonJS({
   "../../node_modules/.pnpm/cookie@0.7.2/node_modules/cookie/index.js"(exports2) {
     "use strict";
     exports2.parse = parse;
-    exports2.serialize = serialize;
+    exports2.serialize = serialize2;
     var __toString = Object.prototype.toString;
     var __hasOwnProperty = Object.prototype.hasOwnProperty;
     var cookieNameRegExp = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
@@ -22480,7 +22480,7 @@ var require_cookie = __commonJS({
       }
       return min;
     }
-    function serialize(name, val, opt) {
+    function serialize2(name, val, opt) {
       var enc = opt && opt.encode || encodeURIComponent;
       if (typeof enc !== "function") {
         throw new TypeError("option encode is invalid");
@@ -23720,7 +23720,7 @@ var require_express = __commonJS({
     var EventEmitter = require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router11 = require_router();
+    var Router12 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -23742,8 +23742,8 @@ var require_express = __commonJS({
     exports2.application = proto;
     exports2.request = req;
     exports2.response = res;
-    exports2.Route = Router11.Route;
-    exports2.Router = Router11;
+    exports2.Route = Router12.Route;
+    exports2.Router = Router12;
     exports2.json = bodyParser.json;
     exports2.raw = bodyParser.raw;
     exports2.static = require_serve_static();
@@ -24833,7 +24833,7 @@ var require_redact = __commonJS({
       const {
         paths = [],
         censor = "[REDACTED]",
-        serialize = JSON.stringify,
+        serialize: serialize2 = JSON.stringify,
         strict = true,
         remove = false
       } = options;
@@ -24842,10 +24842,10 @@ var require_redact = __commonJS({
       return function redact(obj) {
         if (strict && (obj === null || typeof obj !== "object")) {
           if (obj === null || obj === void 0) {
-            return serialize ? serialize(obj) : obj;
+            return serialize2 ? serialize2(obj) : obj;
           }
           if (typeof obj !== "object") {
-            return serialize ? serialize(obj) : obj;
+            return serialize2 ? serialize2(obj) : obj;
           }
         }
         const cloned = selectiveClone(obj, pathStructure);
@@ -24855,14 +24855,14 @@ var require_redact = __commonJS({
           actualCensor = censor;
         }
         redactPaths(cloned, paths, actualCensor, remove);
-        if (serialize === false) {
+        if (serialize2 === false) {
           cloned.restore = function() {
             return deepClone(original);
           };
           return cloned;
         }
-        if (typeof serialize === "function") {
-          return serialize(cloned);
+        if (typeof serialize2 === "function") {
+          return serialize2(cloned);
         }
         return JSON.stringify(cloned);
       };
@@ -24951,7 +24951,7 @@ var require_redaction = __commonJS({
     var rx = /[^.[\]]+|\[([^[\]]*?)\]/g;
     var CENSOR = "[Redacted]";
     var strict = false;
-    function redaction(opts, serialize) {
+    function redaction(opts, serialize2) {
       const { paths, censor, remove } = handle(opts);
       const shape = paths.reduce((o, str) => {
         rx.lastIndex = 0;
@@ -24985,10 +24985,10 @@ var require_redaction = __commonJS({
         return o;
       }, {});
       const result = {
-        [redactFmtSym]: Redact({ paths, censor, serialize, strict, remove })
+        [redactFmtSym]: Redact({ paths, censor, serialize: serialize2, strict, remove })
       };
       const topCensor = (...args) => {
-        return typeof censor === "function" ? serialize(censor(...args)) : serialize(censor);
+        return typeof censor === "function" ? serialize2(censor(...args)) : serialize2(censor);
       };
       return [...Object.keys(shape), ...Object.getOwnPropertySymbols(shape)].reduce((o, k) => {
         if (shape[k] === null) {
@@ -25000,7 +25000,7 @@ var require_redaction = __commonJS({
           o[k] = Redact({
             paths: shape[k],
             censor: wrappedCensor,
-            serialize,
+            serialize: serialize2,
             strict,
             remove
           });
@@ -28599,12 +28599,12 @@ __export(serverless_exports, {
 module.exports = __toCommonJS(serverless_exports);
 
 // src/app.ts
-var import_express11 = __toESM(require_express2(), 1);
+var import_express12 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_pino_http = __toESM(require_logger(), 1);
 
 // src/routes/index.ts
-var import_express10 = __toESM(require_express2(), 1);
+var import_express11 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -33911,6 +33911,31 @@ var products_default = router6;
 
 // src/routes/admin.ts
 var import_express7 = __toESM(require_express2(), 1);
+var FRAME_IMAGE_COLORS = ["Black", "Brown", "White"];
+async function resolveFrameImageTags(tags, slug) {
+  const out = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const tag of tags) {
+    if (typeof tag !== "string") continue;
+    if (!tag.toLowerCase().startsWith("frame-image:")) {
+      out.push(tag);
+      continue;
+    }
+    const rest = tag.slice("frame-image:".length);
+    const cut = rest.indexOf(":");
+    if (cut < 0) continue;
+    const color = FRAME_IMAGE_COLORS.find((c) => c.toLowerCase() === rest.slice(0, cut).trim().toLowerCase());
+    let value = rest.slice(cut + 1).trim();
+    if (!color || seen.has(color) || !isAcceptableImageInput(value)) continue;
+    if (value.startsWith("data:")) {
+      value = await uploadBase64ToCloudinary(value, `${String(slug).slice(0, 50)}_${color.toLowerCase()}_frame`);
+    }
+    if (!/^https:\/\/\S+$/i.test(value) || value.length > 2048) continue;
+    seen.add(color);
+    out.push(`frame-image:${color}:${value}`);
+  }
+  return out;
+}
 var router7 = (0, import_express7.Router)();
 var loginAttemptStore = /* @__PURE__ */ new Map();
 var currentAdminPassword = usableSecret(process.env.ADMIN_PASSWORD || "Admin@Poster2026!", 10);
@@ -34333,6 +34358,7 @@ router7.post("/admin/products", requireAdminAuth, async (req, res) => {
         productData.tags.push("trending");
       }
     }
+    if (Array.isArray(productData.tags)) productData.tags = await resolveFrameImageTags(productData.tags, productData.slug || "wall-art");
     if (Array.isArray(productData.images) && productData.images.length > 0) {
       productData.images = await Promise.all(
         productData.images.map(
@@ -34392,6 +34418,7 @@ router7.put("/admin/products/:id", requireAdminAuth, async (req, res) => {
         productData.tags = productData.tags.filter((t) => t.toLowerCase() !== "trending");
       }
     }
+    if (Array.isArray(productData.tags)) productData.tags = await resolveFrameImageTags(productData.tags, productData.slug || String(req.params.id));
     if (Array.isArray(productData.images) && productData.images.length > 0) {
       productData.images = await Promise.all(
         productData.images.map(
@@ -34885,7 +34912,7 @@ function buildProductData(input) {
     };
     price = sizePrices.A5;
   }
-  const tags = input.tags.filter((t) => !/^(sizeprice|sizecompare|rating|reviews|avail-size|frame-color|wall-art-cat):/i.test(t) && t.toLowerCase() !== "trending");
+  const tags = input.tags.filter((t) => !/^(sizeprice|sizecompare|rating|reviews|avail-size|frame-color|wall-art-cat|wall-art-catname|frame-image):/i.test(t) && t.toLowerCase() !== "trending");
   return {
     title: input.title,
     description: input.description,
@@ -35273,21 +35300,141 @@ router9.patch("/admin/products/:id/approval", requireAdminAuth, async (req, res)
 });
 var admin_sellers_default = router9;
 
-// src/routes/index.ts
+// src/routes/hero-slides.ts
+var import_express10 = __toESM(require_express2(), 1);
 var router10 = (0, import_express10.Router)();
-router10.use(health_default);
-router10.use(orders_default);
-router10.use(addresses_default);
-router10.use(coupons_default);
-router10.use(newsletter_default);
-router10.use(products_default);
-router10.use(admin_default);
-router10.use(admin_sellers_default);
-router10.use(seller_default);
-var routes_default = router10;
+var SCHEMA_MISSING_ERROR2 = 'Database not updated for hero slides yet. Run "pnpm --filter @workspace/db run push", then restart the API.';
+var isSchemaMissing2 = (error) => error?.code === "P2021" || error?.code === "P2022";
+var isSafeLink = (value) => value.startsWith("/") && !value.startsWith("//") && !value.includes("\\") || /^https:\/\/[^\s]+$/i.test(value);
+var SlideSchema = external_exports.object({
+  title: external_exports.string().trim().max(120).default(""),
+  image: external_exports.string().refine(isAcceptableImageInput, "Image must be an https URL or a PNG/JPEG/WEBP upload under 8MB"),
+  link: external_exports.string().trim().max(500).refine(isSafeLink, "Link must start with / (a page on this site) or https://").default("/collections"),
+  isActive: external_exports.boolean().default(true),
+  sortOrder: external_exports.number().int().min(0).max(9999).optional()
+});
+var SlideUpdateSchema = SlideSchema.partial();
+var serialize = (s) => ({
+  id: s.id,
+  title: s.title,
+  image: s.image,
+  link: s.link,
+  isActive: s.isActive,
+  sortOrder: s.sortOrder,
+  createdAt: s.createdAt,
+  updatedAt: s.updatedAt
+});
+var zodMessage2 = (err) => err.issues.map((i) => i.message).join(", ");
+async function storeImage(image, title) {
+  if (image.startsWith("data:")) {
+    return uploadBase64ToCloudinary(image, `hero_${(title || "slide").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40)}`);
+  }
+  return image;
+}
+async function audit(req, action, entityId, details) {
+  try {
+    await prisma.auditLog.create({ data: { action, entity: "HeroSlide", entityId, details, ipAddress: clientIp(req) } });
+  } catch (err) {
+    logger.warn({ err }, "hero slide audit log failed");
+  }
+}
+router10.get("/hero-slides", async (_req, res) => {
+  try {
+    const slides = await prisma.heroSlide.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      take: 20
+    });
+    res.setHeader("Cache-Control", "public, max-age=0, s-maxage=15, stale-while-revalidate=60");
+    return res.json({ success: true, slides: slides.map(serialize) });
+  } catch (error) {
+    if (isSchemaMissing2(error)) return res.json({ success: true, slides: [], configured: false });
+    return res.status(500).json({ success: false, error: "Failed to load hero slides" });
+  }
+});
+router10.get("/admin/hero-slides", requireAdminAuth, async (_req, res) => {
+  try {
+    const slides = await prisma.heroSlide.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] });
+    return res.json({ success: true, slides: slides.map(serialize) });
+  } catch (error) {
+    if (isSchemaMissing2(error)) return res.status(503).json({ success: false, error: SCHEMA_MISSING_ERROR2 });
+    return res.status(500).json({ success: false, error: "Failed to load hero slides" });
+  }
+});
+router10.post("/admin/hero-slides", requireAdminAuth, async (req, res) => {
+  const parsed = SlideSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ success: false, error: zodMessage2(parsed.error) });
+  try {
+    const count = await prisma.heroSlide.count();
+    if (count >= 20) return res.status(400).json({ success: false, error: "You can have up to 20 hero slides. Delete one first." });
+    const last = await prisma.heroSlide.aggregate({ _max: { sortOrder: true } });
+    const image = await storeImage(parsed.data.image, parsed.data.title);
+    const slide = await prisma.heroSlide.create({
+      data: {
+        title: parsed.data.title,
+        image,
+        link: parsed.data.link,
+        isActive: parsed.data.isActive,
+        sortOrder: parsed.data.sortOrder ?? (last._max.sortOrder ?? -1) + 1
+      }
+    });
+    await audit(req, "HERO_SLIDE_CREATED", slide.id, { title: slide.title, link: slide.link });
+    return res.status(201).json({ success: true, slide: serialize(slide) });
+  } catch (error) {
+    if (isSchemaMissing2(error)) return res.status(503).json({ success: false, error: SCHEMA_MISSING_ERROR2 });
+    logger.error({ err: error }, "create hero slide failed");
+    return res.status(500).json({ success: false, error: error?.message?.includes("Cloudinary") ? error.message : "Failed to save hero slide" });
+  }
+});
+router10.patch("/admin/hero-slides/:id", requireAdminAuth, async (req, res) => {
+  const parsed = SlideUpdateSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ success: false, error: zodMessage2(parsed.error) });
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.heroSlide.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, error: "Hero slide not found" });
+    const data = { ...parsed.data };
+    if (data.image) data.image = await storeImage(data.image, data.title ?? existing.title);
+    const slide = await prisma.heroSlide.update({ where: { id }, data });
+    await audit(req, "HERO_SLIDE_UPDATED", slide.id, { fields: Object.keys(parsed.data) });
+    return res.json({ success: true, slide: serialize(slide) });
+  } catch (error) {
+    if (isSchemaMissing2(error)) return res.status(503).json({ success: false, error: SCHEMA_MISSING_ERROR2 });
+    logger.error({ err: error }, "update hero slide failed");
+    return res.status(500).json({ success: false, error: "Failed to update hero slide" });
+  }
+});
+router10.delete("/admin/hero-slides/:id", requireAdminAuth, async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const existing = await prisma.heroSlide.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ success: false, error: "Hero slide not found" });
+    await prisma.heroSlide.delete({ where: { id } });
+    await audit(req, "HERO_SLIDE_DELETED", id, { title: existing.title });
+    return res.json({ success: true });
+  } catch (error) {
+    if (isSchemaMissing2(error)) return res.status(503).json({ success: false, error: SCHEMA_MISSING_ERROR2 });
+    return res.status(500).json({ success: false, error: "Failed to delete hero slide" });
+  }
+});
+var hero_slides_default = router10;
+
+// src/routes/index.ts
+var router11 = (0, import_express11.Router)();
+router11.use(health_default);
+router11.use(orders_default);
+router11.use(addresses_default);
+router11.use(coupons_default);
+router11.use(newsletter_default);
+router11.use(products_default);
+router11.use(admin_default);
+router11.use(admin_sellers_default);
+router11.use(seller_default);
+router11.use(hero_slides_default);
+var routes_default = router11;
 
 // src/app.ts
-var app = (0, import_express11.default)();
+var app = (0, import_express12.default)();
 app.set("trust proxy", 1);
 app.use(securityHeadersMiddleware);
 app.use(
@@ -35321,8 +35468,8 @@ app.use(
     // 24 hours preflight cache
   })
 );
-app.use(import_express11.default.json({ limit: "25mb" }));
-app.use(import_express11.default.urlencoded({ extended: true, limit: "25mb" }));
+app.use(import_express12.default.json({ limit: "25mb" }));
+app.use(import_express12.default.urlencoded({ extended: true, limit: "25mb" }));
 app.use(sanitizeInputs);
 app.use("/api", rateLimiter({ windowMs: 60 * 1e3, maxRequests: 120 }));
 app.use((req, _res, next) => {

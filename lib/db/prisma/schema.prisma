@@ -293,3 +293,21 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+// ------------------------------------------------------------------------------
+// HOMEPAGE HERO SLIDER (managed from the admin panel)
+// ------------------------------------------------------------------------------
+
+model HeroSlide {
+  id        String   @id @default(cuid())
+  title     String   @default("")
+  image     String
+  link      String   @default("/collections")
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("hero_slides")
+}

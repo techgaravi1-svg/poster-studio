@@ -6,6 +6,37 @@ import { isAcceptableImageInput, uploadBase64ToCloudinary } from '../lib/cloudin
 import { clientIp, safeEqual, usableSecret } from '../lib/auth';
 import { logger } from '../lib/logger';
 
+/**
+ * Wall art photo per frame colour, stored as `frame-image:<Colour>:<https url>`.
+ * Uploads base64 photos to Cloudinary, drops anything that is not a safe https image,
+ * and keeps one photo per colour. Other tags pass through untouched.
+ */
+const FRAME_IMAGE_COLORS = ['Black', 'Brown', 'White'];
+async function resolveFrameImageTags(tags: unknown[], slug: string): Promise<string[]> {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const tag of tags) {
+    if (typeof tag !== 'string') continue;
+    if (!tag.toLowerCase().startsWith('frame-image:')) {
+      out.push(tag);
+      continue;
+    }
+    const rest = tag.slice('frame-image:'.length);
+    const cut = rest.indexOf(':');
+    if (cut < 0) continue;
+    const color = FRAME_IMAGE_COLORS.find((c) => c.toLowerCase() === rest.slice(0, cut).trim().toLowerCase());
+    let value = rest.slice(cut + 1).trim();
+    if (!color || seen.has(color) || !isAcceptableImageInput(value)) continue;
+    if (value.startsWith('data:')) {
+      value = await uploadBase64ToCloudinary(value, `${String(slug).slice(0, 50)}_${color.toLowerCase()}_frame`);
+    }
+    if (!/^https:\/\/\S+$/i.test(value) || value.length > 2048) continue;
+    seen.add(color);
+    out.push(`frame-image:${color}:${value}`);
+  }
+  return out;
+}
+
 const router: Router = Router();
 
 // In-memory brute force lockout store for admin login
@@ -527,6 +558,8 @@ router.post('/admin/products', requireAdminAuth, async (req: Request, res: Respo
       }
     }
 
+    if (Array.isArray(productData.tags)) productData.tags = await resolveFrameImageTags(productData.tags, productData.slug || 'wall-art');
+
     // Automatically convert any base64 images to Cloudinary CDN URLs before DB save
     if (Array.isArray(productData.images) && productData.images.length > 0) {
       productData.images = await Promise.all(
@@ -596,6 +629,8 @@ router.put('/admin/products/:id', requireAdminAuth, async (req: Request, res: Re
         productData.tags = productData.tags.filter((t: string) => t.toLowerCase() !== 'trending');
       }
     }
+
+    if (Array.isArray(productData.tags)) productData.tags = await resolveFrameImageTags(productData.tags, productData.slug || String(req.params.id));
 
     // Automatically convert any base64 images to Cloudinary CDN URLs before DB update
     if (Array.isArray(productData.images) && productData.images.length > 0) {

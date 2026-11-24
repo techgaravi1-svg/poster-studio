@@ -8,6 +8,7 @@ import productsRouter from './products';
 import adminRouter from './admin';
 import adminSellersRouter from './admin-sellers';
 import sellerRouter from './seller';
+import heroSlidesRouter from './hero-slides';
 
 const router: Router = Router();
 
@@ -20,5 +21,6 @@ router.use(productsRouter);
 router.use(adminRouter);
 router.use(adminSellersRouter);
 router.use(sellerRouter);
+router.use(heroSlidesRouter);
 
 export default router;

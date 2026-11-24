@@ -39,6 +39,8 @@ export const CUSTOM_WALL_ART_FRAME_COLORS: readonly string[] = ['Black'];
 export const AVAILABLE_SIZE_TAG = 'avail-size:';
 export const FRAME_COLOR_TAG = 'frame-color:';
 export const WALL_ART_CATEGORY_TAG = 'wall-art-cat:';
+/** Display name of an admin-added wall art category, stored next to its slug tag. */
+export const WALL_ART_CATEGORY_NAME_TAG = 'wall-art-catname:';
 
 /**
  * Wall art themes (like poster categories). Every wall art item keeps category 'wall-art'
@@ -52,13 +54,47 @@ export const WALL_ART_CATEGORIES: ReadonlyArray<{ slug: string; name: string }> 
   { slug: 'pop-art', name: 'Pop Art' },
 ];
 
-/** Theme slug of a wall art item ('' when none set). */
-export function getWallArtCategory(product: { tags?: unknown }): string {
-  return readTagList(product.tags, WALL_ART_CATEGORY_TAG, WALL_ART_CATEGORIES.map((c) => c.slug))[0] || '';
+export function slugifyWallArtCategory(name: string): string {
+  return String(name || '').toLowerCase().trim().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '').slice(0, 40);
 }
 
-export function getWallArtCategoryName(slug: string): string {
-  return WALL_ART_CATEGORIES.find((c) => c.slug === slug)?.name || '';
+/** Clean display name for a new category (no commas, they separate tags in the admin form). */
+export function cleanWallArtCategoryName(name: string): string {
+  return String(name || '').replace(/[,\n\r\t]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+}
+
+function readTagValue(tags: unknown, prefix: string): string {
+  if (!Array.isArray(tags)) return '';
+  const tag = tags.find((t): t is string => typeof t === 'string' && t.toLowerCase().startsWith(prefix));
+  return tag ? tag.slice(prefix.length).trim() : '';
+}
+
+/** Theme slug of a wall art item ('' when none set). Includes categories the admin added. */
+export function getWallArtCategory(product: { tags?: unknown }): string {
+  return slugifyWallArtCategory(readTagValue(product.tags, WALL_ART_CATEGORY_TAG));
+}
+
+function titleFromSlug(slug: string): string {
+  return slug.split('-').filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+/** Default categories plus every admin-added category found on the given products. */
+export function getWallArtCategoryList(productsList?: ReadonlyArray<{ category?: string; tags?: unknown }>): Array<{ slug: string; name: string }> {
+  const list: Array<{ slug: string; name: string }> = WALL_ART_CATEGORIES.map((c) => ({ ...c }));
+  const seen = new Set(list.map((c) => c.slug));
+  for (const p of productsList || []) {
+    if (!isWallArtCategory(p.category)) continue;
+    const slug = getWallArtCategory(p);
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    list.push({ slug, name: cleanWallArtCategoryName(readTagValue(p.tags, WALL_ART_CATEGORY_NAME_TAG)) || titleFromSlug(slug) });
+  }
+  return list;
+}
+
+export function getWallArtCategoryName(slug: string, list: ReadonlyArray<{ slug: string; name: string }> = WALL_ART_CATEGORIES): string {
+  if (!slug) return '';
+  return list.find((c) => c.slug === slug)?.name || WALL_ART_CATEGORIES.find((c) => c.slug === slug)?.name || titleFromSlug(slug);
 }
 
 export function isWallArtCategory(cat?: string | null): boolean {
@@ -94,6 +130,30 @@ export function getFrameColors(product: { category?: string; tags?: unknown }): 
   if (!isWallArtCategory(product.category)) return [];
   const list = readTagList(product.tags, FRAME_COLOR_TAG, WALL_ART_FRAME_COLORS);
   return list.length ? list : [...DEFAULT_WALL_ART_FRAME_COLORS];
+}
+
+/** Photo of the wall art in a given frame colour, stored as `frame-image:Black:https://...`. */
+export const FRAME_IMAGE_TAG = 'frame-image:';
+
+/** Admin-uploaded image per frame colour. Older wall art has none and keeps its main image. */
+export function getFrameImages(product: { category?: string; tags?: unknown }): Partial<Record<string, string>> {
+  const out: Partial<Record<string, string>> = {};
+  if (!isWallArtCategory(product.category) || !Array.isArray(product.tags)) return out;
+  for (const tag of product.tags) {
+    if (typeof tag !== 'string' || !tag.toLowerCase().startsWith(FRAME_IMAGE_TAG)) continue;
+    const rest = tag.slice(FRAME_IMAGE_TAG.length);
+    const cut = rest.indexOf(':');
+    if (cut < 0) continue;
+    const color = WALL_ART_FRAME_COLORS.find((c) => c.toLowerCase() === rest.slice(0, cut).trim().toLowerCase());
+    const url = rest.slice(cut + 1).trim();
+    if (color && !out[color] && /^https:\/\/\S+$/i.test(url)) out[color] = url;
+  }
+  return out;
+}
+
+export function getFrameImage(product: { category?: string; tags?: unknown }, color?: string | null): string {
+  if (!color) return '';
+  return getFrameImages(product)[color] || '';
 }
 
 /**

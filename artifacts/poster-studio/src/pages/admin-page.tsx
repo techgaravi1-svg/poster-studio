@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import './admin.css';
 import { AdminSellersPanel } from '@/pages/admin-sellers-panel';
+import { AdminHeroSlidesPanel } from '@/pages/admin-hero-slides-panel';
 import {
   formatPrice,
   fetchLiveProducts,
@@ -61,6 +62,12 @@ import {
   AVAILABLE_SIZE_TAG,
   FRAME_COLOR_TAG,
   WALL_ART_CATEGORY_TAG,
+  WALL_ART_CATEGORY_NAME_TAG,
+  FRAME_IMAGE_TAG,
+  getFrameImages,
+  getWallArtCategoryList,
+  slugifyWallArtCategory,
+  cleanWallArtCategoryName,
   WALL_ART_CATEGORIES,
   getWallArtCategory,
   getWallArtCategoryName,
@@ -210,7 +217,7 @@ export function AdminDashboardPage() {
   // -------------------------------------------------------------
   // DASHBOARD STATE
   // -------------------------------------------------------------
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'wallart' | 'decor' | 'sellers' | 'coupons' | 'customers' | 'security'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'wallart' | 'decor' | 'sellers' | 'heroslider' | 'coupons' | 'customers' | 'security'>('dashboard');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -490,6 +497,7 @@ export function AdminDashboardPage() {
     images: ['https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-6_71a8b7.jpg'],
     availableSizes: ['A5', 'A4', 'A3'] as string[],
     frameColors: ['Black'] as string[],
+    frameImages: {} as Record<string, string>,
     wallArtCategory: '' as string,
     tags: 'mirrors, aesthetic, home decor',
     stock: 25,
@@ -497,7 +505,7 @@ export function AdminDashboardPage() {
     isNewRelease: false,
     isTrending: false,
     rating: 4.9,
-    reviewsCount: 48,
+    reviewsCount: 0,
   };
 
   const defaultPosterFormData = {
@@ -521,6 +529,7 @@ export function AdminDashboardPage() {
     images: ['https://res.cloudinary.com/pyjyrmry/image/upload/v1793349698/dungeons_store_assets/poster-01_24409e.jpg'],
     availableSizes: ['A5', 'A4', 'A3'] as string[],
     frameColors: ['Black'] as string[],
+    frameImages: {} as Record<string, string>,
     wallArtCategory: '' as string,
     tags: 'anime, poster, art',
     stock: 50,
@@ -528,7 +537,7 @@ export function AdminDashboardPage() {
     isNewRelease: false,
     isTrending: false,
     rating: 4.9,
-    reviewsCount: 148,
+    reviewsCount: 0,
   };
 
   // Wall Art Catalog: Small / Medium / Large canvas pricing (category 'wall-art')
@@ -542,11 +551,12 @@ export function AdminDashboardPage() {
     sizeComparePrices: { A4: 1399 } as Record<string, number>,
     availableSizes: ['A4'] as string[],
     frameColors: ['Black'] as string[],
+    frameImages: {} as Record<string, string>,
     wallArtCategory: WALL_ART_CATEGORIES[0].slug,
     images: ['https://res.cloudinary.com/pyjyrmry/image/upload/v1793349694/dungeons_store_assets/circle-2_3df893.jpg'],
     tags: 'wall art, canvas, home decor',
     stock: 25,
-    reviewsCount: 48,
+    reviewsCount: 0,
   };
 
   const [productFormData, setProductFormData] = useState(defaultProductFormData);
@@ -662,6 +672,32 @@ export function AdminDashboardPage() {
       showToast(`Error: ${err.message || 'Image processing failed'}`);
     } finally {
       setImageCompressing(false);
+    }
+  };
+
+  const [frameImageBusy, setFrameImageBusy] = useState<string | null>(null);
+  const setFrameImage = (color: string, value: string) => {
+    setProductFormData((prev: any) => ({ ...prev, frameImages: { ...(prev.frameImages || {}), [color]: value } }));
+  };
+  const handleFrameImageUpload = async (color: string, file: File) => {
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/jpg', 'image/webp'].includes(file.type)) {
+      showToast('Error 400: Please upload a valid JPG, PNG, or WEBP image.');
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      showToast('Error 413: Image must be under 20MB.');
+      return;
+    }
+    try {
+      setFrameImageBusy(color);
+      const dataUrl = await compressImageFile(file, 1000, 1250, 0.8);
+      setFrameImage(color, dataUrl);
+      showToast(`${color} frame photo attached. Save the wall art to publish it.`);
+    } catch (err: any) {
+      showToast(`Error: ${err.message || 'Image processing failed'}`);
+    } finally {
+      setFrameImageBusy(null);
     }
   };
 
@@ -1153,7 +1189,7 @@ export function AdminDashboardPage() {
     const cleanTags = (typeof productFormData.tags === 'string'
       ? productFormData.tags.split(',').map((t) => t.trim()).filter(Boolean)
       : Array.isArray(productFormData.tags) ? productFormData.tags : [])
-      .filter((t) => !t.startsWith('rating:') && !t.startsWith('reviews:') && !t.startsWith(AVAILABLE_SIZE_TAG) && !t.startsWith(FRAME_COLOR_TAG) && !t.startsWith(WALL_ART_CATEGORY_TAG));
+      .filter((t) => !t.startsWith('rating:') && !t.startsWith('reviews:') && !t.startsWith(AVAILABLE_SIZE_TAG) && !t.startsWith(FRAME_COLOR_TAG) && !t.startsWith(WALL_ART_CATEGORY_TAG) && !t.startsWith(WALL_ART_CATEGORY_NAME_TAG) && !t.startsWith(FRAME_IMAGE_TAG));
 
     const ratingVal = Number(productFormData.rating) || 4.9;
     const reviewsVal = Number(productFormData.reviewsCount) >= 0 ? Number(productFormData.reviewsCount) : (isCurrentProduct ? 48 : 148);
@@ -1164,7 +1200,19 @@ export function AdminDashboardPage() {
     }
     if (productType === 'wallart') {
       for (const color of productFormData.frameColors || []) cleanTags.push(`${FRAME_COLOR_TAG}${color}`);
-      if (productFormData.wallArtCategory) cleanTags.push(`${WALL_ART_CATEGORY_TAG}${productFormData.wallArtCategory}`);
+      // One photo per frame colour. Kept even if the colour is switched off, so nothing uploaded is lost.
+      for (const color of WALL_ART_FRAME_COLORS) {
+        const img = ((productFormData as any).frameImages || {})[color];
+        if (typeof img === 'string' && img.trim()) cleanTags.push(`${FRAME_IMAGE_TAG}${color}:${img.trim()}`);
+      }
+      if (productFormData.wallArtCategory) {
+        cleanTags.push(`${WALL_ART_CATEGORY_TAG}${productFormData.wallArtCategory}`);
+        // Admin-added categories also keep their display name so the store can label them
+        if (!WALL_ART_CATEGORIES.some((c) => c.slug === productFormData.wallArtCategory)) {
+          const catName = cleanWallArtCategoryName(wallArtCategoryList.find((c) => c.slug === productFormData.wallArtCategory)?.name || '');
+          if (catName) cleanTags.push(`${WALL_ART_CATEGORY_NAME_TAG}${catName}`);
+        }
+      }
     }
     if (productFormData.isTrending && !cleanTags.some((t: string) => t.toLowerCase() === 'trending')) {
       cleanTags.push('trending');
@@ -1494,6 +1542,26 @@ export function AdminDashboardPage() {
   // Poster Catalog shows art posters; Product Catalog shows home & decor items (mirrors, rugs, ...)
   const posterProducts = useMemo(() => products.filter((p) => isPosterCategory(p.category)), [products]);
   const wallArtProducts = useMemo(() => products.filter((p) => isWallArtCategory(p.category)), [products]);
+  // Default wall art categories + any found on saved wall art + any the admin added in this session
+  const [extraWallArtCategories, setExtraWallArtCategories] = useState<Array<{ slug: string; name: string }>>([]);
+  const wallArtCategoryList = useMemo(() => {
+    const list = getWallArtCategoryList(wallArtProducts as any);
+    for (const c of extraWallArtCategories) if (!list.some((x) => x.slug === c.slug)) list.push(c);
+    return list;
+  }, [wallArtProducts, extraWallArtCategories]);
+  const [newWallArtCategoryName, setNewWallArtCategoryName] = useState('');
+  const [showNewWallArtCategory, setShowNewWallArtCategory] = useState(false);
+  const addNewWallArtCategory = () => {
+    const name = cleanWallArtCategoryName(newWallArtCategoryName);
+    const slug = slugifyWallArtCategory(name);
+    if (!name || !slug) return;
+    if (!wallArtCategoryList.some((c) => c.slug === slug)) {
+      setExtraWallArtCategories((prev) => [...prev, { slug, name }]);
+    }
+    setProductFormData((prev: any) => ({ ...prev, wallArtCategory: slug }));
+    setNewWallArtCategoryName('');
+    setShowNewWallArtCategory(false);
+  };
   const decorProducts = useMemo(() => products.filter((p) => !isPosterCategory(p.category) && !isWallArtCategory(p.category)), [products]);
 
   const filteredProducts = useMemo(() => {
@@ -1514,7 +1582,7 @@ export function AdminDashboardPage() {
   }, [activeTab, posterProducts, wallArtProducts, decorProducts, productCategoryFilter, productSearch]);
 
   const catalogCategoryFilters = useMemo(() => {
-    if (activeTab === 'wallart') return [{ slug: 'all', label: 'All Wall Art' }, ...WALL_ART_CATEGORIES.map((c) => ({ slug: c.slug, label: c.name }))];
+    if (activeTab === 'wallart') return [{ slug: 'all', label: 'All Wall Art' }, ...wallArtCategoryList.map((c) => ({ slug: c.slug, label: c.name }))];
     if (activeTab === 'decor') {
       return [
         { slug: 'all', label: 'All Products' },
@@ -1844,6 +1912,17 @@ export function AdminDashboardPage() {
 
             <button
               type="button"
+              onClick={() => { setActiveTab('heroslider'); setMobileSidebarOpen(false); }}
+              className={`admin-nav-link ${activeTab === 'heroslider' ? 'active' : ''}`}
+            >
+              <span className="admin-nav-link-left">
+                <ImageIcon size={16} />
+                <span>Hero Slider</span>
+              </span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => { setActiveTab('sellers'); setMobileSidebarOpen(false); }}
               className={`admin-nav-link ${activeTab === 'sellers' ? 'active' : ''}`}
             >
@@ -1928,6 +2007,7 @@ export function AdminDashboardPage() {
                 {activeTab === 'wallart' && 'Wall Art Catalog & Inventory'}
                 {activeTab === 'decor' && 'Product Catalog & Inventory'}
                 {activeTab === 'sellers' && 'Marketplace Sellers & Listing Review'}
+                {activeTab === 'heroslider' && 'Homepage Hero Slider'}
                 {activeTab === 'coupons' && 'Discount Vouchers & Offers'}
                 {activeTab === 'customers' && 'Newsletter Subscribers & Reach'}
                 {activeTab === 'security' && 'Security Gate & Database Health'}
@@ -2669,7 +2749,7 @@ export function AdminDashboardPage() {
                           alt={prod.title}
                         />
                         <span style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.8)', color: '#ffffff', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase' }}>
-                          {isWallArtCategory(prod.category) ? getWallArtCategoryName(getWallArtCategory(prod)) || 'Wall Art' : prod.category}
+                          {isWallArtCategory(prod.category) ? getWallArtCategoryName(getWallArtCategory(prod), wallArtCategoryList) || 'Wall Art' : prod.category}
                         </span>
                         {prod.isBestSeller && (
                           <span style={{ position: 'absolute', top: '8px', right: '8px', background: '#f59e0b', color: '#000000', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase' }}>
@@ -2749,6 +2829,7 @@ export function AdminDashboardPage() {
                                   compareAtPrice: isProdPoster ? a5c : isProdWallArt ? wallArtSalePrice(prodSizeCompare, baseComparePrice) : baseComparePrice,
                                   availableSizes: getAvailableSizes(prod as any),
                                   frameColors: isProdWallArt ? getFrameColors(prod as any) : ['Black'],
+                                  frameImages: isProdWallArt ? (getFrameImages(prod as any) as Record<string, string>) : {},
                                   wallArtCategory: isProdWallArt ? getWallArtCategory(prod as any) || WALL_ART_CATEGORIES[0].slug : '',
                                   sizePrices: isProdWallArt ? Object.fromEntries(
                                     WALL_ART_DISPLAY_SIZES.map((sz) => [sz, prodSizePrices[sz] || wallArtSalePrice(prodSizePrices, baseSellingPrice)]),
@@ -2766,7 +2847,7 @@ export function AdminDashboardPage() {
                                   } : { Standard: baseComparePrice },
                                   images: prod.images,
                                   tags: Array.isArray(prod.tags)
-                                    ? prod.tags.filter((t: string) => !t.startsWith(AVAILABLE_SIZE_TAG) && !t.startsWith(FRAME_COLOR_TAG) && !t.startsWith(WALL_ART_CATEGORY_TAG)).join(', ')
+                                    ? prod.tags.filter((t: string) => !t.startsWith(AVAILABLE_SIZE_TAG) && !t.startsWith(FRAME_COLOR_TAG) && !t.startsWith(WALL_ART_CATEGORY_TAG) && !t.startsWith(WALL_ART_CATEGORY_NAME_TAG) && !t.startsWith(FRAME_IMAGE_TAG)).join(', ')
                                     : '',
                                   stock: prod.stock,
                                   isBestSeller: prod.isBestSeller,
@@ -2959,6 +3040,10 @@ export function AdminDashboardPage() {
                   </table>
                 </div>
               </div>
+            )}
+
+            {activeTab === 'heroslider' && (
+              <AdminHeroSlidesPanel authFetch={authFetch} showToast={showToast} />
             )}
 
             {activeTab === 'sellers' && (
@@ -3372,16 +3457,52 @@ export function AdminDashboardPage() {
                     <label className="admin-input-label">Wall Art Category</label>
                     <select
                       value={productFormData.wallArtCategory || ''}
-                      onChange={(e) => setProductFormData({ ...productFormData, wallArtCategory: e.target.value })}
+                      onChange={(e) => {
+                        if (e.target.value === '__add_new__') { setShowNewWallArtCategory(true); return; }
+                        setProductFormData({ ...productFormData, wallArtCategory: e.target.value });
+                      }}
                       className="admin-input-field"
                       style={{ height: '40px' }}
                       required
                     >
                       <option value="" disabled>Choose a category</option>
-                      {WALL_ART_CATEGORIES.map((c) => (
+                      {wallArtCategoryList.map((c) => (
                         <option key={c.slug} value={c.slug}>{c.name}</option>
                       ))}
+                      <option value="__add_new__">+ Add New Category</option>
                     </select>
+                    {showNewWallArtCategory && (
+                      <div className="flex gap-2 mt-2">
+                        <input
+                          type="text"
+                          value={newWallArtCategoryName}
+                          onChange={(e) => setNewWallArtCategoryName(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addNewWallArtCategory(); } }}
+                          placeholder="New category name, e.g. Movies"
+                          className="admin-input-field"
+                          style={{ height: '40px', flex: 1, minWidth: 0 }}
+                          maxLength={40}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={addNewWallArtCategory}
+                          disabled={!cleanWallArtCategoryName(newWallArtCategoryName)}
+                          className="px-3 rounded-lg bg-neutral-900 text-white text-xs font-bold disabled:opacity-40"
+                          style={{ height: '40px' }}
+                        >
+                          Add
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setShowNewWallArtCategory(false); setNewWallArtCategoryName(''); }}
+                          className="px-3 rounded-lg border border-neutral-300 text-xs font-bold"
+                          style={{ height: '40px' }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="admin-input-label">Orientation</label>
@@ -3479,6 +3600,68 @@ export function AdminDashboardPage() {
                           );
                         })}
                       </div>
+
+                      {/* One photo per frame colour: customers see it when they pick that colour */}
+                      <label className="admin-input-label" style={{ margin: '14px 0 6px', display: 'block' }}>
+                        Photo for each frame colour
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
+                        {WALL_ART_FRAME_COLORS.map((color) => {
+                          const img = ((productFormData as any).frameImages || {})[color] as string | undefined;
+                          const on = (productFormData.frameColors || []).includes(color);
+                          const inputId = `admin-frame-image-${color.toLowerCase()}`;
+                          return (
+                            <div key={color} style={{ background: '#0e1628', border: `1px solid ${on ? '#1e3a5f' : '#1e2638'}`, borderRadius: '12px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px', opacity: on ? 1 : 0.75 }}>
+                              <div style={{ fontSize: '12px', fontWeight: 800, color: '#e2e8f0', display: 'flex', justifyContent: 'space-between', gap: '6px' }}>
+                                <span>{color} frame</span>
+                                {!on && <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>not offered</span>}
+                              </div>
+                              <label
+                                htmlFor={inputId}
+                                style={{ aspectRatio: '4 / 5', borderRadius: '8px', border: '1px dashed #334155', background: '#0f172a', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: frameImageBusy ? 'wait' : 'pointer', textAlign: 'center', padding: img ? 0 : '8px' }}
+                              >
+                                {img ? (
+                                  <img src={img} alt={`${color} frame preview`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                    {frameImageBusy === color ? 'Compressing…' : <><Upload size={16} style={{ color: '#38bdf8', display: 'block', margin: '0 auto 4px' }} />Upload {color} frame photo</>}
+                                  </span>
+                                )}
+                              </label>
+                              <input
+                                id={inputId}
+                                type="file"
+                                accept="image/png, image/jpeg, image/jpg, image/webp"
+                                style={{ display: 'none' }}
+                                disabled={frameImageBusy !== null}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleFrameImageUpload(color, file);
+                                  e.target.value = '';
+                                }}
+                              />
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <label htmlFor={inputId} className="admin-btn-secondary" style={{ flex: 1, textAlign: 'center', fontSize: '11px', padding: '6px 8px', cursor: 'pointer' }}>
+                                  {img ? 'Replace' : 'Upload'}
+                                </label>
+                                {img && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setFrameImage(color, '')}
+                                    title={`Remove ${color} frame photo`}
+                                    style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', color: '#fca5a5', borderRadius: '8px', padding: '0 8px', cursor: 'pointer' }}
+                                  >
+                                    <X size={13} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <span style={{ fontSize: '10.5px', color: '#64748b', display: 'block', marginTop: '6px' }}>
+                        Optional. A colour without its own photo shows the main wall art image. Replacing one colour does not change the others.
+                      </span>
                     </div>
                   )}
                   <span style={{ fontSize: '10.5px', color: '#64748b' }}>
@@ -3923,7 +4106,9 @@ export function AdminDashboardPage() {
                     style={{ height: '38px' }}
                   />
                   <span style={{ fontSize: '10px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                    e.g. ({productFormData.reviewsCount || 0} verified ratings)
+                    {Number(productFormData.reviewsCount) > 0
+                      ? `Shows: (${productFormData.reviewsCount} verified ratings)`
+                      : 'Leave 0 to hide stars and reviews on the product page'}
                   </span>
                 </div>
               </div>

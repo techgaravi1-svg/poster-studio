@@ -349,10 +349,13 @@ function MenuDrawer({
                 <span>Custom Orders</span>
                 <span className="badge-new-pill">NEW</span>
               </Link>
-              <div className="menu-nav-item opacity-60 cursor-not-allowed select-none flex items-center justify-between" title="Coming Soon">
-                <span>Wall Packs</span>
-                <span className="cat-status-chip soon-chip text-[10px]">Coming Soon</span>
-              </div>
+              <Link
+                href="/collections/wall-art"
+                className={`menu-nav-item ${location.startsWith('/collections/wall-art') ? 'active-pill' : ''}`}
+                onClick={onClose}
+              >
+                Wall Art
+              </Link>
               <div className="menu-categories-accordion">
                 <button
                   type="button"
@@ -585,11 +588,10 @@ export function Header() {
                   <span className="badge-new-pill">NEW</span>
                 </Link>
 
-                {/* Wall Packs */}
-                <span className="desktop-nav-item opacity-60 cursor-not-allowed select-none" title="Coming Soon">
-                  <span>Wall Packs</span>
-                  <span className="cat-status-chip soon-chip">Coming Soon</span>
-                </span>
+                {/* Wall Art */}
+                <Link href="/collections/wall-art" className="desktop-nav-item">
+                  <span>Wall Art</span>
+                </Link>
 
                 {/* Coming Soon Dropdown */}
                 <div className="desktop-categories-dropdown">
@@ -1015,10 +1017,12 @@ export function Footer() {
               <Instagram size={18} />
             </a>
             <a
-              href="#"
-              onClick={(e) => e.preventDefault()}
+              href="https://www.facebook.com/share/19tuh1G27c/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="social-icon-box"
               aria-label="Facebook"
+              title="Follow DUNGEONS on Facebook"
             >
               <Facebook size={18} />
             </a>

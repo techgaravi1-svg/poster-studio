@@ -47,7 +47,7 @@ import {
   Store,
   Mail,
 } from 'lucide-react';
-import { collections, formatPrice, getProduct, transformDbProductToFrontend, getWallArtSizes, isWallArtCategory, WALL_ART_DISPLAY_SIZES, WALL_ART_FRAME_COLORS, CUSTOM_WALL_ART_FRAME_COLORS, getAvailableSizes, getFrameColors, getDefaultSize, WALL_ART_CATEGORIES, getWallArtCategory, type WallArtFrameColor, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, isPosterCategory, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
+import { collections, formatPrice, getProduct, transformDbProductToFrontend, getWallArtSizes, isWallArtCategory, WALL_ART_DISPLAY_SIZES, WALL_ART_FRAME_COLORS, CUSTOM_WALL_ART_FRAME_COLORS, getAvailableSizes, getFrameColors, getFrameImages, getDefaultSize, WALL_ART_CATEGORIES, getWallArtCategory, getWallArtCategoryList, type WallArtFrameColor, getProductStock, getProductSizePrice, getProductSizeComparePrice, getProductTierRank, products, searchProducts, storeCategories, getStoreCategories, useStoreCategories, useLiveProducts, useLiveProductsWithStatus, optimizeCloudinary, getDynamicPosterCategories, isPosterCategory, type DynamicPosterCategory, type PosterSize, type Product, type Orientation, type StoreCategory } from '@/lib/catalog';
 import { cartTotals, makeOrder, store, useStore, type CartItem, type DemoOrder } from '@/lib/store';
 import { PosterArt, ProductCard, ProductCardSkeleton, Toast, PARTNER_MAILTO_LINK } from '@/components/storefront';
 import { MyntraItemCard, SwiggyCouponBox, MyntraPriceDetails } from '@/components/cart-order-ui';
@@ -115,6 +115,16 @@ function SizeChartModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
   );
 }
 
+const HERO_SLIDES_CACHE_KEY = 'dungeons_hero_slides_v1';
+
+/** Internal links use the router; full https links open in a new tab. */
+function HeroSlideLink({ href, className, children }: { href: string; className?: string; children: React.ReactNode }) {
+  if (/^https:\/\//i.test(href)) {
+    return <a href={href} className={className} target="_blank" rel="noopener noreferrer">{children}</a>;
+  }
+  return <Link href={href.startsWith('/') ? href : '/collections'} className={className}>{children}</Link>;
+}
+
 export function HomePage() {
   const [toast, setToast] = useState('');
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
@@ -165,11 +175,13 @@ export function HomePage() {
 
   // 3 & 4. Wall art sections: items the admin marks Best Seller / Trending in the Wall Art Catalog
   const wallArtPool = useMemo(() => (liveProducts || []).filter((p) => isWallArtCategory(p.category)), [liveProducts]);
+  // The admin's Trending switch writes/removes the exact 'trending' tag, so that tag is the source of truth.
+  // A wall art item marked Trending shows in Trending Wall Art (not Best Selling), even if Best Seller is also on.
   const isTrendingItem = (p: Product) =>
-    Boolean(p.trending || (p as any).isStaffPick || p.tags?.some((t) => typeof t === 'string' && t.toLowerCase().includes('trending')));
+    Boolean(p.tags?.some((t) => typeof t === 'string' && t.trim().toLowerCase() === 'trending'));
 
   const bestSellingWallArt = useMemo(() => {
-    const flagged = wallArtPool.filter((p) => Boolean(p.bestseller || (p as any).isBestSeller));
+    const flagged = wallArtPool.filter((p) => Boolean(p.bestseller || (p as any).isBestSeller) && !isTrendingItem(p));
     // Until the admin marks any wall art as Best Seller, show the latest wall art so the section is never empty
     const pool = flagged.length > 0 ? flagged : wallArtPool.filter((p) => !isTrendingItem(p));
     return pool.slice(0, 10).map((p) => ({ ...p, bestseller: true, newArrival: false, trending: false }));
@@ -267,7 +279,7 @@ export function HomePage() {
     setTouchStartX(null);
   };
 
-  const heroSlides = [
+  const defaultHeroSlides = [
     {
       id: 'hero-1',
       image: optimizeCloudinary('https://res.cloudinary.com/pyjyrmry/image/upload/v1793352224/dungeons_hero_assets/hero_slide_1.jpg', 1280, 80),
@@ -287,6 +299,34 @@ export function HomePage() {
       title: 'Dungeons Posters Hero 3',
     },
   ];
+  // Slides managed in Admin > Hero Slider. Last good list is cached so returning visitors don't see a swap.
+  const [adminHeroSlides, setAdminHeroSlides] = useState<Array<{ id: string; image: string; link: string; title: string }>>(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(HERO_SLIDES_CACHE_KEY) || '[]');
+      return Array.isArray(cached) ? cached.filter((s: any) => s && typeof s.image === 'string' && s.image) : [];
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/hero-slides')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data || !data.success || !Array.isArray(data.slides)) return;
+        const list = data.slides
+          .filter((s: any) => s && typeof s.image === 'string' && s.image)
+          .map((s: any) => ({ id: String(s.id), image: s.image, link: typeof s.link === 'string' && s.link ? s.link : '/collections', title: s.title || 'DUNGEONS' }));
+        setAdminHeroSlides(list);
+        try { localStorage.setItem(HERO_SLIDES_CACHE_KEY, JSON.stringify(list)); } catch { /* storage unavailable */ }
+      })
+      .catch(() => { /* keep cached or default slides */ });
+    return () => { cancelled = true; };
+  }, []);
+  const heroSlides = adminHeroSlides.length > 0 ? adminHeroSlides : defaultHeroSlides;
+  useEffect(() => {
+    if (bannerSlide >= heroSlides.length) setBannerSlide(0);
+  }, [heroSlides.length, bannerSlide]);
 
   const [heroPaused, setHeroPaused] = useState(false);
   const dynamicStoreCategories = useMemo(() => getStoreCategories(liveProducts), [liveProducts]);
@@ -346,7 +386,7 @@ export function HomePage() {
           >
             {heroSlides.map((slide, idx) => (
               <div key={slide.id} className="hd-hero-slide-item">
-                <Link href={slide.link} className="hd-hero-slide-link">
+                <HeroSlideLink href={slide.link} className="hd-hero-slide-link">
                   <img
                     src={optimizeCloudinary(slide.image, 1400, 85)}
                     srcSet={`${optimizeCloudinary(slide.image, 640, 80)} 640w, ${optimizeCloudinary(slide.image, 1200, 85)} 1200w, ${optimizeCloudinary(slide.image, 1600, 85)} 1600w`}
@@ -358,7 +398,7 @@ export function HomePage() {
                     width="1200"
                     height="675"
                   />
-                </Link>
+                </HeroSlideLink>
               </div>
             ))}
           </div>
@@ -793,7 +833,8 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
   const isWallArtPage = matchedCategory?.slug === 'wall-art';
   const searchString = useSearch();
   const requestedWallArtCat = new URLSearchParams(searchString).get('cat') || 'all';
-  const activeWallArtCat = WALL_ART_CATEGORIES.some((c) => c.slug === requestedWallArtCat) ? requestedWallArtCat : 'all';
+  const wallArtCategoryList = useMemo(() => getWallArtCategoryList(liveProducts || []), [liveProducts]);
+  const activeWallArtCat = wallArtCategoryList.some((c) => c.slug === requestedWallArtCat) ? requestedWallArtCat : 'all';
 
   const activePosterSubSlug = bestsellers
     ? 'bestsellers'
@@ -1038,7 +1079,7 @@ export function CollectionPage({ bestsellers = false }: { bestsellers?: boolean;
               {isWallArtPage && (
                 <div className="category-pills-bar wall-art-pills-bar">
                   <div className="category-pills-scroll">
-                    {[{ slug: 'all', name: 'All Wall Art' }, ...WALL_ART_CATEGORIES].map((c) => (
+                    {[{ slug: 'all', name: 'All Wall Art' }, ...wallArtCategoryList].map((c) => (
                       <Link
                         key={c.slug}
                         href={c.slug === 'all' ? '/collections/wall-art' : `/collections/wall-art?cat=${c.slug}`}
@@ -1482,7 +1523,15 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
     }
   };
 
-  const heroImageSrc = product.images?.[0] || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349713/dungeons_store_assets/spiderman-product-hero_bafa79.jpg';
+  // Wall art: show the photo the admin uploaded for the selected frame colour (falls back to the main image)
+  const frameImages = useMemo(() => getFrameImages(product), [product]);
+  useEffect(() => {
+    // Preload the other frame photos so switching colour is instant
+    Object.values(frameImages).forEach((url) => {
+      if (url) { const img = new Image(); img.src = optimizeCloudinary(url, 800, 85); }
+    });
+  }, [frameImages]);
+  const heroImageSrc = (hasWallArtSizes && frameImages[frameColor]) || product.images?.[0] || 'https://res.cloudinary.com/pyjyrmry/image/upload/v1793349713/dungeons_store_assets/spiderman-product-hero_bafa79.jpg';
 
   return (
     <main className="postgenz-product-page">
@@ -1531,6 +1580,8 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
           </p>
         )}
 
+        {/* Reviews show only when the admin added a review count above 0 */}
+        {(product.reviewsCount === undefined || product.reviewsCount > 0) && (
         <div className="product-stars-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0 10px' }}>
           <div style={{ display: 'flex', color: '#f59e0b', fontSize: '15px' }}>
             {[1, 2, 3, 4, 5].map((star) => (
@@ -1546,6 +1597,7 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
             ({product.reviewsCount !== undefined ? product.reviewsCount : (isPoster ? 148 : 48)} verified ratings)
           </span>
         </div>
+        )}
 
         <div className="product-price-display-row">
           <span className="price-bold">{formatPrice(currentSizePrice)}</span>
@@ -1890,13 +1942,15 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
 
 
 
-        {/* 9. NOTICE HIGHLIGHT BOX */}
+        {/* 9. NOTICE HIGHLIGHT BOX (posters only; wall art ships ready to hang) */}
+        {!isWallArtCategory(product.category) && (
         <div className="notice-highlight-card">
           <h4 className="notice-card-title">No Adhesive Included</h4>
           <p className="notice-card-desc">
             Posters do not come with stickers or glue. Please use your own double-sided tape, poster glue, or wall-safe mounting solution.
           </p>
         </div>
+        )}
       </section>
     </div>
 
@@ -1904,7 +1958,7 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
       <section className="product-similar-section">
         <div className="poster-section-header">
           <h2 className="stencil-heading">YOU MAY ALSO LIKE</h2>
-          <span className="stencil-subheading">SIMILAR POSTERS YOU MIGHT LOVE</span>
+          <span className="stencil-subheading">{isWallArtCategory(product.category) ? 'SIMILAR WALL ART YOU MIGHT LOVE' : 'SIMILAR POSTERS YOU MIGHT LOVE'}</span>
         </div>
 
         <div className="similar-products-row-wrap">
@@ -1923,10 +1977,10 @@ function ProductPageContent({ product, liveProducts }: { product: Product; liveP
 
           <div className="explore-all-posters-wrap">
             <Link
-              href="/collections/posters"
+              href={isWallArtCategory(product.category) ? '/collections/wall-art' : '/collections/posters'}
               className="explore-all-posters-btn"
             >
-              <span>EXPLORE ALL POSTERS</span>
+              <span>{isWallArtCategory(product.category) ? 'EXPLORE ALL WALL ART' : 'EXPLORE ALL POSTERS'}</span>
               <ArrowRight size={16} />
             </Link>
           </div>
